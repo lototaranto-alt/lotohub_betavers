@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Dimensions, FlatList, Image, ImageBackground,
 import { supabase } from '../../utils/supabase';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import { calculateDistance } from '../../utils/haversine';
+import { useMobility } from '../../context/MobilityContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -98,7 +99,37 @@ const getPOIImage = (name: string) => {
   }
 };
 
+const getMobilityPillStyle = (type: string) => {
+  switch (type) {
+    case 'dolce':
+      return {
+        bg: '#ECFDF5', // Sfondo verde leggero
+        text: '#10B981', // Testo verde
+        label: '🌱 Mobilità Dolce',
+      };
+    case 'pubblica':
+      return {
+        bg: '#F0F9FF', // Sfondo blu leggero
+        text: '#0a7ea4', // Testo blu
+        label: '🚌 Rete Pubblica',
+      };
+    case 'privata':
+      return {
+        bg: '#F1F5F9', // Sfondo grigio leggero
+        text: '#4B5563', // Testo grigio
+        label: '🚗 Auto/Moto',
+      };
+    default:
+      return {
+        bg: '#F1F5F9',
+        text: '#64748B',
+        label: '',
+      };
+  }
+};
+
 export default function VetrinaScreen() {
+  const { mobilityType, forceReopenWizard } = useMobility();
   const [pois, setPois] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
@@ -338,9 +369,9 @@ export default function VetrinaScreen() {
           // ==============================
           <>
             <View style={[styles.prestigePill, { backgroundColor: LOTO_PALETTE.EBANO }]}>
-              <MaterialIcons name="storefront" size={50} color={LOTO_PALETTE.SABBIA_DORATA} />
+              <MaterialIcons name="storefront" size={48} color={LOTO_PALETTE.SABBIA_DORATA} />
               <View style={styles.prestigeCenterCol}>
-                <Text style={[styles.prestigeTierTitle, { color: '#FFF' }]}>{userProfile?.nickname || 'Merchant'}</Text>
+                <Text style={[styles.prestigeTierTitle, { color: '#FFF' }]} numberOfLines={1} adjustsFontSizeToFit>{userProfile?.nickname || 'Merchant'}</Text>
                 <View style={styles.prestigeBadgeRow}>
                   <View style={[styles.prestigePillBadge, { backgroundColor: LOTO_PALETTE.VERDE_OLIVA }]}>
                     <Text style={[styles.prestigePillBadgeText, { color: '#FFF' }]}>LOTO Partner</Text>
@@ -372,22 +403,42 @@ export default function VetrinaScreen() {
           <>
             <View style={styles.prestigePill}>
               {/* SX: Stemma Tier */}
-              <MaterialIcons name={levelInfo.stemma || 'emoji-events'} size={60} color={LOTO_PALETTE.SABBIA_DORATA} />
+              <MaterialIcons name={levelInfo.stemma || 'emoji-events'} size={48} color={LOTO_PALETTE.SABBIA_DORATA} />
 
               {/* Centro: Testo */}
               <View style={styles.prestigeCenterCol}>
-                <Text style={styles.prestigeTierTitle}>{levelInfo.title}</Text>
+                <Text style={styles.prestigeTierTitle} numberOfLines={1} adjustsFontSizeToFit>{levelInfo.title}</Text>
                 <View style={styles.prestigeBadgeRow}>
                   <View style={[styles.prestigePillBadge, userProfile?.flow_role === 'Flash Cruiser' && { backgroundColor: LOTO_PALETTE.SABBIA_DORATA }]}>
                     <Text style={[styles.prestigePillBadgeText, userProfile?.flow_role === 'Flash Cruiser' && { color: '#FFF' }]}>
                       {userProfile?.flow_role || 'LOTO Explorer'}
                     </Text>
                   </View>
+                  
+                  {!isPartner && mobilityType && (
+                    <TouchableOpacity
+                      onPress={forceReopenWizard}
+                      activeOpacity={0.8}
+                      style={[
+                        styles.mobilityPillHeader,
+                        { backgroundColor: getMobilityPillStyle(mobilityType).bg }
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.mobilityPillText,
+                          { color: getMobilityPillStyle(mobilityType).text }
+                        ]}
+                      >
+                        {getMobilityPillStyle(mobilityType).label}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
               {/* DX: Avatar */}
-              <TouchableOpacity style={styles.avatarCirclePill} onPress={() => setIsExpModalVisible(true)}>
+              <TouchableOpacity style={[styles.avatarCirclePill, { backgroundColor: levelInfo.color }]} onPress={() => setIsExpModalVisible(true)}>
                 <Text style={styles.avatarInitialPill}>{userProfile?.nickname ? userProfile.nickname[0].toUpperCase() : 'L'}</Text>
               </TouchableOpacity>
             </View>
@@ -644,21 +695,34 @@ const styles = StyleSheet.create({
   headerContainer: { paddingBottom: 15 },
 
   // HEADER SYMMETRY
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 25, paddingTop: 40, paddingBottom: 15, alignItems: 'center' },
-  hubTitleSymmetry: { fontSize: 26, fontWeight: '900', color: LOTO_PALETTE.EBANO, fontFamily: 'serif', letterSpacing: 2 },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingLeft: 18, paddingRight: 25, paddingTop: 40, paddingBottom: 15, alignItems: 'center' },
+  hubTitleSymmetry: { fontSize: 40, fontWeight: '900', color: LOTO_PALETTE.EBANO, fontFamily: 'serif', letterSpacing: 0.5, lineHeight: 44, includeFontPadding: false, textAlignVertical: 'center' },
   languageIconWrapper: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: LOTO_PALETTE.TERRACOTTA, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   langBadge: { position: 'absolute', bottom: -5, right: -5, backgroundColor: LOTO_PALETTE.EBANO, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 8 },
   langBadgeText: { color: '#FFF', fontSize: 8, fontWeight: 'bold' },
+  mobilityPillHeader: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
+  },
+  mobilityPillText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  },
 
   // RETTANGOLO PRESTIGE
-  prestigePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: LOTO_PALETTE.VERDE_OLIVA, marginTop: 10, marginBottom: 25, marginRight: 25, paddingVertical: 20, paddingHorizontal: 20, borderTopRightRadius: 50, borderBottomRightRadius: 50, elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
-  prestigeCenterCol: { flex: 1, marginLeft: 15, justifyContent: 'center' },
-  prestigeTierTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFF', fontFamily: 'serif', marginBottom: 5 },
-  prestigeBadgeRow: { flexDirection: 'row' },
+  prestigePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: LOTO_PALETTE.VERDE_OLIVA, marginTop: 10, marginBottom: 25, marginRight: 25, paddingVertical: 26, paddingLeft: 6, paddingRight: 10, borderTopRightRadius: 50, borderBottomRightRadius: 50, elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
+  prestigeCenterCol: { flex: 1, marginLeft: 8, marginRight: 15, justifyContent: 'center', alignItems: 'flex-start' },
+  prestigeTierTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFF', fontFamily: 'serif', marginBottom: 3, textAlign: 'left' },
+  prestigeBadgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' },
   prestigePillBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginRight: 6 },
   prestigePillBadgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
-  avatarCirclePill: { width: 66, height: 66, borderRadius: 33, backgroundColor: LOTO_PALETTE.CREMA, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: LOTO_PALETTE.SABBIA_DORATA, marginLeft: 10 },
-  avatarInitialPill: { color: LOTO_PALETTE.EBANO, fontWeight: 'bold', fontSize: 24, fontFamily: 'serif' },
+  avatarCirclePill: { width: 54, height: 54, borderRadius: 27, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF', marginLeft: 5, marginRight: 2 },
+  avatarInitialPill: { color: '#FFF', fontWeight: 'bold', fontSize: 22, fontFamily: 'serif' },
 
   // IMPACT CARD '3 ARCHI'
   archesSection: { marginHorizontal: 20, marginBottom: 25 },

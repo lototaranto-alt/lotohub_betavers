@@ -85,7 +85,7 @@ export default function WizardScreen() {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} style={styles.formContainer}>
           <Text style={styles.formTitle}>Benvenuto in LOTO</Text>
-          <Text style={styles.formSubtitle}>Crea il tuo profilo per personalizzare l'esperienza.</Text>
+          <Text style={styles.formSubtitle}>Crea il tuo profilo per personalizzare l&apos;esperienza.</Text>
 
           <Text style={styles.label}>Nickname</Text>
           <TextInput

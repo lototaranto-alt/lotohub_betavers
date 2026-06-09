@@ -8,6 +8,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import { CityProvider } from '../context/CityContext';
+import { MobilityProvider } from '../context/MobilityContext';
+import MobilityWizard from '../components/MobilityWizard';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -47,14 +49,17 @@ export default function RootLayout() {
 
   return (
     <CityProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="wizard" options={{ headerShown: false, animation: 'fade' }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <MobilityProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="wizard" options={{ headerShown: false, animation: 'fade' }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          </Stack>
+          <StatusBar style="auto" />
+          <MobilityWizard />
+        </ThemeProvider>
+      </MobilityProvider>
     </CityProvider>
   );
 }

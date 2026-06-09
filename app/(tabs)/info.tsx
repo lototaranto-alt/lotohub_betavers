@@ -53,28 +53,34 @@ export default function InfoScreen() {
 
         <AccordionItem title="Proprietà Intellettuale & Modello" icon="gavel">
           <Text style={styles.bodyText}>
-            L.O.T.O. (Local Optimization & Territorial Organization) utilizza un modello proprietario di <Text style={styles.boldText}>Gestione Dinamica dei Flussi</Text>.
+            {"L.O.T.O. (Local Optimization & Territorial Organization) utilizza un modello proprietario di "}
+            <Text style={styles.boldText}>{"Gestione Dinamica dei Flussi"}</Text>.
           </Text>
           <Text style={styles.bodyText}>
-            L'algoritmo di Smart Routing è tutelato da segreto industriale e si basa sul <Text style={styles.boldText}>"Triangolo della Verità"</Text>: un triplo livello di validazione per prevenire frodi ambientali. Questo include il geofencing spaziale (raggio di 50m), la validazione cinematica (sospensione accumulo XP a velocità superiori ai 20 km/h) e il protocollo anti-double-spend per l'acquisizione degli scontrini OCR.
+            {"L'algoritmo di Smart Routing è tutelato da segreto industriale e si basa sul "}
+            <Text style={styles.boldText}>{"\"Triangolo della Verità\""}</Text>
+            {": un triplo livello di validazione per prevenire frodi ambientali. Questo include il geofencing spaziale (raggio di 50m), la validazione cinematica (sospensione accumulo XP a velocità superiori ai 20 km/h) e il protocollo anti-double-spend per l'acquisizione degli scontrini OCR."}
           </Text>
           <Text style={styles.bodyText}>
-            L'intero ecosistema logico per la deviazione della calca e il ripopolamento delle aree urbane secondarie di Taranto costituisce un asset intellettuale protetto. È severamente vietata la riproduzione del codice sorgente, dei layer cartografici o delle funzioni di calcolo ESG.
+            {"L'intero ecosistema logico per la deviazione della calca e il ripopolamento delle aree urbane secondarie di Taranto costituisce un asset intellettuale protetto. È severamente vietata la riproduzione del codice sorgente, dei layer cartografici o delle funzioni di calcolo ESG."}
           </Text>
         </AccordionItem>
 
         <AccordionItem title="Come Partecipare (How To Use)" icon="eco">
           <Text style={styles.bodyText}>
-            Più che un'app, L.O.T.O. è un invito a riscoprire l'autentica bellezza di Taranto proteggendo il suo ecosistema.
+            {"Più che un'app, L.O.T.O. è un invito a riscoprire l'autentica bellezza di Taranto proteggendo il suo ecosistema."}
           </Text>
           <Text style={styles.bulletPoint}>
-            <Text style={[styles.boldText, { color: LOTO_PALETTE.VERDE_OLIVA }]}>🍃 CO₂ Evitata:</Text> Camminare verso le mete consigliate o raggiungere un partner locale contribuisce ad abbattere le emissioni. Il nostro sistema converte i tuoi passi in chilogrammi di anidride carbonica risparmiata.
+            <Text style={[styles.boldText, { color: LOTO_PALETTE.VERDE_OLIVA }]}>{"🍃 CO₂ Evitata:"}</Text>
+            {" Camminare verso le mete consigliate o raggiungere un partner locale contribuisce ad abbattere le emissioni. Il nostro sistema converte i tuoi passi in chilogrammi di anidride carbonica risparmiata."}
           </Text>
           <Text style={styles.bulletPoint}>
-            <Text style={[styles.boldText, { color: '#0056D2' }]}>🚰 Bonus Idrico (Refill):</Text> Porta con te la tua borraccia! Presso i partner aderenti, puoi fare il refill gratuito dell'acqua, risparmiando plastica e accumulando XP bonus.
+            <Text style={[styles.boldText, { color: '#0056D2' }]}>{"🚰 Bonus Idrico (Refill):"}</Text>
+            {" Porta con te la tua borraccia! Presso i partner aderenti, puoi fare il refill gratuito dell'acqua, risparmiando plastica e accumulando XP bonus."}
           </Text>
           <Text style={styles.bulletPoint}>
-            <Text style={[styles.boldText, { color: LOTO_PALETTE.SABBIA_DORATA }]}>🪙 LOTO PTI:</Text> La moneta virtuale dell'impatto positivo. Eseguendo Check-in nelle aree culturali o scansionando gli scontrini, accumuli PTI per scalare la gerarchia LOTO (fino al rango Eroe del Mare) e sbloccare Storie Segrete.
+            <Text style={[styles.boldText, { color: LOTO_PALETTE.SABBIA_DORATA }]}>{"🪙 LOTO PTI:"}</Text>
+            {" La moneta virtuale dell'impatto positivo. Eseguendo Check-in nelle aree culturali o scansionando gli scontrini, accumuli PTI per scalare la gerarchia LOTO (fino al rango Eroe del Mare) e sbloccare Storie Segrete."}
           </Text>
         </AccordionItem>
 

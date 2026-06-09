@@ -9,6 +9,8 @@ interface MobilityContextType {
   mobilityRadius: MobilityRadius;
   lastWizardDate: string | null;
   saveMobilityChoice: (type: MobilityType, radius: MobilityRadius) => Promise<void>;
+  resetMobilityChoice: () => Promise<void>;
+  forceReopenWizard: () => void;
   loading: boolean;
 }
 
@@ -109,6 +111,21 @@ export function MobilityProvider({ children }: MobilityProviderProps) {
     }
   };
 
+  const resetMobilityChoice = async () => {
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEYS.TYPE);
+      setMobilityType(null);
+      console.log('[MobilityContext] Scelta mobilità resettata (riapertura Wizard)');
+    } catch (error) {
+      console.error('[MobilityContext] Errore durante il reset della scelta mobilità:', error);
+      throw error;
+    }
+  };
+
+  const forceReopenWizard = () => {
+    setMobilityType(null);
+  };
+
   return (
     <MobilityContext.Provider
       value={{
@@ -116,6 +133,8 @@ export function MobilityProvider({ children }: MobilityProviderProps) {
         mobilityRadius,
         lastWizardDate,
         saveMobilityChoice,
+        resetMobilityChoice,
+        forceReopenWizard,
         loading,
       }}
     >

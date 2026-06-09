@@ -138,7 +138,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
                         <Text style={styles.governanceTitle}>Suggerimento Sosta Strategica</Text>
                       </View>
                       <Text style={styles.governanceText}>
-                        La zona intorno a {poi.name} è a traffico limitato o congestionata. Parcheggia comodamente a "Park Porto Antico" e guadagna <Text style={{fontWeight: 'bold', color: LOTO_PALETTE.SABBIA_DORATA}}>+10 PTI</Text>.
+                        La zona intorno a {poi.name} è a traffico limitato o congestionata. Parcheggia comodamente a &quot;Park Porto Antico&quot; e guadagna <Text style={{fontWeight: 'bold', color: LOTO_PALETTE.SABBIA_DORATA}}>+10 PTI</Text>.
                       </Text>
                       <TouchableOpacity style={styles.navParkingBtn} onPress={() => handleNavigate('driving', true)}>
                         <MaterialIcons name="navigation" size={16} color="#FFF" style={{ marginRight: 5 }} />

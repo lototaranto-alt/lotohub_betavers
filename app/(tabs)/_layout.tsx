@@ -82,7 +82,7 @@ export default function TabLayout() {
         <View style={styles.modalBg}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Certificazione Hub</Text>
-            <Text style={styles.modalSubtitle}>Scegli l'azione da intraprendere sul territorio.</Text>
+            <Text style={styles.modalSubtitle}>Scegli l&apos;azione da intraprendere sul territorio.</Text>
             
             <TouchableOpacity style={styles.actionBtn}>
               <MaterialIcons name="receipt-long" size={32} color="#FFF" />

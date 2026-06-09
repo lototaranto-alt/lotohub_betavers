@@ -97,7 +97,7 @@ export default function MapScreen() {
           <MaterialIcons name="map" size={100} color="#C9C4B8" style={{ opacity: 0.5 }} />
           <Text style={styles.placeholderTitle}>LOTO MAP ENGINE</Text>
           <Text style={styles.placeholderText}>
-            L'infrastruttura geografica è pronta per la Development Build. Inserire il modulo nativo @rnmapbox/maps qui dentro per attivare il Layer.
+            L&apos;infrastruttura geografica è pronta per la Development Build. Inserire il modulo nativo @rnmapbox/maps qui dentro per attivare il Layer.
           </Text>
           <TouchableOpacity style={styles.demoBtn} onPress={() => setHasMapbox(true)}>
             <Text style={styles.demoBtnText}>Attiva (Mockup Sidebar)</Text>
