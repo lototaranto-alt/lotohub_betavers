@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "name": "Taranto LOTO POIs",
+  "features": [
+    { "type": "Feature", "properties": { "name": "Castello Aragonese", "category": "free", "layer_name": "layer-loto-free", "xp_reward": 15 }, "geometry": { "type": "Point", "coordinates": [ 17.2341, 40.4727 ] } },
+    { "type": "Feature", "properties": { "name": "Tempio di Poseidone", "category": "free", "layer_name": "layer-loto-free", "xp_reward": 15 }, "geometry": { "type": "Point", "coordinates": [ 17.2335, 40.4731 ] } },
+    { "type": "Feature", "properties": { "name": "Duomo San Cataldo", "category": "free", "layer_name": "layer-loto-free", "xp_reward": 15 }, "geometry": { "type": "Point", "coordinates": [ 17.2301, 40.4761 ] } },
+    { "type": "Feature", "properties": { "name": "Concattedrale Gran Madre di Dio", "category": "free", "layer_name": "layer-loto-free", "xp_reward": 15 }, "geometry": { "type": "Point", "coordinates": [ 17.2612, 40.4595 ] } },
+    { "type": "Feature", "properties": { "name": "Monumento al Marinaio", "category": "free", "layer_name": "layer-loto-free", "xp_reward": 15 }, "geometry": { "type": "Point", "coordinates": [ 17.2325, 40.4745 ] } },
+    { "type": "Feature", "properties": { "name": "Ponte Girevole", "category": "free", "layer_name": "layer-loto-free", "xp_reward": 15 }, "geometry": { "type": "Point", "coordinates": [ 17.2349, 40.4732 ] } },
+    { "type": "Feature", "properties": { "name": "Mura Greche", "category": "free", "layer_name": "layer-loto-free", "xp_reward": 15 }, "geometry": { "type": "Point", "coordinates": [ 17.258, 40.469 ] } },
+    { "type": "Feature", "properties": { "name": "Palude La Vela", "category": "free", "layer_name": "layer-loto-free", "xp_reward": 15 }, "geometry": { "type": "Point", "coordinates": [ 17.31, 40.48 ] } },
+    { "type": "Feature", "properties": { "name": "Piazza Fontana", "category": "free", "layer_name": "layer-loto-free", "xp_reward": 15 }, "geometry": { "type": "Point", "coordinates": [ 17.2305, 40.4815 ] } },
+    { "type": "Feature", "properties": { "name": "Parco Archeologico Collepasso", "category": "free", "layer_name": "layer-loto-free", "xp_reward": 15 }, "geometry": { "type": "Point", "coordinates": [ 17.2645, 40.4565 ] } },
+    { "type": "Feature", "properties": { "name": "Museo Diocesano MuDi", "category": "partner", "layer_name": "layer-loto-partners", "xp_reward": 50 }, "geometry": { "type": "Point", "coordinates": [ 17.2288, 40.4762 ] } },
+    { "type": "Feature", "properties": { "name": "Canneto Beach", "category": "partner", "layer_name": "layer-loto-partners", "xp_reward": 50 }, "geometry": { "type": "Point", "coordinates": [ 17.3755, 40.3478 ] } },
+    { "type": "Feature", "properties": { "name": "Fatamorgana", "category": "partner", "layer_name": "layer-loto-partners", "xp_reward": 50 }, "geometry": { "type": "Point", "coordinates": [ 17.4037, 40.3465 ] } },
+    { "type": "Feature", "properties": { "name": "Valle Rita", "category": "partner", "layer_name": "layer-loto-partners", "xp_reward": 50 }, "geometry": { "type": "Point", "coordinates": [ 16.8905, 40.5052 ] } },
+    { "type": "Feature", "properties": { "name": "Ipogeo Spartano - Casa della Marchesa", "category": "secret", "layer_name": "layer-loto-secrets", "xp_reward": 100 }, "geometry": { "type": "Point", "coordinates": [ 17.2313, 40.4766 ] } },
+    { "type": "Feature", "properties": { "name": "Parco Archeologico di Saturo", "category": "secret", "layer_name": "layer-loto-secrets", "xp_reward": 100 }, "geometry": { "type": "Point", "coordinates": [ 17.3113, 40.3538 ] } },
+    { "type": "Feature", "properties": { "name": "Isola San Pietro", "category": "secret", "layer_name": "layer-loto-secrets", "xp_reward": 100 }, "geometry": { "type": "Point", "coordinates": [ 17.1512, 40.4545 ] } }
+  ]
+}

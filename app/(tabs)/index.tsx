@@ -1,0 +1,710 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as Location from 'expo-location';
+import { router } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { supabase } from '../../utils/supabase';
+import PoiDetailSheet from '../../components/PoiDetailSheet';
+import { calculateDistance } from '../../utils/haversine';
+
+const { width, height } = Dimensions.get('window');
+
+
+
+// --- NUOVA PALETTE ECO-BOUTIQUE ---
+const LOTO_PALETTE = {
+  VERDE_OLIVA: '#5F713D',
+  TERRACOTTA: '#C36B4D',
+  CREMA: '#FDF8F2',
+  EBANO: '#1A1C1E',
+  SABBIA_DORATA: '#D9A05B',
+  // VECCHI COLORI (per retrocompatibilità)
+  VERDE: '#4A5D23',
+  BLU: '#0056D2',
+  ORO: '#D96C4A',
+  ROSSO: '#D94A4A',
+  BLU_SCURO: '#0F172A',
+  GRIGIO: '#64748B',
+  BG: '#FFFFFF',
+  TEXT_LIGHT: '#64748B',
+  CARD_BG: '#F8FAFC'
+};
+
+const DICTIONARY = {
+  IT: {
+    hello: 'Ciao',
+    guest: 'Ospite Loto',
+    impactTitle: 'IL TUO IMPATTO ECO-SOSTENIBILE',
+    co2Lab: 'Kg CO₂ Evitata',
+    ptsLab: 'LOTO PTI',
+    ticker: '🍃 COMMUNITY TARANTO OGGI: 1.240 Litri risparmiati • 45kg Plastica • 12kg CO₂',
+    btnCheckin: 'Check-in',
+    btnEvents: 'Eventi',
+    btnMap: 'Mappa',
+    sectionSpots: 'METE CONSIGLIATE',
+    recommended: '✨ CONSIGLIATO: BONUS +10 PTI',
+    scanBtn: 'SCANSIONA SCONTRINO',
+    checkinAction: 'CHECK-IN (+15 XP)',
+    userBadge: 'Utente Loto',
+    modalCo2: 'CO2 Evitata',
+    modalPlast: 'Plastica Ridotta',
+    modalTok: 'Token Accumulati',
+    modalDev: 'DEV TOOLS 🛠️ (Modalità Super User)',
+    levelGold: 'EROE DEL MARE',
+    levelSilver: 'CUSTODE DELLA CITTÀ',
+    levelBronze: 'ECO-NAVIGATORE',
+    refillBadge: '🚰 STAZIONE REFILL: BONUS IDRICO',
+    crowdWarning: '🔴 META MOLTO AFFOLLATA',
+    btnAlternative: 'VEDI ALTERNATIVA CONSIGLIATA',
+    btnUnlockStory: 'SBLOCCA STORIA (+30 XP)'
+  },
+  UK: {
+    hello: 'Hello',
+    guest: 'Loto Guest',
+    impactTitle: 'YOUR ECO-SUSTAINABLE IMPACT',
+    co2Lab: 'Kg CO₂ avoided',
+    ptsLab: 'LOTO PTS',
+    ticker: '🍃 TARANTO COMMUNITY TODAY: 1.240 Liters saved • 45kg Plastic • 12kg CO₂',
+    btnCheckin: 'Check-in',
+    btnEvents: 'Events',
+    btnMap: 'Map',
+    sectionSpots: 'RECOMMENDED SPOTS',
+    recommended: '✨ RECOMMENDED: +10 PTS BONUS',
+    scanBtn: 'SCAN RECEIPT',
+    checkinAction: 'CHECK-IN (+15 XP)',
+    userBadge: 'Loto User',
+    modalCo2: 'CO2 Avoided',
+    modalPlast: 'Plastic Reduced',
+    modalTok: 'Tokens Earned',
+    modalDev: 'DEV TOOLS 🛠️ (Super User Mode)',
+    levelGold: 'SEA HERO',
+    levelSilver: 'CITY GUARDIAN',
+    levelBronze: 'ECO-NAVIGATOR',
+    refillBadge: '🚰 REFILL STATION: WATER BONUS',
+    crowdWarning: '🔴 VERY CROWDED DESTINATION',
+    btnAlternative: 'SEE RECOMMENDED ALTERNATIVE',
+    btnUnlockStory: 'UNLOCK STORY (+30 XP)'
+  }
+};
+
+const getPOIImage = (name: string) => {
+  try {
+    if (name.includes('Castello')) return require('../../assets/images/castello-evento.png');
+    if (name.includes('Fontana') || name.includes('Piazza Fontana')) return require('../../assets/images/fontana.jpg');
+    if (name.includes('MArTA') || name.includes('LOTO')) return require('../../assets/images/logo-LOTO.png');
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export default function VetrinaScreen() {
+  const [pois, setPois] = useState<any[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // --- STATO TRIANGOLO DELLA VERITÀ (INTEGRALE) ---
+  const [isMotorized, setIsMotorized] = useState(false);
+  const lastSample = useRef<{ coords: Location.LocationObjectCoords; timestamp: number } | null>(null);
+  const KINEMATIC_TIMER_MS = 60000;
+  const SPEED_LIMIT_KMS = 20 / 3.6;
+
+
+
+  // STATI LOGICI
+  const [lang, setLang] = useState<'IT' | 'UK'>('IT');
+  const [isExpModalVisible, setIsExpModalVisible] = useState(false);
+  const [bookedSessions, setBookedSessions] = useState<Record<string, string>>({});
+  
+  // STATI SPRINT B (Bottom Sheet e Accordion)
+  const [selectedPoi, setSelectedPoi] = useState<any | null>(null);
+  const [isSheetVisible, setIsSheetVisible] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>('recommended');
+
+  const t = DICTIONARY[lang];
+
+  const getLevelInfo = (tokens: number) => {
+    if (tokens >= 500) return { title: t.levelGold, badge: require('../../assets/images/badge_gold_1775676641737.png'), color: LOTO_PALETTE.SABBIA_DORATA, stemma: 'workspace-premium' as any };
+    if (tokens >= 100) return { title: t.levelSilver, badge: require('../../assets/images/badge_silver_1775675392322.png'), color: LOTO_PALETTE.VERDE_OLIVA, stemma: 'security' as any };
+    return { title: t.levelBronze, badge: require('../../assets/images/badge_bronze_1775675369793.png'), color: LOTO_PALETTE.TERRACOTTA, stemma: 'sailing' as any };
+  };
+
+  useEffect(() => {
+    caricaDati();
+    const interval = setInterval(() => avviaFiltroCinematico(), KINEMATIC_TIMER_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  const caricaDati = async () => {
+    try {
+      const { data: poiData, error } = await supabase.rpc('get_pois');
+      if (error) {
+        console.log("ERRORE RPC get_pois:", error);
+      }
+      if (poiData) setPois(poiData);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (profile) {
+          setUserProfile(profile);
+        }
+      }
+
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
+          setUserLocation(loc);
+        });
+      }
+    } catch (e) {
+      console.log("Errore caricaDati:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const avviaFiltroCinematico = async () => {
+    const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    if (lastSample.current) {
+      const distance = getDistance(
+        lastSample.current.coords.latitude,
+        lastSample.current.coords.longitude,
+        current.coords.latitude,
+        current.coords.longitude
+      );
+      const timeDiff = (current.timestamp - lastSample.current.timestamp) / 1000;
+      const velocity = distance / timeDiff;
+
+      setIsMotorized(velocity > SPEED_LIMIT_KMS);
+    }
+    lastSample.current = { coords: current.coords, timestamp: current.timestamp };
+  };
+
+  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371e3;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const executeScan = async (poi: any) => {
+    if (isMotorized) {
+      Alert.alert("Velocità Elevata", "L'uso di mezzi motorizzati sospende l'erogazione di XP mobilità.");
+      return;
+    }
+
+    const dist = userLocation ? getDistance(userLocation.coords.latitude, userLocation.coords.longitude, poi.latitude, poi.longitude) : 999;
+
+    if (dist > (poi.checkin_radius || 50)) {
+      const { data: pings } = await supabase
+        .from('location_pings')
+        .select('*')
+        .eq('poi_id', poi.id)
+        .gte('created_at', new Date(Date.now() - 12 * 3600 * 1000).toISOString())
+        .limit(1);
+
+      if (!pings || pings.length === 0) {
+        Alert.alert("Troppo Lontano", "Spostati verso il partner o attendi segnale GPS stabile.");
+        return;
+      }
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const receiptHash = `${today}_${poi.p_iva}_15.00`;
+
+    const { data: existing } = await supabase.from('impact_transactions').select('id').eq('receipt_hash', receiptHash).single();
+    if (existing) {
+      Alert.alert("Errore", "Scontrino già registrato.");
+      return;
+    }
+
+    const multiplier = userProfile?.party_size || 1;
+    const { error } = await supabase.rpc('process_esg_impact', {
+      user_id: userProfile.id,
+      p_co2: 0.5 * multiplier,
+      p_liters: 5 * multiplier,
+      p_tokens: 50,
+      p_xp: 50,
+      p_takeaway: false,
+      p_party_size: multiplier
+    });
+
+    if (error) {
+      Alert.alert("Errore", "Impossibile completare la scansione.");
+    } else {
+      Alert.alert("Successo!", "Impatto registrato.");
+      caricaDati();
+    }
+  };
+
+  const handleAction = async (poi: any) => {
+    if (poi.category === 'partner') {
+      executeScan(poi);
+      return;
+    }
+    setSelectedPoi(poi);
+    setIsSheetVisible(true);
+  };
+
+  const handleBookPoi = async (poi: any, partySize: number) => {
+    const { data, error } = await supabase.rpc('book_poi_visit', {
+      p_user_id: userProfile.id,
+      p_poi_id: poi.id,
+      p_party_size: partySize
+    });
+    if (!error && data) {
+      setBookedSessions(prev => ({ ...prev, [poi.id]: data }));
+      Alert.alert("Prenotato!", "Hai riservato i tuoi posti. Raggiungi il luogo!");
+      caricaDati();
+    } else {
+      Alert.alert("Errore", "Impossibile prenotare in questo momento.");
+    }
+  };
+
+  const handleValidatePoi = async (poi: any) => {
+    const sessionId = bookedSessions[poi.id];
+    if (!sessionId) return;
+
+    const accuracy = userLocation?.coords.accuracy || 999;
+    
+    if (accuracy < 15) {
+      await supabase.rpc('validate_checkin', { p_session_id: sessionId, p_validation_confidence: 'GPS_SILENT' });
+      const isGolden = (userProfile?.total_tokens || 0) >= 100;
+      Alert.alert("Check-in Convalidato", isGolden ? `Hai sbloccato la storia segreta. +30 XP!` : `Benvenuto a ${poi.name}. +15 XP!`);
+      
+      const newBooked = { ...bookedSessions };
+      delete newBooked[poi.id];
+      setBookedSessions(newBooked);
+      setIsSheetVisible(false);
+      caricaDati();
+    } else {
+      Alert.alert(
+        "Segnale GPS Debole",
+        "La precisione del GPS nel borgo antico non è sufficiente. Scansiona il QR all'ingresso per convalidare in modo sicuro.",
+        [
+          { text: "Annulla", style: "cancel" },
+          { 
+            text: "Scansiona QR", 
+            onPress: async () => {
+              await supabase.rpc('validate_checkin', { p_session_id: sessionId, p_validation_confidence: 'QR_FORCED' });
+              Alert.alert("QR Convalidato!", "Presenza verificata in modo sicuro. +15 XP!");
+              
+              const newBooked = { ...bookedSessions };
+              delete newBooked[poi.id];
+              setBookedSessions(newBooked);
+              setIsSheetVisible(false);
+              caricaDati();
+            }
+          }
+        ]
+      );
+    }
+  };
+
+  const trovaAlternativa = (poiAffollato: any) => {
+    Alert.alert(
+      "Capacità Massima Raggiunta",
+      `Il luogo ${poiAffollato.name} è attualmente sovraffollato. Il protocollo LOTO ti invia alla mappa per esplorare opzioni sicure e guadagnare più punti!`,
+      [
+        { text: "Resta qui", style: "cancel" },
+        { text: "Apri Mappa", onPress: () => router.push('/map') }
+      ]
+    );
+  };
+  const renderHeader = () => {
+    const isPartner = userProfile?.flow_role === 'LOTO Partner';
+
+    return (
+      <View style={styles.headerContainer}>
+
+        {/* 1. HEADER 'SYMMETRY' */}
+        <View style={styles.topBar}>
+          <Text style={styles.hubTitleSymmetry}>{isPartner ? 'L.O.T.O. B2B' : 'L.O.T.O. HUB'}</Text>
+          <TouchableOpacity onPress={() => setLang(lang === 'IT' ? 'UK' : 'IT')} style={styles.languageIconWrapper}>
+            <MaterialIcons name="language" size={24} color={LOTO_PALETTE.EBANO} />
+            <View style={styles.langBadge}><Text style={styles.langBadgeText}>{lang}</Text></View>
+          </TouchableOpacity>
+        </View>
+
+        {isPartner ? (
+          // ==============================
+          // DASHBOARD PARTNER (NO GAMIFICATION)
+          // ==============================
+          <>
+            <View style={[styles.prestigePill, { backgroundColor: LOTO_PALETTE.EBANO }]}>
+              <MaterialIcons name="storefront" size={50} color={LOTO_PALETTE.SABBIA_DORATA} />
+              <View style={styles.prestigeCenterCol}>
+                <Text style={[styles.prestigeTierTitle, { color: '#FFF' }]}>{userProfile?.nickname || 'Merchant'}</Text>
+                <View style={styles.prestigeBadgeRow}>
+                  <View style={[styles.prestigePillBadge, { backgroundColor: LOTO_PALETTE.VERDE_OLIVA }]}>
+                    <Text style={[styles.prestigePillBadgeText, { color: '#FFF' }]}>LOTO Partner</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.archesSection}>
+              <Text style={styles.archesMainTitle}>MERCHANT ANALYTICS (Q1)</Text>
+              <View style={styles.archesContainer}>
+                <View style={[styles.impactArch, { backgroundColor: LOTO_PALETTE.EBANO }]}>
+                  <MaterialIcons name="qr-code-scanner" size={24} color={LOTO_PALETTE.SABBIA_DORATA} style={{ marginBottom: 10 }} />
+                  <Text style={[styles.archVal, { color: '#FFF' }]}>142</Text>
+                  <Text style={styles.archLabel}>Scansioni Clienti</Text>
+                </View>
+                <View style={[styles.impactArch, { backgroundColor: LOTO_PALETTE.VERDE_OLIVA }]}>
+                  <MaterialIcons name="eco" size={24} color="#FFF" style={{ marginBottom: 10 }} />
+                  <Text style={[styles.archVal, { color: '#FFF' }]}>35.5</Text>
+                  <Text style={styles.archLabel}>CO₂ Risparmiata (kg)</Text>
+                </View>
+              </View>
+            </View>
+          </>
+        ) : (
+          // ==============================
+          // DASHBOARD TURISTA (GAMIFICATION)
+          // ==============================
+          <>
+            <View style={styles.prestigePill}>
+              {/* SX: Stemma Tier */}
+              <MaterialIcons name={levelInfo.stemma || 'emoji-events'} size={60} color={LOTO_PALETTE.SABBIA_DORATA} />
+
+              {/* Centro: Testo */}
+              <View style={styles.prestigeCenterCol}>
+                <Text style={styles.prestigeTierTitle}>{levelInfo.title}</Text>
+                <View style={styles.prestigeBadgeRow}>
+                  <View style={[styles.prestigePillBadge, userProfile?.flow_role === 'Flash Cruiser' && { backgroundColor: LOTO_PALETTE.SABBIA_DORATA }]}>
+                    <Text style={[styles.prestigePillBadgeText, userProfile?.flow_role === 'Flash Cruiser' && { color: '#FFF' }]}>
+                      {userProfile?.flow_role || 'LOTO Explorer'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* DX: Avatar */}
+              <TouchableOpacity style={styles.avatarCirclePill} onPress={() => setIsExpModalVisible(true)}>
+                <Text style={styles.avatarInitialPill}>{userProfile?.nickname ? userProfile.nickname[0].toUpperCase() : 'L'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 3. IMPACT CARD '3 ARCHI' */}
+            <View style={styles.archesSection}>
+              <Text style={styles.archesMainTitle}>{t.impactTitle}</Text>
+              <View style={styles.archesContainer}>
+                <View style={[styles.impactArch, { backgroundColor: LOTO_PALETTE.VERDE_OLIVA }]}>
+                  <MaterialIcons name="eco" size={24} color="#FFF" style={{ marginBottom: 10 }} />
+                  <Text style={styles.archVal}>{userProfile?.total_co2?.toFixed(1) || '0.5'}</Text>
+                  <Text style={styles.archLabel}>{t.co2Lab}</Text>
+                </View>
+                <View style={[styles.impactArch, { backgroundColor: '#0056D2' }]}>
+                  <MaterialIcons name="water-drop" size={24} color="#FFF" style={{ marginBottom: 10 }} />
+                  <Text style={styles.archVal}>12</Text>
+                  <Text style={styles.archLabel}>Refill (Litri)</Text>
+                </View>
+                <View style={[styles.impactArch, { backgroundColor: LOTO_PALETTE.SABBIA_DORATA }]}>
+                  <MaterialIcons name="toll" size={24} color="#FFF" style={{ marginBottom: 10 }} />
+                  <Text style={styles.archVal}>{userProfile?.total_tokens || 120}</Text>
+                  <Text style={styles.archLabel}>{t.ptsLab}</Text>
+                </View>
+              </View>
+            </View>
+          </>
+        )}
+      <View style={styles.tickerBar}>
+        <Text style={styles.tickerText}>
+          {t.ticker}
+        </Text>
+      </View>
+
+      {/* 5. SWITCHBOARD HUB (Le 3 Sfere) */}
+      <View style={styles.switchboard}>
+        <TouchableOpacity style={styles.hubBtn} onPress={() => router.push('/explore')}>
+          <View style={styles.hubIconCircle}><MaterialIcons name="search" size={24} color="#FFF" /></View>
+          <Text style={styles.hubBtnText}>ESPLORA</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.hubBtn, styles.hubBtnCenter]} onPress={() => router.push('/map')}>
+          <View style={[styles.hubIconCircle, { backgroundColor: LOTO_PALETTE.TERRACOTTA }]}><MaterialIcons name="map" size={24} color="#FFF" /></View>
+          <Text style={[styles.hubBtnText, { color: LOTO_PALETTE.TERRACOTTA }]}>MAPPA</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.hubBtn} onPress={() => router.push('/events')}>
+          <View style={styles.hubIconCircle}><MaterialIcons name="event" size={24} color="#FFF" /></View>
+          <Text style={styles.hubBtnText}>EVENTI</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* L'header è stato ripulito dai filtri orizzontali e dai titoli statici, ora gestiti dall'Accordion */}
+
+    </View>
+  );
+  };
+
+  const renderPOI = ({ item }: { item: any }) => {
+    const img = getPOIImage(item.name);
+    const isCrowded = (item.crowd_level || 0) >= 80;
+    const hasWater = item.has_water === true;
+    const userTokens = userProfile?.total_tokens || 0;
+    const canUnlockStory = userTokens >= 100 && item.category !== 'partner';
+    
+    // Task 3: Inclusione Intelligente (Soft Warning)
+    const isAccessibleUser = userProfile?.accessibility_mode === true;
+    const isDifficult = (item.difficulty_score || (item.name.includes('Castello') ? 80 : 20)) > 70;
+    const showAccessibilityWarning = isAccessibleUser && isDifficult;
+
+    return (
+      <View style={[styles.poiCardHarmonious, isCrowded && { borderWidth: 1, borderColor: LOTO_PALETTE.TERRACOTTA }]}>
+        <View style={styles.poiImageContainer}>
+          {img ? <Image source={img} style={styles.poiImageHarmonious} /> : <View style={[styles.poiImageHarmonious, { backgroundColor: '#E2E8F0' }]} />}
+          <View style={[styles.recommendedBadge, { backgroundColor: LOTO_PALETTE.SABBIA_DORATA, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }]}>
+            <MaterialIcons name="workspace-premium" size={14} color="#FFF" />
+            <Text style={[styles.recommendedText, { color: '#FFF', marginLeft: 4, fontSize: 10, fontWeight: 'bold' }]}>BONUS +10 PTI</Text>
+          </View>
+        </View>
+
+        <View style={styles.poiInfoHarmonious}>
+          <Text style={styles.poiNameHarmonious}>{item.name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+            <MaterialIcons name="place" size={14} color={LOTO_PALETTE.VERDE_OLIVA} />
+            <Text style={styles.poiDistHarmonious}> {userLocation && item.latitude && item.longitude ? calculateDistance(userLocation.coords.latitude, userLocation.coords.longitude, item.latitude, item.longitude) : 'Calcolo...'} • <Text style={{ color: isCrowded ? LOTO_PALETTE.TERRACOTTA : LOTO_PALETTE.VERDE_OLIVA }}>{isCrowded ? 'Affollato' : 'Capacità Sicura'}</Text></Text>
+          </View>
+          
+          {showAccessibilityWarning && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(217, 160, 91, 0.15)', padding: 8, borderRadius: 10, marginTop: 10 }}>
+              <MaterialIcons name="warning-amber" size={16} color={LOTO_PALETTE.SABBIA_DORATA} />
+              <Text style={{ fontSize: 10, color: LOTO_PALETTE.SABBIA_DORATA, marginLeft: 5, flex: 1, fontWeight: 'bold' }}>Questo sito presenta sfide architettoniche o barriere strutturali.</Text>
+            </View>
+          )}
+
+          {isCrowded ? (
+            <View style={{ marginTop: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ color: LOTO_PALETTE.TERRACOTTA, fontWeight: 'bold', fontSize: 11 }}>{t.crowdWarning} ({(item.crowd_level || 85)}%)</Text>
+              <TouchableOpacity
+                style={[styles.btnActionHarmonious, { backgroundColor: LOTO_PALETTE.TERRACOTTA }]}
+                onPress={() => trovaAlternativa(item)}
+              >
+                <Text style={styles.btnActionTextHarmonious}>{t.btnAlternative}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ marginTop: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              {hasWater ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialIcons name="water-drop" size={16} color={LOTO_PALETTE.VERDE_OLIVA} />
+                  <Text style={{ color: LOTO_PALETTE.VERDE_OLIVA, fontWeight: 'bold', fontSize: 11, marginLeft: 4 }}>BONUS IDRICO</Text>
+                </View>
+              ) : <View />}
+              <TouchableOpacity
+                style={[styles.btnActionHarmonious, { backgroundColor: item.category === 'partner' ? '#0056D2' : (canUnlockStory ? LOTO_PALETTE.SABBIA_DORATA : LOTO_PALETTE.VERDE_OLIVA) }]}
+                onPress={() => handleAction(item)}
+              >
+                <Text style={styles.btnActionTextHarmonious}>
+                  {item.category === 'partner' ? t.scanBtn : (bookedSessions[item.id] ? "Convalida Arrivo" : "Prenota Visita")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} color={LOTO_PALETTE.VERDE} />;
+
+  const userTokens = userProfile?.total_tokens || 0;
+  const levelInfo = getLevelInfo(userTokens);
+
+  const accordionSections = [
+    { id: 'recommended', title: 'Mete Consigliate', data: pois.filter(p => p.is_recommended) },
+    { id: 'free', title: 'Culturali', data: pois.filter(p => p.category === 'free' && !p.is_recommended) },
+    { id: 'partner', title: 'B2B Partner', data: pois.filter(p => p.category === 'partner') },
+    { id: 'secret', title: 'Secret', data: pois.filter(p => p.category === 'secret') }
+  ].filter(s => s.data.length > 0);
+
+  const renderAccordionSection = ({ item }: { item: any }) => {
+    const isOpen = openAccordion === item.id;
+    return (
+      <View style={{ marginBottom: 15 }}>
+        <TouchableOpacity 
+          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isOpen ? LOTO_PALETTE.VERDE_OLIVA : '#FFF', padding: 20, borderRadius: 15, marginHorizontal: 20, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5 }}
+          onPress={() => setOpenAccordion(isOpen ? null : item.id)}
+        >
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: isOpen ? '#FFF' : LOTO_PALETTE.EBANO, fontFamily: 'serif' }}>{item.title}</Text>
+          <MaterialIcons name={isOpen ? "expand-less" : "expand-more"} size={24} color={isOpen ? "#FFF" : "#64748B"} />
+        </TouchableOpacity>
+        
+        {isOpen && (
+          <View style={{ marginTop: 10 }}>
+            {item.data.map((poi: any) => (
+              <View key={poi.id}>
+                {renderPOI({ item: poi })}
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <ImageBackground source={require('../../assets/images/eco_bg.png')} style={{ flex: 1 }} resizeMode="cover">
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <FlatList
+          data={accordionSections}
+          ListHeaderComponent={renderHeader}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 30 }}
+          renderItem={renderAccordionSection}
+        />
+
+        {isMotorized && (
+          <View style={styles.motorizedToast}>
+            <Text style={styles.motorizedToastText}>🚌 MODO MOTORIZZATO ATTIVO</Text>
+          </View>
+        )}
+
+
+        {/* MODALE SCHEDA EXP (PROFILO AVATAR PREMIUM) */}
+        <Modal visible={isExpModalVisible} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={{ height: 400, alignItems: 'center', justifyContent: 'center' }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={width * 0.8} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: width * 0.1, alignItems: 'center' }}>
+                
+                {/* CARD 1: Badge Profilo */}
+                <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025 }]}>
+                  <Image source={levelInfo.badge} style={styles.crownIcon} />
+                  <Text style={styles.expNameBoutique}>{userProfile?.nickname || t.guest}</Text>
+                  <Text style={[styles.expTitleBoutique, { color: levelInfo.color }]}>{levelInfo.title} ({userTokens} XP)</Text>
+                  <Text style={{fontSize: 12, color: '#64748B', textAlign: 'center', marginTop: 10}}>Continua a esplorare per salire di livello.</Text>
+                </View>
+
+                {/* CARD 2: CO2 Counter */}
+                <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: 'center' }]}>
+                   <MaterialIcons name="eco" size={60} color={LOTO_PALETTE.VERDE_OLIVA} style={{marginBottom: 20}} />
+                   <Text style={[styles.mStatValBoutique, { fontSize: 32, color: LOTO_PALETTE.VERDE_OLIVA }]}>{userProfile?.total_co2?.toFixed(2) || '0.25'} kg</Text>
+                   <Text style={[styles.mStatLab, { fontSize: 14 }]}>CO₂ Risparmiata</Text>
+                </View>
+
+                {/* CARD 3: PTI Counter */}
+                <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: 'center' }]}>
+                   <MaterialIcons name="toll" size={60} color={LOTO_PALETTE.SABBIA_DORATA} style={{marginBottom: 20}} />
+                   <Text style={[styles.mStatValBoutique, { fontSize: 32, color: LOTO_PALETTE.SABBIA_DORATA }]}>{userProfile?.total_tokens || 120} PTI</Text>
+                   <Text style={[styles.mStatLab, { fontSize: 14 }]}>LOTO Tokens</Text>
+                </View>
+
+              </ScrollView>
+              
+              <TouchableOpacity style={styles.closeExpModal} onPress={() => setIsExpModalVisible(false)}>
+                <MaterialIcons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* BOTTOM SHEET SPRINT B */}
+        <PoiDetailSheet
+          visible={isSheetVisible}
+          poi={selectedPoi}
+          onClose={() => setIsSheetVisible(false)}
+          onBook={handleBookPoi}
+          onValidate={handleValidatePoi}
+          isBooked={selectedPoi ? !!bookedSessions[selectedPoi.id] : false}
+          initialPartySize={userProfile?.party_size || 1}
+        />
+
+      {/* DEV MODE: Tasto rapido per tornare al Wizard */}
+      {__DEV__ && (
+        <TouchableOpacity 
+          style={{ position: 'absolute', bottom: 30, left: 20, backgroundColor: LOTO_PALETTE.EBANO, padding: 10, borderRadius: 20, elevation: 5, flexDirection: 'row', alignItems: 'center' }}
+          onPress={async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from('profiles').update({ profile_completed: false }).eq('id', user.id);
+              router.replace('/wizard');
+            }
+          }}
+        >
+          <MaterialIcons name="science" size={16} color="#FFF" />
+          <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', marginLeft: 5 }}>RESET WIZARD</Text>
+        </TouchableOpacity>
+      )}
+      </SafeAreaView>
+    </ImageBackground>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: 'rgba(253, 248, 242, 0.75)' },
+  headerContainer: { paddingBottom: 15 },
+
+  // HEADER SYMMETRY
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 25, paddingTop: 40, paddingBottom: 15, alignItems: 'center' },
+  hubTitleSymmetry: { fontSize: 26, fontWeight: '900', color: LOTO_PALETTE.EBANO, fontFamily: 'serif', letterSpacing: 2 },
+  languageIconWrapper: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: LOTO_PALETTE.TERRACOTTA, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  langBadge: { position: 'absolute', bottom: -5, right: -5, backgroundColor: LOTO_PALETTE.EBANO, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 8 },
+  langBadgeText: { color: '#FFF', fontSize: 8, fontWeight: 'bold' },
+
+  // RETTANGOLO PRESTIGE
+  prestigePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: LOTO_PALETTE.VERDE_OLIVA, marginTop: 10, marginBottom: 25, marginRight: 25, paddingVertical: 20, paddingHorizontal: 20, borderTopRightRadius: 50, borderBottomRightRadius: 50, elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
+  prestigeCenterCol: { flex: 1, marginLeft: 15, justifyContent: 'center' },
+  prestigeTierTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFF', fontFamily: 'serif', marginBottom: 5 },
+  prestigeBadgeRow: { flexDirection: 'row' },
+  prestigePillBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginRight: 6 },
+  prestigePillBadgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
+  avatarCirclePill: { width: 66, height: 66, borderRadius: 33, backgroundColor: LOTO_PALETTE.CREMA, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: LOTO_PALETTE.SABBIA_DORATA, marginLeft: 10 },
+  avatarInitialPill: { color: LOTO_PALETTE.EBANO, fontWeight: 'bold', fontSize: 24, fontFamily: 'serif' },
+
+  // IMPACT CARD '3 ARCHI'
+  archesSection: { marginHorizontal: 20, marginBottom: 25 },
+  archesMainTitle: { color: LOTO_PALETTE.EBANO, fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'serif', textAlign: 'center', marginBottom: 15 },
+  archesContainer: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  impactArch: { flex: 1, alignItems: 'center', paddingTop: 25, paddingBottom: 55, borderTopLeftRadius: 80, borderTopRightRadius: 80, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, elevation: 6, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
+  archVal: { color: '#FFF', fontSize: 26, fontWeight: 'bold' },
+  archLabel: { color: '#FFF', fontSize: 10, opacity: 0.9, textAlign: 'center', marginTop: 4, fontWeight: '500' },
+
+  // COMMUNITY TICKER
+  tickerBar: { backgroundColor: LOTO_PALETTE.EBANO, paddingVertical: 14, marginHorizontal: 20, borderRadius: 15, marginBottom: 20 },
+  tickerText: { color: LOTO_PALETTE.SABBIA_DORATA, fontSize: 11, fontWeight: 'bold', textAlign: 'center', letterSpacing: 0.5 },
+
+  // SWITCHBOARD
+  switchboard: { flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 25, justifyContent: 'space-between', alignItems: 'center' },
+  hubBtn: { alignItems: 'center', flex: 1 },
+  hubBtnCenter: { transform: [{ translateY: 0 }] },
+  hubIconCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: LOTO_PALETTE.VERDE_OLIVA, justifyContent: 'center', alignItems: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
+  hubBtnText: { color: LOTO_PALETTE.EBANO, fontWeight: 'bold', fontSize: 11, marginTop: 10, textTransform: 'uppercase' },
+
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', fontFamily: 'serif', marginLeft: 25, marginBottom: 15, color: LOTO_PALETTE.EBANO },
+
+  // POI CARD HARMONIOUS
+  poiCardHarmonious: { marginHorizontal: 20, backgroundColor: '#FFF', borderRadius: 30, overflow: 'hidden', elevation: 6, marginBottom: 25, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 15, borderWidth: 1, borderColor: 'rgba(0, 0, 0, 0.06)' },
+
+  poiImageContainer: { width: '100%', height: 180 },
+  poiImageHarmonious: { width: '100%', height: '100%', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
+  recommendedBadge: { position: 'absolute', top: 15, right: 15, backgroundColor: LOTO_PALETTE.TERRACOTTA, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  recommendedText: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  poiInfoHarmonious: { padding: 25, backgroundColor: '#FFF', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  poiNameHarmonious: { fontSize: 22, fontWeight: 'bold', color: LOTO_PALETTE.EBANO, fontFamily: 'serif' },
+  poiDistHarmonious: { color: '#64748B', fontSize: 14, fontWeight: '500' },
+  btnActionHarmonious: { borderRadius: 20, alignItems: 'center', paddingVertical: 10, paddingHorizontal: 16, alignSelf: 'flex-start' },
+  btnActionTextHarmonious: { color: '#FFF', fontWeight: 'bold', fontSize: 11, letterSpacing: 0.5 },
+
+  motorizedToast: { position: 'absolute', bottom: 30, alignSelf: 'center', backgroundColor: LOTO_PALETTE.ROSSO, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
+  motorizedToastText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(26, 28, 30, 0.6)', justifyContent: 'center', alignItems: 'center' },
+  closeExpModal: { marginTop: 25, backgroundColor: '#FFF', padding: 15, borderRadius: 30, elevation: 5 },
+  expCardBoutique: { width: '85%', backgroundColor: LOTO_PALETTE.CREMA, borderRadius: 30, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: LOTO_PALETTE.SABBIA_DORATA, elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20 },
+  closeBtn: { alignSelf: 'flex-end', position: 'absolute', top: 20, right: 20, padding: 5 },
+  crownIcon: { width: 140, height: 140, marginBottom: 15 },
+  expNameBoutique: { fontSize: 26, fontWeight: '900', color: LOTO_PALETTE.EBANO, fontFamily: 'serif', marginBottom: 5 },
+  expTitleBoutique: { fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 30 },
+  modalStatsRowBoutique: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', backgroundColor: '#FFF', padding: 20, borderRadius: 20, borderWidth: 0.5, borderColor: '#C9C4B8', elevation: 2 },
+  modalStat: { alignItems: 'center', flex: 1 },
+  mStatValBoutique: { fontSize: 18, fontWeight: 'bold' },
+  mStatLab: { fontSize: 9, color: '#64748B', marginTop: 5, textTransform: 'uppercase', fontWeight: 'bold' }
+});

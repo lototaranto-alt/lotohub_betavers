@@ -1,0 +1,958 @@
+import * as Location from 'expo-location';
+import React, { useState, useEffect, useRef } from 'react';
+import { Alert, Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, BackHandler, Modal, TextInput, Animated, useWindowDimensions, Switch } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { supabase } from './utils/supabase';
+import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const DEBUG_MODE = true; // Set to false for production
+
+// --- CONFIGURAZIONE LOGICA WIN-WIN (Placeholder per Commercialista) ---
+const LOTO_CONFIG = {
+  fixed_fee_partner: 10.00,  // (F) Quota fissa mensile partner (es. Lido)
+  commission_rate: 0.05,     // (C) Commissione del 5% su servizi extra via App
+  token_value_internal: 0.10 // Valore nominale di 1 token (€0.10) per i calcoli
+};
+
+// --- DIZIONARIO MULTI-LINGUA (i18n) ---
+const translations = {
+  it: {
+    welcome: "Benvenuto in L.O.T.O.",
+    explore_green: "Esplora Green",
+    explore_sub: "Percorsi sostenibili e su misura per te.",
+    protect: "Proteggi",
+    protect_sub: "Riduci la plastica e scegli la mobilità sostenibile.",
+    earn: "Guadagna",
+    earn_sub: "Trasforma l'impatto in Token e vantaggi.",
+    start_onboarding: "Inizia Onboarding",
+    hero_title: "Come vuoi essere chiamato?",
+    b2b_welcome: "Ospite",
+    rank_bronze: "Eco-Navigatore",
+    rank_silver: "Custode della Città",
+    rank_gold: "Eroe del Mare",
+    skip: "Salta",
+    back_to_menu: "Torna al Menu",
+    persona_title: "Configurazione Profilo",
+    party_size: "Con quante persone viaggi?",
+    party_sub: "(Più siete, maggiore è l'impatto!)",
+    return_point: "Punto di Rientro",
+    skip_for_now: "Salta ed Esplora",
+    next: "Avanti",
+    finish: "Concludi",
+    impact_title: "IL TUO IMPATTO ECO-SOSTENIBILE",
+    loto_points: "LOTO PTI",
+    co2_saved_unit: "Kg CO₂ evitati",
+    city_impact_prefix: "🍃 COMUNITÀ TARANTO OGGI:",
+    status_costa: "Ospite Costa",
+    status_access: "Access",
+    status_user: "Loto Utente",
+    validator_receipt: "📸 Valida Scontrino (F&B Audit)",
+    validator_beacon: "📷 Beacon non rilevato? Valida con QR",
+    identity_form_title: "Ultime informazioni per personalizzare la tua esperienza",
+    im_cruise: "Sono un ospite della nave da crociera",
+    has_accessibility: "Ho necessità di percorsi accessibili (♿)"
+  },
+  en: {
+    welcome: "Welcome to L.O.T.O.",
+    explore_green: "Explore Green",
+    explore_sub: "Sustainable and tailored routes for you.",
+    protect: "Protect",
+    protect_sub: "Reduce plastic and choose sustainable mobility.",
+    earn: "Earn",
+    earn_sub: "Turn your impact into Tokens and perks.",
+    start_onboarding: "Start Onboarding",
+    hero_title: "What is your name?",
+    b2b_welcome: "Guest",
+    rank_bronze: "Eco-Navigator",
+    rank_silver: "City Guardian",
+    rank_gold: "Hero of the Sea",
+    skip: "Skip",
+    back_to_menu: "Back to Menu",
+    persona_title: "Profile Config",
+    party_size: "How many people are traveling?",
+    party_sub: "(The more you are, the higher the impact!)",
+    return_point: "Return Point",
+    skip_for_now: "Skip and Explore",
+    next: "Next",
+    finish: "Finish",
+    impact_title: "YOUR ECO-SUSTAINABLE IMPACT",
+    loto_points: "LOTO PTI",
+    co2_saved_unit: "Kg CO₂ avoided",
+    city_impact_prefix: "🍃 TARANTO COMMUNITY TODAY:",
+    status_costa: "Costa Guest",
+    status_access: "Access",
+    status_user: "Loto User",
+    validator_receipt: "📸 Validate Receipt (F&B Audit)",
+    validator_beacon: "📷 Beacon not detected? Validate with QR",
+    identity_form_title: "Last details to customize your experience",
+    im_cruise: "I am a cruise ship guest",
+    has_accessibility: "I need accessible routes (♿)"
+  }
+};
+
+// --- DATI LOCATION (Con logica Gatekeeping/Bonus) ---
+const LOCATIONS = [
+  { id: 1, name: 'Museo MArTA', type: 'Cultura', distance: '800m', tokens: 100, reward: 'Sconto Bus Urbano', img: 'https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?q=80&w=800&auto=format&fit=crop', crowded: false, recommended: true },
+  { id: 2, name: 'Fontanella Borgo Antico', type: 'Refill', distance: '300m', tokens: '+3', reward: 'Check-in', img: 'https://images.unsplash.com/photo-1549692520-acc6669e2f0c?q=80&w=800&auto=format&fit=crop', crowded: false, recommended: false },
+  // Castello Aragonese: Simulo stato di affollamento (>80%) per mostrare Gatekeeper
+  { id: 3, name: 'Castello Aragonese', type: 'Cultura', distance: '300m', tokens: 50, reward: 'Audioguida Esclusiva', img: 'https://images.unsplash.com/photo-1590050853526-0e1b69fba71a?q=80&w=800&auto=format&fit=crop', crowded: true, recommended: false, hasBarriers: true },
+];
+
+export default function App() {
+  const [currentView, setCurrentView] = useState('menu'); // 'menu', 'intro', 'wizard', 'tourist', 'partner'
+  const [userProfile, setUserProfile] = useState(null); // State to store wizard configuration
+  const [isGuest, setIsGuest] = useState(false); // Traccia se l'utente ha saltato il wizard
+  const [language, setLanguage] = useState('it'); // 'it' | 'en'
+
+  // Gestione Back Button Nativo Android / Gesture OS
+  useEffect(() => {
+    const backAction = () => {
+      if (currentView === 'tourist' || currentView === 'partner' || currentView === 'intro') {
+        setCurrentView('menu');
+        return true;
+      }
+      if (currentView === 'wizard') {
+        setCurrentView('intro');
+        return true;
+      }
+      return false; // Nel menu, premi indietro per uscire dall'app
+    };
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [currentView]);
+
+  // Schermata Iniziale (Scelta Utente per Demo)
+  if (currentView === 'menu') {
+    return (
+      <SafeAreaView style={styles.menuArea}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.menuContainer}>
+          <Text style={styles.logoText}>L.O.T.O. HUB</Text>
+          <Text style={styles.menuSubtitle}>Benvenuto in L.O.T.O. HUB</Text>
+
+          <TouchableOpacity style={styles.roleButtonTourist} onPress={() => setCurrentView('intro')}>
+            <Text style={styles.roleIcon}>🎒</Text>
+            <Text style={styles.roleButtonText}>Vista Turista / Utente</Text>
+            <Text style={styles.roleButtonSub}>Layout "Gold", Mappa e Gatekeeper</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.roleButtonPartner} onPress={() => setCurrentView('partner')}>
+            <Text style={styles.roleIcon}>🏪</Text>
+            <Text style={styles.roleButtonText}>Vista Partner B2B</Text>
+            <Text style={styles.roleButtonSub}>Dashboard Lido/Masseria (Win-Win Logica)</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Navigazione principale dopo la scelta
+  if (currentView === 'intro' || currentView === 'wizard') {
+    return (
+      <ImmersiveOnboarding 
+        language={language} 
+        onComplete={(profile) => { 
+          setUserProfile(profile); 
+          setIsGuest(false); 
+          setCurrentView('tourist'); 
+        }} 
+        onSkip={() => { 
+          setIsGuest(true); 
+          setCurrentView('tourist'); 
+        }}
+        onBack={() => setCurrentView('menu')}
+      />
+    );
+  }
+
+  return currentView === 'tourist'
+    ? <TouristApp onBack={() => setCurrentView('menu')} isGuest={isGuest} userProfile={userProfile} onRequestWizard={() => setCurrentView('wizard')} language={language} setLanguage={setLanguage} />
+    : <PartnerDashboard onBack={() => setCurrentView('menu')} language={language} />;
+}
+
+// --- ONBOARDING IMMERSIVO (Full-Display) ---
+function ImmersiveOnboarding({ language, onComplete, onSkip, onBack }) {
+  const t = translations[language];
+  const { width, height } = useWindowDimensions();
+  const [step, setStep] = useState(0); // 0: Explore, 1: Protect, 2: Earn, 3: Profile Form
+  const scrollRef = useRef(null);
+
+  // Form States
+  const [nickname, setNickname] = useState('');
+  const [partySize, setPartySize] = useState(1);
+  const [isCruise, setIsCruise] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
+
+  const scrollNext = (index) => {
+    if (index > 2) {
+      setStep(3);
+    } else {
+      setStep(index);
+      scrollRef.current?.scrollTo({ x: index * width, animated: true });
+    }
+  };
+
+  const handleFinish = async () => {
+    if (!nickname.trim()) {
+      Alert.alert("Ehi!", t.hero_title);
+      return;
+    }
+    const profile = { nickname, partySize, isCruise, hasAccess, persona: hasAccess ? '♿' : 'Standard' };
+    
+    // Persistenza su Supabase
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          nickname,
+          party_size: partySize,
+          is_cruise: isCruise,
+          has_accessibility_needs: hasAccess,
+          user_persona: hasAccess ? '♿' : 'Standard'
+        });
+      }
+    } catch (e) {
+      console.log("Supabase Profile Sync Error:", e);
+    }
+
+    onComplete(profile);
+  };
+
+  if (step === 3) {
+    return (
+      <SafeAreaView style={styles.wizardArea}>
+        <ScrollView contentContainerStyle={{padding: 25}}>
+          <Text style={[styles.wizardQuestion, {fontSize: 32, textAlign: 'left', marginTop: 40}]}>{t.identity_form_title}</Text>
+          
+          <Text style={styles.formLabel}>{t.hero_title}</Text>
+          <TextInput 
+            style={styles.heroInput} 
+            placeholder="Mario Rossi" 
+            value={nickname} 
+            onChangeText={setNickname}
+          />
+
+          <Text style={styles.formLabel}>{t.party_size}</Text>
+          <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 30}}>
+             <TouchableOpacity style={styles.partyBtn} onPress={() => setPartySize(Math.max(1, partySize - 1))}>
+                <Text style={styles.partyBtnText}>-</Text>
+             </TouchableOpacity>
+             <Text style={styles.partyValue}>{partySize}</Text>
+             <TouchableOpacity style={styles.partyBtn} onPress={() => setPartySize(partySize + 1)}>
+                <Text style={styles.partyBtnText}>+</Text>
+             </TouchableOpacity>
+          </View>
+
+          <View style={styles.switchRow}>
+             <Text style={styles.switchLabel}>{t.im_cruise}</Text>
+             <Switch value={isCruise} onValueChange={setIsCruise} trackColor={{ false: "#767577", true: "#0056D2" }} />
+          </View>
+
+          <View style={styles.switchRow}>
+             <Text style={styles.switchLabel}>{t.has_accessibility}</Text>
+             <Switch value={hasAccess} onValueChange={setHasAccess} trackColor={{ false: "#767577", true: "#D96C4A" }} />
+          </View>
+
+          <TouchableOpacity style={[styles.actionButtonMain, {marginTop: 40}]} onPress={handleFinish}>
+            <Text style={styles.actionButtonText}>{t.finish}</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={{alignItems: 'center', marginTop: 20}} onPress={onSkip}>
+             <Text style={{color: '#64748B', fontWeight: 'bold'}}>{t.skip}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  const screens = [
+    { title: t.explore_green, sub: t.explore_sub, img: require('./assets/images/intro_explore_1775676666618.png'), color: '#4A5D23' },
+    { title: t.protect, sub: t.protect_sub, img: require('./assets/images/intro_protect_1775676688994.png'), color: '#10B981' },
+    { title: t.earn, sub: t.earn_sub, img: require('./assets/images/intro_earn_1775676711707.png'), color: '#D96C4A' },
+  ];
+
+  return (
+    <View style={{flex: 1, backgroundColor: '#FFF'}}>
+      <StatusBar hidden />
+      <ScrollView 
+        ref={scrollRef}
+        horizontal 
+        pagingEnabled 
+        scrollEnabled={false} // Navigazione solo via tasti come richiesto
+        showsHorizontalScrollIndicator={false}
+      >
+        {screens.map((screen, index) => (
+          <View key={index} style={{width, height, padding: 30, justifyContent: 'center', alignItems: 'center'}}>
+             <Image source={screen.img} style={{width: 300, height: 300, resizeMode: 'contain', marginBottom: 40}} />
+             <Text style={{fontSize: 36, fontWeight: '900', color: screen.color, textAlign: 'center'}}>{screen.title}</Text>
+             <Text style={{fontSize: 18, color: '#64748B', textAlign: 'center', marginTop: 15, paddingHorizontal: 20}}>{screen.sub}</Text>
+             
+             <TouchableOpacity 
+               style={{position: 'absolute', bottom: 60, backgroundColor: screen.color, paddingVertical: 18, paddingHorizontal: 60, borderRadius: 30, elevation: 5}}
+               onPress={() => scrollNext(index + 1)}
+             >
+               <Text style={{color: '#FFF', fontSize: 18, fontWeight: 'bold'}}>{t.next}</Text>
+             </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+// --- COMPONENTE FOTOCAMERA (Scan Scontrino) ---
+function ReceiptScanner({ onScan, onCancel }) {
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef(null);
+  const scanAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        Animated.timing(scanAnim, { toValue: 0, duration: 2000, useNativeDriver: true })
+      ])
+    ).start();
+  }, [scanAnim]);
+
+  const translateY = scanAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 310] // approx box height minus offset
+  });
+
+  if (!permission) return <View style={styles.modalBg} />;
+  if (!permission.granted) {
+    return (
+      <View style={styles.modalBg}>
+        <View style={styles.modalCard}>
+          <Text style={{textAlign: 'center', marginBottom: 20}}>L'App ha bisogno della fotocamera per validare lo scontrino.</Text>
+          <TouchableOpacity style={styles.btnActive} onPress={requestPermission}><Text style={styles.btnText}>Concedi Permesso</Text></TouchableOpacity>
+          <TouchableOpacity style={{marginTop: 15}} onPress={onCancel}><Text style={{textAlign:'center', color: '#64748B'}}>Annulla</Text></TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      try {
+        const photo = await cameraRef.current.takePictureAsync({ quality: 0.5, base64: true });
+        console.log("Supabase STORAGE upload: /receipts mock");
+        console.log("Supabase INSERT impact_transactions mock");
+        onScan(photo.uri);
+      } catch (e) {
+        Alert.alert("Errore scatto", e.message);
+      }
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#000' }}>
+      <CameraView style={{ flex: 1 }} facing="back" ref={cameraRef}>
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ padding: 20, flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
+            <TouchableOpacity onPress={onCancel}>
+              <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold' }}>Annulla</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ width: '85%', height: 350, justifyContent: 'center', alignItems: 'center' }}>
+               {/* Mirini (Corners) */}
+               <View style={{position: 'absolute', top: 0, left: 0, width: 40, height: 40, borderTopWidth: 4, borderLeftWidth: 4, borderColor: '#10B981', borderTopLeftRadius: 10}} />
+               <View style={{position: 'absolute', top: 0, right: 0, width: 40, height: 40, borderTopWidth: 4, borderRightWidth: 4, borderColor: '#10B981', borderTopRightRadius: 10}} />
+               <View style={{position: 'absolute', bottom: 0, left: 0, width: 40, height: 40, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: '#10B981', borderBottomLeftRadius: 10}} />
+               <View style={{position: 'absolute', bottom: 0, right: 0, width: 40, height: 40, borderBottomWidth: 4, borderRightWidth: 4, borderColor: '#10B981', borderBottomRightRadius: 10}} />
+               
+               {/* Scanning Line */}
+               <Animated.View style={{position: 'absolute', top: 20, width: '95%', height: 2, backgroundColor: '#10B981', shadowColor: '#10B981', shadowOffset: {width: 0, height: 0}, shadowOpacity: 1, shadowRadius: 5, elevation: 5, transform: [{translateY}]}} />
+               
+               <View style={{backgroundColor: 'rgba(0,0,0,0.6)', padding: 10, borderRadius: 8, marginTop: 'auto', marginBottom: 20}}>
+                 <Text style={{color: '#FFF', textAlign: 'center', fontWeight: 'bold'}}>Inquadra Data, Ora e P.IVA</Text>
+               </View>
+            </View>
+          </View>
+
+          <View style={{ paddingBottom: 40, alignItems: 'center' }}>
+            <TouchableOpacity style={{width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', borderWidth: 4, borderColor: '#10B981'}} onPress={takePicture}>
+               <View style={{width: 55, height: 55, borderRadius: 27.5, backgroundColor: '#FFF'}} />
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </CameraView>
+    </View>
+  );
+}
+
+// --- VISTA TURISTA ("Gold" + B2B Branding) ---
+function TouristApp({ onBack, isGuest, onRequestWizard, userProfile, language, setLanguage }) {
+  const [activeTab, setActiveTab] = useState('explore');
+  const [tokens, setTokens] = useState(120);
+  const [co2, setCo2] = useState(0.25);
+  const [liters, setLiters] = useState(2.0); // Litri di plastica risparmiati
+
+  // Audit F&B
+  const [showConsumptionModal, setShowConsumptionModal] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [consumptionMode, setConsumptionMode] = useState(null);
+
+  // Stato e Logica Social Profilo
+  const [nickname, setNickname] = useState(null);
+  const [showIdentityModal, setShowIdentityModal] = useState(false);
+  const [inputName, setInputName] = useState('');
+
+  const t = translations[language];
+
+  // Calcolo XP Meritocratico
+  const xpPoints = Math.floor((co2 * 100) + (liters * 20));
+  let rankLabel = t.rank_bronze;
+  let rankColor = '#CD7F32'; // Bronzo
+  let badgeImage = require('./assets/images/badge_bronze_1775675369793.png');
+  let gradientColors = ['#FFF', '#FDF5E6', '#FBE5C8']; // Sfumatura Bronzo
+  
+  if (xpPoints >= 500) {
+    rankLabel = t.rank_gold;
+    rankColor = '#FFD700';
+    badgeImage = require('./assets/images/badge_gold_1775676641737.png');
+    gradientColors = ['#FFF', '#FEF9E7', '#FDE792']; // Sfumatura Oro
+  } else if (xpPoints >= 100) {
+    rankLabel = t.rank_silver;
+    rankColor = '#C0C0C0';
+    badgeImage = require('./assets/images/badge_silver_1775675392322.png');
+    gradientColors = ['#FFF', '#F8FAFC', '#E2E8F0']; // Sfumatura Argento
+  }
+
+  // Salvataggio Su Supabase (Simulazione Real-Time)
+  const saveNickname = async () => {
+    if (!inputName.trim()) return;
+    setNickname(inputName);
+    
+    // In un app reale:
+    // await supabase.from('profiles').upsert({ id: 'guest-session', nickname: inputName });
+    console.log("Supabase UPSERT profiles:", { nickname: inputName });
+    
+    // Non chiudiamo, si ricarica in "Card" mode automaticamente.
+  };
+
+  // Simulazione Timer Resilienza: se dopo 15s il Beacon non risponde, appare il QR
+  React.useEffect(() => {
+    let timer;
+    if (!beaconDetected) {
+      timer = setTimeout(() => {
+        setShowQRManual(true);
+      }, 15000); // 15 Secondi Timeout
+    }
+    return () => clearTimeout(timer);
+  }, [beaconDetected]);
+
+  // Handler F&B
+  const startAudit = () => setShowConsumptionModal(true);
+  
+  const handleScanDone = async (uri) => {
+    setShowScanner(false);
+    const size = userProfile?.partySize || 1;
+    const isTakeaway = consumptionMode === 'takeaway';
+
+    try {
+      // Invocazione Edge Function (Calcolo Protetto & Persistenza)
+      const { data, error } = await supabase.functions.invoke('calculate-esg-impact', {
+        body: { 
+          base_co2: 0.3, 
+          base_liters: 0.5, 
+          base_tokens: 15, 
+          party_size: size, 
+          is_takeaway: isTakeaway 
+        }
+      });
+
+      if (error) throw error;
+
+      // Aggiornamento Stato Locale solo a successo confermato dal Backend
+      setCo2(c => c + data.co2_saved);
+      setLiters(l => l + data.liters_saved);
+      setTokens(t => t + data.tokens_earned);
+      
+      Alert.alert(
+        "✅ ESG Audit Completato", 
+        `Punteggio certificato: +${data.tokens_earned} Token.\nImpatto CO2: ${data.co2_saved.toFixed(2)}kg.`
+      );
+    } catch (e) {
+      console.error("ESG Function Error:", e);
+      Alert.alert("Errore validazione", "Non è stato possibile certificare l'impatto sul server.");
+    } finally {
+      setConsumptionMode(null);
+    }
+  };
+
+  const executeSmartReturn = () => {
+    if (!userProfile?.returnPoint) {
+      Alert.alert("Nessun Punto Rientro", "Non hai impostato il tuo veicolo o base.");
+      return;
+    }
+    if (isInclusiveMode || userProfile?.persona === 'Senior') {
+      Alert.alert("⚠️ Safety Mode Attivata", `Target: ${userProfile.returnPoint}\nRilevate barriere per ♿. Ricalcolo percorso facilitato +3 min.`);
+    } else {
+      Alert.alert("Smart Return", `Destinazione: ${userProfile.returnPoint}.\nTracciato ottimale pronto.`);
+    }
+  };
+
+  // Simulazione B2B: L'utente ha attivato il Digital Pass tramite Tour Operator
+  const simulatedTourOperator = { name: 'Costa', logo: '🚢' }; // es: Costa Crociere
+
+  const handleAction = (item) => {
+    if (item.crowded) {
+      Alert.alert("🚫 Castello Affollato!", "Al momento la capacità è superiore all'80%. Ti consigliamo di visitare il MArTA e guadagnare +10 Token Bonus!");
+      return;
+    }
+    if (item.type === 'Refill') {
+      setTokens(tokens + 3);
+      setCo2(co2 + 0.05);
+      setLiters(liters + 0.5);
+      Alert.alert("💧 Refill Effettuato!", "Hai risparmiato plastica e guadagnato Token!");
+    } else {
+      Alert.alert("🏛️ Sblocca Premio", `Usi ${item.tokens} Token per ${item.reward}?`, [
+        { text: "No" }, { text: "Sì", onPress: () => setTokens(tokens - 50) }
+      ]);
+    }
+  };
+
+  // Logica per ordinare la lista: Metti in cima i raccomandati (Nudging) e in fondo gli affollati (Gatekeeper)
+  const sortedLocations = [...LOCATIONS].sort((a, b) => {
+    if (a.crowded && !b.crowded) return 1;
+    if (!a.crowded && b.crowded) return -1;
+    if (a.recommended && !b.recommended) return -1;
+    if (!a.recommended && b.recommended) return 1;
+    return 0;
+  });
+
+  // Trigger della UI basato sullo status Guest
+  const handleActionPress = (item) => {
+    if (isGuest) {
+      Alert.alert(
+        "🏅 Ottimo lavoro!",
+        "Per calcolare correttamente il tuo impatto e quello dei tuoi compagni di viaggio, completiamo il profilo (30 secondi).",
+        [
+          { text: "Annulla", style: "cancel" },
+          { text: "Completa Profilo", onPress: onRequestWizard }
+        ]
+      );
+    } else {
+      handleAction(item);
+    }
+  };
+
+  const isInclusiveMode = userProfile?.persona === '♿';
+
+  return (
+    <SafeAreaView style={styles.touristArea}>
+      <StatusBar barStyle="dark-content" />
+      {/* Feedback Accessibilità Visibile Se Inclusivo */}
+      {isInclusiveMode && (
+        <View style={styles.inclusiveBanner}>
+          <Text style={styles.inclusiveText}>✓ Mappa con accessi semplificati attivata: segnaleremo barriere e percorsi facilitati.</Text>
+        </View>
+      )}
+      <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={isInclusiveMode ? [0] : undefined}>
+
+        {/* Header Definitivo + New Identity System (Ciao, [Nick]) */}
+        <View style={styles.headerTop}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.appTitleLight}>L.O.T.O. HUB</Text>
+            <Text style={[styles.greetingText, {fontSize: 26}]} adjustsFontSizeToFit numberOfLines={1}>
+              Ciao, {userProfile?.nickname || nickname || 'Eco-Rider'}! 👋
+            </Text>
+            
+            {/* Status Area: Multi-Badge Badge System */}
+            <View style={{flexDirection: 'row', flexWrap: 'wrap', marginTop: 8}}>
+              <View style={[styles.statusBadge, {backgroundColor: '#4A5D23'}]}>
+                <Text style={styles.statusBadgeText}>{t.status_user}</Text>
+              </View>
+              {userProfile?.isCruise && (
+                <View style={[styles.statusBadge, {backgroundColor: '#0056D2'}]}>
+                  <Text style={styles.statusBadgeText}>{t.status_costa}</Text>
+                </View>
+              )}
+              {userProfile?.hasAccess && (
+                <View style={[styles.statusBadge, {backgroundColor: '#D96C4A'}]}>
+                  <Text style={styles.statusBadgeText}>♿ {t.status_access}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.rightHeader}>
+            <View style={styles.langRow}>
+              <TouchableOpacity onPress={() => setLanguage('it')}><Text style={[styles.flag, language === 'it' && {opacity: 1, transform: [{scale: 1.2}]}]}>🇮🇹</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setLanguage('en')}><Text style={[styles.flag, language === 'en' && {opacity: 1, transform: [{scale: 1.2}]}]}>🇬🇧</Text></TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={() => setShowIdentityModal(true)}>
+               <View style={styles.avatarCircle}><Text style={styles.avatarText}>{(userProfile?.nickname || nickname || 'ER').substring(0, 2).toUpperCase()}</Text></View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Card Impatto (Punti + CO2) Definitiva */}
+        <View style={styles.impactCard}>
+          <Text style={styles.impactTitle}>{t.impact_title}</Text>
+          <View style={styles.impactRow}>
+            <View style={styles.impactBox}>
+              <Text style={styles.impactValue}>{tokens}</Text>
+              <Text style={styles.impactLabel}>{t.loto_points}</Text>
+            </View>
+            <View style={styles.impactDivider} />
+            <View style={styles.impactBox}>
+              <Text style={styles.impactValue}>{co2.toFixed(2)}</Text>
+              <Text style={styles.impactLabel}>{t.co2_saved_unit}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 🌍 City Impact Ticker */}
+        <View style={styles.cityImpactTicker}>
+          <Text style={styles.tickerText}>
+            {t.city_impact_prefix} 1.240 Litri risparmiati • 45kg Plastica • 12kg CO₂
+          </Text>
+        </View>
+
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity style={[styles.tabButton, activeTab === 'explore' && styles.tabActive]} onPress={() => setActiveTab('explore')}>
+            <Text style={[styles.tabText, activeTab === 'explore' && styles.tabTextActive]}>🏛️ {activeTab === 'explore' ? 'Check-in' : 'Esplora'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.tabButton, activeTab === 'map' && styles.tabActive]} onPress={() => setActiveTab('map')}>
+            <Text style={[styles.tabText, activeTab === 'map' && styles.tabTextActive]}>🗺️ Mappa</Text>
+          </TouchableOpacity>
+        </View>
+
+        {activeTab === 'explore' ? (
+          <View style={{ paddingHorizontal: 20 }}>
+            {sortedLocations.map(item => (
+              <TouchableOpacity key={item.id} style={[styles.card, item.crowded && styles.cardCrowded]} onPress={() => handleActionPress(item)}>
+                <Image source={{ uri: item.img }} style={styles.cardImage} />
+                <View style={styles.cardBody}>
+                  <Text style={styles.cardTitle}>{item.name}</Text>
+                  <View style={styles.actionRow}>
+                    <Text style={styles.cardDistance}>🚶 {item.distance}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={styles.rewardText}>🎁 {item.reward}</Text>
+                      <Text style={[styles.tokenCost, item.type === 'Refill' ? styles.textGreen : styles.textTerracotta]}>
+                        {item.type === 'Refill' ? item.tokens : `-${item.tokens}`} Token
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+
+            {/* GERARCHIA MODULI VALIDAZIONE (Beacon > Scontrino) */}
+            <View style={{marginTop: 10, marginBottom: 30}}>
+               {/* 1. Modulo Beacon (Simulazione Fallback QR) */}
+               <TouchableOpacity style={styles.qrFallbackBtn} onPress={() => Alert.alert("QR Scanner", "Punta la fotocamera sul QR del Beacon.")}>
+                  <Text style={styles.qrText}>{t.validator_beacon}</Text>
+               </TouchableOpacity>
+
+               {/* 2. Modulo Audit F&B (Scontrino) */}
+               <TouchableOpacity style={[styles.qrFallbackBtn, {backgroundColor: '#0056D2', marginTop: 15}]} onPress={startAudit}>
+                  <Text style={styles.qrText}>{t.validator_receipt}</Text>
+               </TouchableOpacity>
+            </View>
+          </View>
+
+        ) : (
+          <View style={{ paddingHorizontal: 20 }}>
+            <View style={{height: 350, overflow: 'hidden', borderRadius: 15, marginBottom: 15}}>
+               <Image source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=800&auto=format&fit=crop' }} style={styles.fakeMap} />
+            </View>
+            <TouchableOpacity style={{backgroundColor: '#10B981', padding: 15, borderRadius: 12, alignItems: 'center', marginBottom: 20}} onPress={executeSmartReturn}>
+               <Text style={{color: '#FFF', fontWeight: 'bold', fontSize: 16}}>🛳️ Smart Return (Safety Mode)</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        <TouchableOpacity onPress={onBack} style={styles.backBtnSmall}><Text style={styles.backBtnText}>⬅️ {t.back_to_menu}</Text></TouchableOpacity>
+      </ScrollView>
+
+      {/* MODAL IDENTITA' (Social Card & Nickname) */}
+      <Modal visible={showIdentityModal} animationType="slide" transparent={true}>
+         <View style={styles.modalBg}>
+            <LinearGradient colors={gradientColors} style={[styles.modalCard, {padding: 0, overflow: 'hidden'}]}>
+               <TouchableOpacity style={{alignSelf: 'flex-end', padding: 15, zIndex: 10}} onPress={() => setShowIdentityModal(false)}>
+                 <Text style={{fontSize: 20}}>❌</Text>
+               </TouchableOpacity>
+               
+               {!nickname ? (
+                 <View style={{padding: 20}}>
+                   <Text style={{fontSize: 22, fontWeight: 'bold', marginBottom: 15, textAlign: 'center', color: '#1A202C'}}>{t.hero_title}</Text>
+                   <TextInput style={styles.heroInput} placeholder="Es. Mario Rossi" value={inputName} onChangeText={setInputName} autoFocus />
+                   <TouchableOpacity style={[styles.actionButtonMain, {backgroundColor: '#4A5D23', padding: 15}]} onPress={saveNickname}>
+                     <Text style={styles.actionButtonText}>Conferma ed Entra in Classifica</Text>
+                   </TouchableOpacity>
+                 </View>
+               ) : (
+                 <View style={{alignItems: 'center', paddingBottom: 30, paddingHorizontal: 20, width: '100%'}}>
+                   <Image source={badgeImage} style={{width: 140, height: 140, resizeMode: 'contain', marginTop: -20}} />
+                   
+                   <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 10}}>
+                     <Text style={{fontSize: 28, fontWeight: 'bold', color: '#1A202C'}} numberOfLines={1} ellipsizeMode="tail">{nickname}</Text>
+                   </View>
+                   <Text style={{fontSize: 16, color: '#64748B', fontWeight: 'bold', marginBottom: 30}}>{rankLabel.toUpperCase()} ({xpPoints} XP)</Text>
+                   
+                   <View style={{flexDirection: 'row', width: '100%', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.7)', padding: 15, borderRadius: 15}}>
+                      <View style={{alignItems: 'center', flex: 1}}>
+                         <Text style={{fontSize: 24, marginBottom: 5}}>☁️</Text>
+                         <Text style={{fontSize: 18, fontWeight: 'bold', color: '#4A5D23'}}>{co2.toFixed(2)} kg</Text>
+                         <Text style={{fontSize: 11, color: '#64748B', textAlign: 'center'}}>CO2 Evitata</Text>
+                      </View>
+                      <View style={{alignItems: 'center', flex: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#E2E8F0'}}>
+                         <Text style={{fontSize: 24, marginBottom: 5}}>💧</Text>
+                         <Text style={{fontSize: 18, fontWeight: 'bold', color: '#0056D2'}}>{liters.toFixed(1)} L</Text>
+                         <Text style={{fontSize: 11, color: '#64748B', textAlign: 'center'}}>Plastica Ridotta</Text>
+                      </View>
+                      <View style={{alignItems: 'center', flex: 1}}>
+                         <Text style={{fontSize: 24, marginBottom: 5}}>🪙</Text>
+                         <Text style={{fontSize: 18, fontWeight: 'bold', color: '#F59E0B'}}>{tokens} T</Text>
+                         <Text style={{fontSize: 11, color: '#64748B', textAlign: 'center'}}>Token Accumulati</Text>
+                      </View>
+                   </View>
+
+                   {/* --- DEV TOOLS SECTION --- */}
+                   {DEBUG_MODE && (
+                     <View style={{marginTop: 25, width: '100%', borderTopWidth: 1, borderColor: 'rgba(0,0,0,0.1)', paddingTop: 15}}>
+                        <Text style={{fontSize: 12, fontWeight: 'bold', color: '#64748B', marginBottom: 10, textAlign: 'center'}}>DEV TOOLS 🛠️ (Super User Mode)</Text>
+                        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                          <TouchableOpacity 
+                            style={{backgroundColor: '#E2E8F0', padding: 8, borderRadius: 8, flex: 1, marginRight: 5}} 
+                            onPress={() => { setCo2(c => c + 0.5); setLiters(l => l + 2); setTokens(t => t + 25); }}>
+                            <Text style={{fontSize: 10, textAlign: 'center', fontWeight: 'bold'}}>🚀 BOOST XP</Text>
+                          </TouchableOpacity>
+                          
+                          <TouchableOpacity 
+                            style={{backgroundColor: '#FED7D7', padding: 8, borderRadius: 8, flex: 1, marginRight: 5}} 
+                            onPress={() => { setCurrentView('wizard'); setShowIdentityModal(false); }}>
+                            <Text style={{fontSize: 10, textAlign: 'center', fontWeight: 'bold', color: '#C53030'}}>🔄 WIZARD</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity 
+                            style={{backgroundColor: '#000', padding: 8, borderRadius: 8, flex: 1}} 
+                            onPress={async () => { 
+                              await AsyncStorage.clear(); 
+                              setNickname(null); setCo2(0.25); setLiters(2.0); setTokens(120);
+                              setCurrentView('menu'); setShowIdentityModal(false);
+                              Alert.alert("Hard Reset", "Memoria locale pulita. Ripartiamo da zero.");
+                            }}>
+                            <Text style={{fontSize: 10, textAlign: 'center', fontWeight: 'bold', color: '#FFF'}}>🧹 HARD RESET</Text>
+                          </TouchableOpacity>
+                        </View>
+                     </View>
+                   )}
+                 </View>
+               )}
+            </LinearGradient>
+         </View>
+      </Modal>
+
+      {/* MODAL CONSUMPTION MODE (Pre-Camera) */}
+      <Modal visible={showConsumptionModal} animationType="slide" transparent={true}>
+         <View style={styles.modalBg}>
+            <View style={styles.modalCard}>
+               <Text style={{fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#1A202C'}}>Modalità di Consumo</Text>
+               <Text style={{textAlign: 'center', color: '#64748B', marginBottom: 20}}>Per il calcolo ESG, indicaci come hai consumato il pasto/snack.</Text>
+               
+               <TouchableOpacity 
+                 style={{backgroundColor: '#EBF4FF', padding: 18, borderRadius: 12, marginBottom: 15, borderWidth: 2, borderColor: '#0056D2'}} 
+                 onPress={() => { setConsumptionMode('insitu'); setShowConsumptionModal(false); setShowScanner(true); }}>
+                 <Text style={{fontSize: 18, fontWeight: 'bold', color: '#0056D2', textAlign: 'center'}}>🍽️ In-Situ (Al Tavolo)</Text>
+                 <Text style={{textAlign: 'center', fontSize: 12, color: '#0056D2', marginTop: 5}}>Massimo impatto positivo sulla comunità.</Text>
+               </TouchableOpacity>
+
+               <TouchableOpacity 
+                 style={{backgroundColor: '#FFF0E6', padding: 18, borderRadius: 12, marginBottom: 20, borderWidth: 2, borderColor: '#FF8C00'}} 
+                 onPress={() => { setConsumptionMode('takeaway'); setShowConsumptionModal(false); setShowScanner(true); }}>
+                 <Text style={{fontSize: 18, fontWeight: 'bold', color: '#FF8C00', textAlign: 'center'}}>🥡 Take-away (Asporto)</Text>
+                 <Text style={{textAlign: 'center', fontSize: 12, color: '#FF8C00', marginTop: 5}}>Attenzione: il packaging riduce del 15% il punteggio.</Text>
+               </TouchableOpacity>
+
+               <TouchableOpacity style={{alignItems: 'center'}} onPress={() => setShowConsumptionModal(false)}>
+                 <Text style={{color: '#64748B', fontWeight: 'bold'}}>Annulla</Text>
+               </TouchableOpacity>
+            </View>
+         </View>
+      </Modal>
+
+      {/* CAMERA FULL SCREEN MODAL */}
+      <Modal visible={showScanner} animationType="slide" onRequestClose={() => setShowScanner(false)}>
+         <ReceiptScanner onScan={handleScanDone} onCancel={() => setShowScanner(false)} />
+      </Modal>
+
+    </SafeAreaView>
+  );
+}
+
+// --- VISTA PARTNER (Dashboard Win-Win) ---
+function PartnerDashboard({ onBack }) {
+  // Simulazione Volume di Vendita (V) generato dall'App (es. €1000)
+  const volumeSales = 1000;
+  const commission = volumeSales * LOTO_CONFIG.commission_rate;
+  const netPartnerGain = volumeSales - commission;
+
+  return (
+    <SafeAreaView style={styles.partnerArea}>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.headerDark}>
+        <Text style={styles.partnerStatus}>🟢 Hub Attivo (Taranto)</Text>
+      </View>
+      <ScrollView style={{ padding: 20 }}>
+        <Text style={styles.partnerName}>Lido San Michele 🏖️</Text>
+        <Text style={styles.sectionTitleDark}>DASHBOARD WIN-WIN (Simulazione)</Text>
+
+        <View style={styles.metricCardPrimary}>
+          <Text style={styles.metricLabel}>Guadagno Netto generato da L.O.T.O.</Text>
+          <Text style={styles.metricValueGiant}>€{netPartnerGain.toFixed(2)}</Text>
+          <Text style={styles.metricSubText}>Commissione L.O.T.O. (5%): -€{commission.toFixed(2)}</Text>
+        </View>
+
+        <View style={styles.metricRow}>
+          <View style={[styles.metricCardSecondary, { flex: 1, marginRight: 10 }]}>
+            <Text style={styles.metricLabel}>Plastica Evitata</Text>
+            <Text style={styles.metricValue}>5.3 Kg</Text>
+          </View>
+          <View style={[styles.metricCardSecondary, { flex: 1 }]}>
+            <Text style={styles.metricLabel}>Turisti in Area</Text>
+            <Text style={styles.metricValue}>28 👨‍👩‍👧‍👦</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.actionButtonMain}>
+          <Text style={styles.actionIcon}>📷</Text>
+          <Text style={styles.actionButtonText}>Valida Sconto Turista (QR)</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onBack} style={styles.backBtnDark}><Text style={{ color: '#FFF' }}>⬅️ Torna al Menu</Text></TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  // Stili Menu e Ruoli
+  menuArea: { flex: 1, backgroundColor: '#F8FAFC', justifyContent: 'center' },
+  menuContainer: { padding: 30, alignItems: 'center' },
+  logoText: { fontSize: 36, fontWeight: '900', color: '#1A202C' },
+  menuSubtitle: { color: '#4A5D23', fontSize: 16, marginBottom: 50 },
+  roleButtonTourist: { backgroundColor: '#4A5D23', width: '100%', padding: 25, borderRadius: 20, marginBottom: 20, alignItems: 'center', elevation: 5 },
+  roleButtonPartner: { backgroundColor: '#1E293B', width: '100%', padding: 25, borderRadius: 20, alignItems: 'center', elevation: 5 },
+  roleButtonText: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
+  roleButtonSub: { color: '#CBD5E1', fontSize: 12, marginTop: 5 },
+  roleIcon: { fontSize: 45, marginBottom: 10 },
+
+  // Stili Turista "Gold"
+  touristArea: { flex: 1, backgroundColor: '#FFF' },
+  backBtnSmall: { padding: 20, alignItems: 'center' },
+  backBtnText: { color: '#718096', fontWeight: 'bold' },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 25 },
+  appTitleLight: { fontSize: 32, fontWeight: '900', color: '#1A202C' },
+  greetingText: { fontSize: 18, fontWeight: '700', marginTop: 5, color: '#4A5D23' },
+  b2bBadge: { backgroundColor: '#1E293B', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginTop: 10, alignSelf: 'flex-start' },
+  b2bText: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
+  avatarCircle: { width: 55, height: 55, backgroundColor: '#4A5D23', borderRadius: 28, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF', elevation: 4 },
+  avatarText: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
+
+  // Card Impatto Unica
+  impactCard: { backgroundColor: '#4A5D23', borderRadius: 20, marginHorizontal: 20, padding: 25, marginBottom: 25, elevation: 6 },
+  impactTitle: { color: '#C9D9B2', fontSize: 11, fontWeight: 'bold', letterSpacing: 1.2, marginBottom: 15, textAlign: 'center' },
+  impactRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  impactBox: { flex: 1, alignItems: 'center' },
+  impactValue: { color: '#FFF', fontSize: 38, fontWeight: 'bold' },
+  impactLabel: { color: '#C9D9B2', fontSize: 12, marginTop: 2 },
+  impactDivider: { width: 1.5, backgroundColor: '#7A8D53' },
+
+  // Tab
+  tabContainer: { flexDirection: 'row', marginHorizontal: 20, backgroundColor: '#F1F5F9', borderRadius: 12, padding: 5, marginBottom: 25 },
+  tabButton: { flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 10 },
+  tabActive: { backgroundColor: '#FFF', elevation: 3 },
+  tabText: { color: '#718096', fontWeight: 'bold', fontSize: 14 },
+  tabTextActive: { color: '#1A202C' },
+
+  // Location Cards
+  card: { backgroundColor: '#FFF', borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2 },
+  cardCrowded: { backgroundColor: '#F1F5F9', opacity: 0.8 },
+  cardImage: { width: '100%', height: 160 },
+  badge: { position: 'absolute', top: 12, right: 12, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, flexDirection: 'row', alignItems: 'center' },
+  badgeGreen: { backgroundColor: '#4A5D23' },
+  badgeRed: { backgroundColor: '#D94A4A' },
+  badgeBonus: { backgroundColor: '#D96C4A', borderWidth: 1, borderColor: '#FFF' },
+  badgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
+  cardBody: { padding: 18 },
+  cardTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A202C' },
+  cardDistance: { color: '#718096', fontSize: 13, marginVertical: 6 },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1.5, borderTopColor: '#F1F5F9', marginTop: 12, paddingTop: 12 },
+  rewardText: { fontWeight: 'bold', color: '#4A5D23', fontSize: 14 },
+  tokenCost: { fontWeight: '900', fontSize: 15 },
+  textGreen: { color: '#4A5D23' },
+  textTerracotta: { color: '#D96C4A' },
+  textGray: { color: '#718096' },
+  fakeMap: { width: '100%', height: '100%', borderRadius: 16 },
+
+  // Stili Partner
+  partnerArea: { flex: 1, backgroundColor: '#0F172A' },
+  headerDark: { padding: 20, borderBottomWidth: 1, borderBottomColor: '#1E293B' },
+  partnerStatus: { color: '#10B981', fontWeight: 'bold' },
+  partnerName: { color: '#FFF', fontSize: 32, fontWeight: 'bold', marginTop: 15 },
+  sectionTitleDark: { color: '#94A3B8', fontSize: 12, marginVertical: 15, letterSpacing: 1 },
+  metricCardPrimary: { backgroundColor: '#4A5D23', padding: 25, borderRadius: 20, marginBottom: 15, elevation: 4 },
+  metricLabel: { color: '#FFF', opacity: 0.8, fontSize: 13, marginBottom: 5 },
+  metricValueGiant: { color: '#FFF', fontSize: 50, fontWeight: 'bold' },
+  metricSubText: { color: '#FFF', opacity: 0.6, fontSize: 11, marginTop: 5 },
+  metricRow: { flexDirection: 'row', marginBottom: 20 },
+  metricCardSecondary: { backgroundColor: '#1E293B', padding: 20, borderRadius: 20, elevation: 2 },
+  metricValue: { color: '#10B981', fontSize: 28, fontWeight: 'bold', marginTop: 5 },
+  actionButtonMain: { backgroundColor: '#D96C4A', padding: 25, borderRadius: 20, alignItems: 'center', marginBottom: 20, elevation: 4 },
+  actionIcon: { fontSize: 32 },
+  actionButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 18, marginTop: 5 },
+  backBtnDark: { padding: 15, alignItems: 'center' },
+
+  // Stili Wizard
+  introCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 20, borderRadius: 15, marginBottom: 15, elevation: 2 },
+  wizardArea: { flex: 1, backgroundColor: '#F8FAFC' },
+  wizardHeader: { flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  wizardTitle: { fontSize: 20, fontWeight: 'bold', marginLeft: 15, color: '#1A202C' },
+  wizardContent: { flex: 1, padding: 20, justifyContent: 'center' },
+  wizardQuestion: { fontSize: 26, fontWeight: '900', color: '#1A202C', marginBottom: 30, textAlign: 'center' },
+  wizardOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 20, borderRadius: 15, marginBottom: 15, borderWidth: 2, borderColor: '#FFF', elevation: 2 },
+  wizardOptionActive: { borderColor: '#0056D2', backgroundColor: '#EBF4FF' },
+  wizardOptionBlue: { borderColor: '#0056D2', backgroundColor: '#EBF4FF' },
+  wizardOptionIcon: { fontSize: 30, marginRight: 15 },
+  wizardOptionLabel: { fontSize: 18, fontWeight: 'bold', color: '#4A5D23' },
+  wizardOptionLabelBlue: { fontSize: 18, fontWeight: 'bold', color: '#0056D2' },
+  partyBtn: { width: 60, height: 60, backgroundColor: '#4A5D23', borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
+  partyBtnText: { color: '#FFF', fontSize: 30, fontWeight: 'bold' },
+  partyValue: { fontSize: 40, fontWeight: 'bold', marginHorizontal: 30, color: '#1A202C' },
+
+  // Aggiunte UX Inclusiva
+  inclusiveBanner: { backgroundColor: 'rgba(241, 245, 249, 0.95)', padding: 12, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  inclusiveText: { fontSize: 11, color: '#0056D2', fontWeight: 'bold', textAlign: 'center' },
+  barrierAlertRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF0E6', padding: 8, borderRadius: 8, marginTop: 8 },
+  barrierAlertText: { color: '#FF8C00', fontSize: 12, fontWeight: 'bold', marginLeft: 8 },
+
+  // Aggiunte "Iniezione Rapida"
+  modalBg: {flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20},
+  modalCard: {backgroundColor: '#FFF', padding: 20, borderRadius: 20, elevation: 10},
+  heroInput: {borderWidth: 2, borderColor: '#E2E8F0', borderRadius: 12, padding: 15, fontSize: 18, marginBottom: 20},
+  row: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
+  rankBadge: { backgroundColor: '#FFD700', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, marginLeft: 8 },
+  rankText: { fontSize: 8, fontWeight: 'bold', color: '#000' },
+  rightHeader: { alignItems: 'flex-end' },
+  langRow: { flexDirection: 'row', marginBottom: 10 },
+  flag: { fontSize: 18, marginLeft: 10, opacity: 0.8 },
+  cityImpactTicker: { backgroundColor: '#1A202C', paddingVertical: 6, marginTop: -15, marginBottom: 20, marginHorizontal: 20, borderRadius: 0, borderBottomLeftRadius: 15, borderBottomRightRadius: 15 },
+  tickerText: { color: '#10B981', fontSize: 9, fontWeight: 'bold', textAlign: 'center', letterSpacing: 0.5 },
+  
+  // New Identity Styles
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginRight: 6, marginBottom: 4 },
+  statusBadgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
+  formLabel: { fontSize: 14, fontWeight: 'bold', color: '#64748B', marginBottom: 8, marginTop: 10 },
+  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF', padding: 15, borderRadius: 12, marginBottom: 10, elevation: 1 },
+  switchLabel: { fontSize: 16, fontWeight: 'bold', color: '#1A202C', flex: 1 },
+  qrFallbackBtn: { backgroundColor: '#1A202C', padding: 18, borderRadius: 12, alignItems: 'center' },
+  qrText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 }
+});
