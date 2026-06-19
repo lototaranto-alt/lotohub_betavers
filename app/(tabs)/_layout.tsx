@@ -71,7 +71,16 @@ export default function TabLayout() {
           }}
         />
 
-        {/* 4. INVISIBILI (Switchboard Routing Target) */}
+        {/* 4. VISIBILE: Profilo (L.O.T.O. Pass) */}
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Profilo',
+            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="account-circle" color={color} />,
+          }}
+        />
+
+        {/* 5. INVISIBILI (Switchboard Routing Target) */}
         <Tabs.Screen name="explore" options={{ href: null, title: 'Esplora' }} />
         <Tabs.Screen name="map" options={{ href: null, title: 'Mappa' }} />
         <Tabs.Screen name="events" options={{ href: null, title: 'Eventi' }} />

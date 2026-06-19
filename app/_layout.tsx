@@ -7,6 +7,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
+import { TenantProvider } from '../context/TenantContext';
 import { CityProvider } from '../context/CityContext';
 import { MobilityProvider } from '../context/MobilityContext';
 import MobilityWizard from '../components/MobilityWizard';
@@ -48,19 +49,22 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <CityProvider>
-      <MobilityProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="wizard" options={{ headerShown: false, animation: 'fade' }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          </Stack>
-          <StatusBar style="auto" />
-          <MobilityWizard />
-        </ThemeProvider>
-      </MobilityProvider>
-    </CityProvider>
+    <TenantProvider>
+      <CityProvider>
+        <MobilityProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="wizard" options={{ headerShown: false, animation: 'fade' }} />
+              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+              <Stack.Screen name="route-creation-mockup" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+            </Stack>
+            <StatusBar style="auto" />
+            <MobilityWizard />
+          </ThemeProvider>
+        </MobilityProvider>
+      </CityProvider>
+    </TenantProvider>
   );
 }
 

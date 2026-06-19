@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Dimensions, TextInput, Switch } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { supabase } from '../utils/supabase';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -15,41 +15,41 @@ const LOTO_PALETTE = {
 };
 
 const WIZARD_ASSETS = [
-  require('../assets/images/intro_explore_1775676666618.png'),
-  require('../assets/images/intro_protect_1775676688994.png'),
-  require('../assets/images/intro_earn_1775676711707.png'),
+  require('../assets/images/intro_explore_flat.png'),
+  require('../assets/images/intro_protect_flat.png'),
+  require('../assets/images/intro_earn_flat.png'),
 ];
 
-const ROLES = [
-  { id: 'LOTO Explorer', label: 'LOTO Explorer', desc: 'Turista standard' },
-  { id: 'Flash Cruiser', label: 'Flash Cruiser', desc: 'Crocierista (Percorsi rapidi)' },
-  { id: 'LOTO Partner', label: 'LOTO Partner', desc: 'Commerciante (Dashboard B2B)' }
+const PERSONAS = [
+  { id: 'Standard', label: 'LOTO Explorer', desc: 'Turista standard, nessun limite.' },
+  { id: 'Senior', label: 'Senior Cruiser', desc: 'Percorsi rilassati e frequenti soste.' },
+  { id: '♿', label: 'Accessibile (♿)', desc: 'Percorsi privi di barriere architettoniche.' }
+];
+
+const RETURN_POINTS = [
+  { id: 'Hotel', label: 'Hotel / B&B', icon: 'hotel' },
+  { id: 'Cruise', label: 'Nave Crociera', icon: 'directions-boat' },
+  { id: 'Station', label: 'Stazione', icon: 'train' }
 ];
 
 export default function WizardScreen() {
   const [wizardStep, setWizardStep] = useState(0);
-  const [nickname, setNickname] = useState('');
-  const [flowRole, setFlowRole] = useState('LOTO Explorer');
-  const [partySize, setPartySize] = useState('1');
-  const [accessibilityMode, setAccessibilityMode] = useState(false);
+  const [userPersona, setUserPersona] = useState('Standard');
+  const [returnPoint, setReturnPoint] = useState('Hotel');
+  const [partySize, setPartySize] = useState(1);
   const [updatingWizard, setUpdatingWizard] = useState(false);
 
-  const completaWizard = async () => {
-    if (!nickname) {
-      alert('Inserisci un nickname!');
-      return;
-    }
+  const completaWizard = async (isSkipped = false) => {
     setUpdatingWizard(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { error } = await supabase
         .from('profiles')
         .update({
-          nickname,
-          flow_role: flowRole,
-          party_size: parseInt(partySize) || 1,
-          accessibility_mode: accessibilityMode,
-          profile_completed: true
+          user_persona: userPersona,
+          return_point_type: returnPoint,
+          party_size: partySize,
+          profile_completed: !isSkipped
         })
         .eq('id', user.id);
 
@@ -60,6 +60,9 @@ export default function WizardScreen() {
       } else {
         router.replace('/(tabs)');
       }
+    } else {
+      alert('Nessun utente autenticato (Anonymous Auth fallita).');
+      setUpdatingWizard(false);
     }
   };
 
@@ -83,57 +86,62 @@ export default function WizardScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.formContainer}>
-          <Text style={styles.formTitle}>Benvenuto in LOTO</Text>
-          <Text style={styles.formSubtitle}>Crea il tuo profilo per personalizzare l&apos;esperienza.</Text>
-
-          <Text style={styles.label}>Nickname</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Come vuoi farti chiamare?"
-            value={nickname}
-            onChangeText={setNickname}
-            placeholderTextColor="#94A3B8"
-          />
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.formContainer} contentContainerStyle={{ paddingBottom: 50 }}>
+          <Text style={styles.formTitle}>Identità Anonima</Text>
+          <Text style={styles.formSubtitle}>I tuoi dati servono unicamente a personalizzare i percorsi e tarare l'ecosistema cittadino sui tuoi bisogni. Tutto avviene nel pieno rispetto dell'anonimato.</Text>
 
           <Text style={styles.label}>Chi sei?</Text>
           <View style={styles.rolesContainer}>
-            {ROLES.map(r => (
+            {PERSONAS.map(p => (
               <TouchableOpacity
-                key={r.id}
-                style={[styles.roleOption, flowRole === r.id && styles.roleOptionActive]}
-                onPress={() => setFlowRole(r.id)}
+                key={p.id}
+                style={[styles.roleOption, userPersona === p.id && styles.roleOptionActive]}
+                onPress={() => setUserPersona(p.id)}
               >
-                <Text style={[styles.roleLabel, flowRole === r.id && styles.roleLabelActive]}>{r.label}</Text>
-                <Text style={[styles.roleDesc, flowRole === r.id && styles.roleDescActive]}>{r.desc}</Text>
+                <Text style={[styles.roleLabel, userPersona === p.id && styles.roleLabelActive]}>{p.label}</Text>
+                <Text style={[styles.roleDesc, userPersona === p.id && styles.roleDescActive]}>{p.desc}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={styles.label}>Persone in viaggio</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={partySize}
-            onChangeText={setPartySize}
-            placeholderTextColor="#94A3B8"
-          />
-
-          <View style={styles.switchRow}>
-            <View style={{ flex: 1, paddingRight: 15 }}>
-              <Text style={styles.labelSwitch}>Modalità Accessibile</Text>
-              <Text style={styles.switchDesc}>Attiva per ricevere avvisi su sfide architettoniche nei P.O.I.</Text>
-            </View>
-            <Switch
-              value={accessibilityMode}
-              onValueChange={setAccessibilityMode}
-              trackColor={{ false: '#C9C4B8', true: LOTO_PALETTE.TERRACOTTA }}
-              thumbColor={accessibilityMode ? '#FFF' : '#FFF'}
-            />
+          <Text style={[styles.label, { marginTop: 30 }]}>In quanti siete? (Party Size)</Text>
+          <Text style={styles.formSubtitle}>Il tuo impatto e i LOTO PTI guadagnati verranno moltiplicati per i membri del gruppo.</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', alignSelf: 'flex-start', borderRadius: 25, borderWidth: 0.5, borderColor: '#C9C4B8', padding: 5 }}>
+            <TouchableOpacity onPress={() => setPartySize(Math.max(1, partySize - 1))} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: LOTO_PALETTE.CREMA, justifyContent: 'center', alignItems: 'center' }}>
+              <MaterialIcons name="remove" size={20} color={LOTO_PALETTE.EBANO} />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginHorizontal: 20, color: LOTO_PALETTE.EBANO }}>{partySize}</Text>
+            <TouchableOpacity onPress={() => setPartySize(Math.min(20, partySize + 1))} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: LOTO_PALETTE.TERRACOTTA, justifyContent: 'center', alignItems: 'center' }}>
+              <MaterialIcons name="add" size={20} color="#FFF" />
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.btnSubmit} onPress={completaWizard} disabled={updatingWizard}>
-            <Text style={styles.btnSubmitText}>{updatingWizard ? 'SALVATAGGIO...' : 'ENTRA IN LOTO'}</Text>
+          <Text style={[styles.label, { marginTop: 30 }]}>Punto di Rientro</Text>
+          <Text style={styles.formSubtitle}>Serve per il "Panic Mode" (rientro sicuro veloce).</Text>
+          <View style={styles.returnPointsContainer}>
+            {RETURN_POINTS.map(rp => (
+              <TouchableOpacity
+                key={rp.id}
+                style={[styles.returnOption, returnPoint === rp.id && styles.returnOptionActive]}
+                onPress={() => setReturnPoint(rp.id)}
+              >
+                <MaterialIcons 
+                  name={rp.icon as any} 
+                  size={28} 
+                  color={returnPoint === rp.id ? '#FFF' : LOTO_PALETTE.VERDE_OLIVA} 
+                  style={{ marginBottom: 5 }}
+                />
+                <Text style={[styles.returnLabel, returnPoint === rp.id && styles.returnLabelActive]}>{rp.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.btnSubmit} onPress={() => completaWizard(false)} disabled={updatingWizard}>
+            <Text style={styles.btnSubmitText}>{updatingWizard ? 'SALVATAGGIO...' : 'INIZIA L\'AVVENTURA'}</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={{ marginTop: 5, marginBottom: 30, alignItems: 'center', padding: 15 }} onPress={() => completaWizard(true)}>
+             <Text style={{ color: '#64748B', fontWeight: 'bold', textDecorationLine: 'underline' }}>Salta per ora (esplora da anonimo)</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -154,10 +162,9 @@ const styles = StyleSheet.create({
   
   formContainer: { width: '100%', paddingHorizontal: 25, paddingTop: 40 },
   formTitle: { fontSize: 32, fontWeight: '900', fontFamily: 'serif', color: LOTO_PALETTE.EBANO, marginBottom: 5 },
-  formSubtitle: { fontSize: 14, color: '#64748B', marginBottom: 30 },
+  formSubtitle: { fontSize: 14, color: '#64748B', marginBottom: 20 },
   
-  label: { fontSize: 13, fontWeight: 'bold', color: LOTO_PALETTE.EBANO, marginTop: 20, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  input: { backgroundColor: '#FFF', padding: 18, borderRadius: 15, fontSize: 16, color: LOTO_PALETTE.EBANO, borderWidth: 0.5, borderColor: '#C9C4B8' },
+  label: { fontSize: 13, fontWeight: 'bold', color: LOTO_PALETTE.EBANO, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
   
   rolesContainer: { flexDirection: 'column', gap: 10 },
   roleOption: { padding: 18, backgroundColor: '#FFF', borderRadius: 15, borderWidth: 0.5, borderColor: '#C9C4B8' },
@@ -166,11 +173,13 @@ const styles = StyleSheet.create({
   roleLabelActive: { color: '#FFF' },
   roleDesc: { fontSize: 12, color: '#64748B', marginTop: 4 },
   roleDescActive: { color: 'rgba(255,255,255,0.8)' },
+
+  returnPointsContainer: { flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
+  returnOption: { flex: 1, padding: 15, backgroundColor: '#FFF', borderRadius: 15, borderWidth: 0.5, borderColor: '#C9C4B8', alignItems: 'center' },
+  returnOptionActive: { backgroundColor: LOTO_PALETTE.TERRACOTTA, borderColor: LOTO_PALETTE.TERRACOTTA },
+  returnLabel: { fontSize: 12, fontWeight: 'bold', color: LOTO_PALETTE.EBANO, textAlign: 'center' },
+  returnLabelActive: { color: '#FFF' },
   
-  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF', padding: 20, borderRadius: 15, borderWidth: 0.5, borderColor: '#C9C4B8', marginTop: 25 },
-  labelSwitch: { fontSize: 14, fontWeight: 'bold', color: LOTO_PALETTE.EBANO },
-  switchDesc: { fontSize: 11, color: '#64748B', marginTop: 5 },
-  
-  btnSubmit: { backgroundColor: LOTO_PALETTE.EBANO, paddingVertical: 20, borderRadius: 15, alignItems: 'center', marginTop: 35, marginBottom: 50 },
+  btnSubmit: { backgroundColor: LOTO_PALETTE.EBANO, paddingVertical: 20, borderRadius: 15, alignItems: 'center', marginTop: 35 },
   btnSubmitText: { color: '#FFF', fontWeight: 'bold', fontSize: 14, letterSpacing: 1 }
 });

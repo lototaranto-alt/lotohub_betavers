@@ -22,7 +22,7 @@ export default function MobilityWizard() {
         <View style={styles.card}>
           <Text style={styles.title}>Come esplori oggi?</Text>
           <Text style={styles.subtitle}>
-            Regoliamo la bussola per calcolare il tuo impatto e suggerirti i percorsi migliori. (Scelta sempre modificabile)
+            Regoliamo la bussola. Scopri i percorsi perfetti per te o crea il tuo itinerario sostenibile da condividere.
           </Text>
 
           <TouchableOpacity

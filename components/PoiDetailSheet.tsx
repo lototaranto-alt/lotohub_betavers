@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, ScrollView, Alert, Linking, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, ScrollView, Alert, Linking, Dimensions, ActivityIndicator } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { supabase } from '../utils/supabase';
+import { LruCacheManager } from '../utils/LruCacheManager';
+import { OfflineQueueManager } from '../utils/OfflineQueueManager';
+import NetInfo from '@react-native-community/netinfo';
 
 // LOTO_PALETTE definita qua per semplicità, ma in un progetto reale verrebbe importata
 const LOTO_PALETTE = {
-  VERDE_OLIVA: '#6B8E23',
-  TERRACOTTA: '#E07A5F',
-  EBANO: '#3D405B',
+  VERDE_OLIVA: '#5F713D',  // Uniformato con la palette premium
+  TERRACOTTA: '#C36B4D',
+  EBANO: '#1A1C1E',
   SABBIA_DORATA: '#D9A05B',
-  CREMA: '#F4F1DE',
+  CREMA: '#FDF8F2',
 };
 
 const { height } = Dimensions.get('window');
@@ -26,6 +30,191 @@ type PoiDetailSheetProps = {
 export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValidate, isBooked, initialPartySize }: PoiDetailSheetProps) {
   const [partySize, setPartySize] = useState(initialPartySize || 1);
   const [mobilityMode, setMobilityMode] = useState<'mezzo_proprio' | 'loto_mobility' | null>(null);
+  
+  // Stati per la gestione del Vault Multimediale
+  const [vaultMedia, setVaultMedia] = useState<any[]>([]);
+  const [mediaStatus, setMediaStatus] = useState<{[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'}>({});
+
+  useEffect(() => {
+    if (visible && poi) {
+      caricaMediaVault();
+    }
+  }, [visible, poi]);
+
+  const caricaMediaVault = async () => {
+    try {
+      console.log('[PoiDetailSheet] Caricamento media vault per POI:', poi.name);
+      
+      // Query su Supabase per estrarre i media del POI
+      const { data, error } = await supabase
+        .from('media_vault')
+        .select('*')
+        .eq('poi_id', poi.id);
+
+      if (error) {
+        console.log('[PoiDetailSheet] Errore lettura media_vault:', error.message);
+        return;
+      }
+
+      if (data) {
+        setVaultMedia(data);
+        
+        const statusMap: {[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'} = {};
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // Storico degli sblocchi dell'utente
+        const { data: unlockedData } = user ? await supabase
+          .from('user_unlocked_media')
+          .select('media_id')
+          .eq('profile_id', user.id) : { data: null };
+
+        const unlockedIds = unlockedData ? unlockedData.map((u: any) => u.media_id) : [];
+
+        // Coda offline
+        const offlineQueue = await OfflineQueueManager.getQueue();
+        const queuedIds = offlineQueue.map(item => item.mediaId);
+
+        for (const media of data) {
+          const fileName = media.media_path.split('/').pop() || `${media.id}.mp4`;
+          const exists = await LruCacheManager.fileExists(fileName);
+          
+          if (exists) {
+            statusMap[media.id] = 'ready';
+          } else if (queuedIds.includes(media.id)) {
+            statusMap[media.id] = 'queued';
+          } else if (unlockedIds.includes(media.id)) {
+            // Già sbloccato su server, ma non scaricato localmente (es. dopo reinstallazione)
+            statusMap[media.id] = 'locked';
+            const netState = await NetInfo.fetch();
+            if (netState.isConnected) {
+              // Avvia download automatico
+              handleDownloadMedia(media);
+            }
+          } else {
+            statusMap[media.id] = 'locked';
+          }
+        }
+        setMediaStatus(statusMap);
+      }
+    } catch (e) {
+      console.error('[PoiDetailSheet] Errore in caricaMediaVault:', e);
+    }
+  };
+
+  const handleDownloadMedia = async (media: any) => {
+    try {
+      setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
+      
+      const { data: signedData, error } = await supabase
+        .storage
+        .from('loto-vault')
+        .createSignedUrl(media.media_path, 900);
+
+      if (error || !signedData?.signedUrl) {
+        console.error('[PoiDetailSheet] Errore signed URL:', error?.message);
+        setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+        return;
+      }
+
+      const fileName = media.media_path.split('/').pop() || `${media.id}.mp4`;
+      const localPath = await LruCacheManager.downloadFile(signedData.signedUrl, fileName);
+
+      if (localPath) {
+        setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
+      } else {
+        setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+      }
+    } catch (err) {
+      console.error('[PoiDetailSheet] Errore download background:', err);
+      setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+    }
+  };
+
+  const handleUnlockMedia = async (media: any) => {
+    const netState = await NetInfo.fetch();
+
+    if (!netState.isConnected) {
+      Alert.alert(
+        "Modalità Offline",
+        `Non hai connessione internet. Vuoi prenotare lo sblocco di "${media.title}" per ${media.loto_cost} LOTO PTI? I contenuti si scaricheranno appena ritrovi la rete.`,
+        [
+          { text: "Annulla", style: "cancel" },
+          { 
+            text: "Prenota", 
+            onPress: async () => {
+              await OfflineQueueManager.enqueueUnlock(media.id, media.loto_cost, poi.name);
+              setMediaStatus(prev => ({ ...prev, [media.id]: 'queued' }));
+              Alert.alert("Sblocco Prenotato", "Sblocco registrato in locale. Il file si scaricherà in background quando tornerai online.");
+            }
+          }
+        ]
+      );
+      return;
+    }
+
+    try {
+      setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
+      const { data, error } = await supabase.rpc('sblocca_media', {
+        p_media_id: media.id
+      });
+
+      if (error) {
+        Alert.alert("Errore", error.message);
+        setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+        return;
+      }
+
+      const res = data as any;
+      const success = res[0]?.unlocked;
+      const mediaPath = res[0]?.media_path;
+      const msg = res[0]?.message;
+
+      if (success) {
+        const { data: signedData, error: storageError } = await supabase
+          .storage
+          .from('loto-vault')
+          .createSignedUrl(mediaPath, 900);
+
+        if (storageError || !signedData?.signedUrl) {
+          Alert.alert("Errore", "Impossibile caricare il file multimediale dal server.");
+          setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+          return;
+        }
+
+        const fileName = mediaPath.split('/').pop() || `${media.id}.mp4`;
+        const localPath = await LruCacheManager.downloadFile(signedData.signedUrl, fileName);
+
+        if (localPath) {
+          setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
+          Alert.alert("Successo!", `"${media.title}" è stato sbloccato e scaricato localmente per l'ascolto offline.`);
+        } else {
+          setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+          Alert.alert("Errore", "Salvataggio locale fallito.");
+        }
+      } else {
+        Alert.alert("Sblocco Fallito", msg || "Saldo LOTO PTI insufficiente.");
+        setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+      }
+
+    } catch (e) {
+      console.error('[PoiDetailSheet] Errore sblocco:', e);
+      setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+    }
+  };
+
+  const handlePlayMedia = async (media: any) => {
+    const fileName = media.media_path.split('/').pop() || `${media.id}.mp4`;
+    const localPath = LruCacheManager.getLocalPath(fileName);
+    
+    // Aggiorna l'ultimo accesso per la cache LRU
+    await LruCacheManager.touchFile(fileName);
+
+    Alert.alert(
+      "Riproduzione Sandboxed",
+      `In riproduzione locale protetta:\n"${media.title}"\n\nPercorso locale:\n${localPath}`,
+      [{ text: "Ok" }]
+    );
+  };
 
   if (!poi) return null;
 
@@ -82,6 +271,67 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
                 )}
               </View>
             </View>
+
+            {/* SEZIONE VAULT MULTIMEDIALE */}
+            {vaultMedia.length > 0 && (
+              <View style={styles.vaultSection}>
+                <Text style={styles.sectionTitle}>🎒 L.O.T.O. VAULT MULTIMEDIALE</Text>
+                {vaultMedia.map(media => {
+                  const status = mediaStatus[media.id] || 'locked';
+                  return (
+                    <View key={media.id} style={styles.mediaRow}>
+                      <View style={styles.mediaInfo}>
+                        <MaterialIcons 
+                          name={media.media_type === 'audio' ? "audiotrack" : "videocam"} 
+                          size={24} 
+                          color={LOTO_PALETTE.VERDE_OLIVA} 
+                        />
+                        <View style={{ marginLeft: 12, flex: 1 }}>
+                          <Text style={styles.mediaTitle}>{media.title}</Text>
+                          <Text style={styles.mediaTypeLabel}>
+                            {media.media_type.toUpperCase()} • {media.loto_cost} LOTO PTI
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      {status === 'ready' && (
+                        <TouchableOpacity 
+                          style={[styles.vaultBtn, { backgroundColor: LOTO_PALETTE.VERDE_OLIVA }]}
+                          onPress={() => handlePlayMedia(media)}
+                        >
+                          <MaterialIcons name="play-arrow" size={20} color="#FFF" style={{ marginRight: 4 }} />
+                          <Text style={styles.vaultBtnText}>Ascolta</Text>
+                        </TouchableOpacity>
+                      )}
+
+                      {status === 'downloading' && (
+                        <View style={styles.vaultBtnDisabled}>
+                          <ActivityIndicator size="small" color={LOTO_PALETTE.VERDE_OLIVA} />
+                          <Text style={[styles.vaultBtnTextDisabled, { marginLeft: 6 }]}>Download...</Text>
+                        </View>
+                      )}
+
+                      {status === 'queued' && (
+                        <View style={[styles.vaultBtnDisabled, { backgroundColor: '#FEF3C7' }]}>
+                          <MaterialIcons name="schedule" size={16} color="#D97706" style={{ marginRight: 4 }} />
+                          <Text style={[styles.vaultBtnTextDisabled, { color: '#D97706', fontSize: 11 }]}>In coda</Text>
+                        </View>
+                      )}
+
+                      {status === 'locked' && (
+                        <TouchableOpacity 
+                          style={styles.vaultBtn}
+                          onPress={() => handleUnlockMedia(media)}
+                        >
+                          <MaterialIcons name="lock-open" size={16} color="#FFF" style={{ marginRight: 4 }} />
+                          <Text style={styles.vaultBtnText}>Sblocca</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
 
             {/* 3. IL BIVIO DECISIONALE & IL PATTO */}
             <View style={styles.actionSection}>
@@ -229,6 +479,16 @@ const styles = StyleSheet.create({
   mainBtn: { backgroundColor: LOTO_PALETTE.VERDE_OLIVA, padding: 18, borderRadius: 15, alignItems: 'center', marginTop: 10 },
   mainBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
   bookedContainer: { backgroundColor: '#F8FAFC', padding: 20, borderRadius: 20, alignItems: 'center', marginVertical: 20 },
-  bookedTitle: { fontSize: 18, fontWeight: 'bold', color: LOTO_PALETTE.EBANO },
-  bookedSub: { textAlign: 'center', fontSize: 13, color: '#64748B', marginTop: 5, marginBottom: 15 }
+  bookedTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1C1E' },
+  bookedSub: { textAlign: 'center', fontSize: 13, color: '#64748B', marginTop: 5, marginBottom: 15 },
+  // Stili per il Vault Multimediale
+  vaultSection: { padding: 20, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  mediaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F8FAFC', padding: 15, borderRadius: 15, marginBottom: 10, borderWidth: 1, borderColor: '#E2E8F0' },
+  mediaInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  mediaTitle: { fontSize: 14, fontWeight: 'bold', color: '#1A1C1E' },
+  mediaTypeLabel: { fontSize: 11, color: '#64748B', marginTop: 2 },
+  vaultBtn: { backgroundColor: '#C36B4D', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, elevation: 1 },
+  vaultBtnText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  vaultBtnDisabled: { backgroundColor: '#F1F5F9', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0' },
+  vaultBtnTextDisabled: { color: '#64748B', fontSize: 12, fontWeight: 'bold' }
 });

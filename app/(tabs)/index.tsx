@@ -2,9 +2,10 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../utils/supabase';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
+import BreathingLeaf from '../../components/BreathingLeaf';
 import { calculateDistance } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
 
@@ -93,6 +94,8 @@ const getPOIImage = (name: string) => {
     if (name.includes('Castello')) return require('../../assets/images/castello-evento.png');
     if (name.includes('Fontana') || name.includes('Piazza Fontana')) return require('../../assets/images/fontana.jpg');
     if (name.includes('MArTA') || name.includes('LOTO')) return require('../../assets/images/logo-LOTO.png');
+    if (name.includes('MuDi') || name.includes('Museo Diocesano')) return require('../../assets/images/poi_mudi.jpg');
+    if (name.includes('Oasi') || name.includes('Palude La Vela')) return require('../../assets/images/poi_oasi.png');
     return null;
   } catch (e) {
     return null;
@@ -105,19 +108,19 @@ const getMobilityPillStyle = (type: string) => {
       return {
         bg: '#ECFDF5', // Sfondo verde leggero
         text: '#10B981', // Testo verde
-        label: '🌱 Mobilità Dolce',
+        label: '🌱 Dolce',
       };
     case 'pubblica':
       return {
         bg: '#F0F9FF', // Sfondo blu leggero
         text: '#0a7ea4', // Testo blu
-        label: '🚌 Rete Pubblica',
+        label: '🚌 Pubblica',
       };
     case 'privata':
       return {
         bg: '#F1F5F9', // Sfondo grigio leggero
         text: '#4B5563', // Testo grigio
-        label: '🚗 Auto/Moto',
+        label: '🚗 Privata',
       };
     default:
       return {
@@ -153,6 +156,12 @@ export default function VetrinaScreen() {
   const [isSheetVisible, setIsSheetVisible] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>('recommended');
 
+  // STATI DIARIO E PROFILO
+  const [userTransactions, setUserTransactions] = useState<any[]>([]);
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [tempNickname, setTempNickname] = useState('');
+
   const t = DICTIONARY[lang];
 
   const getLevelInfo = (tokens: number) => {
@@ -180,6 +189,9 @@ export default function VetrinaScreen() {
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         if (profile) {
           setUserProfile(profile);
+          setTempNickname(profile.nickname || '');
+          const { data: trans } = await supabase.from('impact_transactions').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(20);
+          if (trans) setUserTransactions(trans);
         }
       }
 
@@ -193,6 +205,28 @@ export default function VetrinaScreen() {
       console.log("Errore caricaDati:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const salvaNickname = async () => {
+    const newNick = tempNickname.trim();
+    if (!newNick) {
+      setEditingNickname(false);
+      return;
+    }
+
+    // Controlla se il nickname è già in uso
+    const { data: existing } = await supabase.from('profiles').select('id').ilike('nickname', newNick).maybeSingle();
+    if (existing && existing.id !== userProfile?.id) {
+      Alert.alert("Errore", "Questo nickname è già in uso da un altro utente. Scegline un altro.");
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('profiles').update({ nickname: newNick }).eq('id', user.id);
+      setUserProfile((prev: any) => ({ ...prev, nickname: newNick }));
+      setEditingNickname(false);
     }
   };
 
@@ -350,6 +384,7 @@ export default function VetrinaScreen() {
   };
   const renderHeader = () => {
     const isPartner = userProfile?.flow_role === 'LOTO Partner';
+    const showCompleteProfileWarning = userProfile && userProfile.profile_completed === false;
 
     return (
       <View style={styles.headerContainer}>
@@ -385,12 +420,12 @@ export default function VetrinaScreen() {
               <View style={styles.archesContainer}>
                 <View style={[styles.impactArch, { backgroundColor: LOTO_PALETTE.EBANO }]}>
                   <MaterialIcons name="qr-code-scanner" size={24} color={LOTO_PALETTE.SABBIA_DORATA} style={{ marginBottom: 10 }} />
-                  <Text style={[styles.archVal, { color: '#FFF' }]}>142</Text>
+                  <Text style={[styles.archVal, { color: '#FFF' }]}>{userProfile?.total_tokens ?? 0}</Text>
                   <Text style={styles.archLabel}>Scansioni Clienti</Text>
                 </View>
                 <View style={[styles.impactArch, { backgroundColor: LOTO_PALETTE.VERDE_OLIVA }]}>
                   <MaterialIcons name="eco" size={24} color="#FFF" style={{ marginBottom: 10 }} />
-                  <Text style={[styles.archVal, { color: '#FFF' }]}>35.5</Text>
+                  <Text style={[styles.archVal, { color: '#FFF' }]}>{userProfile?.total_co2?.toFixed(1) ?? '0.0'}</Text>
                   <Text style={styles.archLabel}>CO₂ Risparmiata (kg)</Text>
                 </View>
               </View>
@@ -409,13 +444,32 @@ export default function VetrinaScreen() {
               <View style={styles.prestigeCenterCol}>
                 <Text style={styles.prestigeTierTitle} numberOfLines={1} adjustsFontSizeToFit>{levelInfo.title}</Text>
                 <View style={styles.prestigeBadgeRow}>
-                  <View style={[styles.prestigePillBadge, userProfile?.flow_role === 'Flash Cruiser' && { backgroundColor: LOTO_PALETTE.SABBIA_DORATA }]}>
-                    <Text style={[styles.prestigePillBadgeText, userProfile?.flow_role === 'Flash Cruiser' && { color: '#FFF' }]}>
-                      {userProfile?.flow_role || 'LOTO Explorer'}
-                    </Text>
-                  </View>
+                  {showCompleteProfileWarning ? (
+                    <TouchableOpacity 
+                      style={[styles.prestigePillBadge, { backgroundColor: LOTO_PALETTE.SABBIA_DORATA, flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }]}
+                      onPress={() => {
+                        Alert.alert(
+                          "Migliora l'Esperienza",
+                          "Completa il tuo profilo anonimo per sbloccare i LOTO PTI. Dicci in quanti viaggiate e il tuo stile di mobilità per ricevere bonus moltiplicatori e aiutarci a preservare l'ecosistema cittadino su misura per te",
+                          [
+                            { text: "Non ora", style: "cancel" },
+                            { text: "Completa", onPress: () => router.replace('/wizard') }
+                          ]
+                        );
+                      }}
+                    >
+                      <MaterialIcons name="warning" size={12} color="#FFF" style={{ marginRight: 4 }} />
+                      <Text style={[styles.prestigePillBadgeText, { color: '#FFF' }]}>PROFILO ANONIMO</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={[styles.prestigePillBadge, userProfile?.flow_role === 'Flash Cruiser' && { backgroundColor: LOTO_PALETTE.SABBIA_DORATA }]}>
+                      <Text style={[styles.prestigePillBadgeText, userProfile?.flow_role === 'Flash Cruiser' && { color: '#FFF' }]}>
+                        {userProfile?.flow_role || 'LOTO Explorer'}
+                      </Text>
+                    </View>
+                  )}
                   
-                  {!isPartner && mobilityType && (
+                  {!isPartner && mobilityType && !showCompleteProfileWarning && (
                     <TouchableOpacity
                       onPress={forceReopenWizard}
                       activeOpacity={0.8}
@@ -449,17 +503,17 @@ export default function VetrinaScreen() {
               <View style={styles.archesContainer}>
                 <View style={[styles.impactArch, { backgroundColor: LOTO_PALETTE.VERDE_OLIVA }]}>
                   <MaterialIcons name="eco" size={24} color="#FFF" style={{ marginBottom: 10 }} />
-                  <Text style={styles.archVal}>{userProfile?.total_co2?.toFixed(1) || '0.5'}</Text>
+                  <Text style={styles.archVal}>{userProfile?.total_co2?.toFixed(1) ?? '0.0'}</Text>
                   <Text style={styles.archLabel}>{t.co2Lab}</Text>
                 </View>
                 <View style={[styles.impactArch, { backgroundColor: '#0056D2' }]}>
                   <MaterialIcons name="water-drop" size={24} color="#FFF" style={{ marginBottom: 10 }} />
-                  <Text style={styles.archVal}>12</Text>
+                  <Text style={styles.archVal}>{userProfile?.total_liters ?? 0}</Text>
                   <Text style={styles.archLabel}>Refill (Litri)</Text>
                 </View>
                 <View style={[styles.impactArch, { backgroundColor: LOTO_PALETTE.SABBIA_DORATA }]}>
                   <MaterialIcons name="toll" size={24} color="#FFF" style={{ marginBottom: 10 }} />
-                  <Text style={styles.archVal}>{userProfile?.total_tokens || 120}</Text>
+                  <Text style={styles.archVal}>{userProfile?.total_tokens ?? 0}</Text>
                   <Text style={styles.archLabel}>{t.ptsLab}</Text>
                 </View>
               </View>
@@ -565,10 +619,11 @@ export default function VetrinaScreen() {
     );
   };
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} color={LOTO_PALETTE.VERDE} />;
+  if (loading) return <BreathingLeaf fullScreen message="Sintonizzazione LOTO..." />;
 
-  const userTokens = userProfile?.total_tokens || 0;
-  const levelInfo = getLevelInfo(userTokens);
+  const userTokens = userProfile?.total_tokens ?? 0;
+  const userXp = userProfile?.total_xp ?? 0;
+  const levelInfo = getLevelInfo(userXp);
 
   const accordionSections = [
     { id: 'recommended', title: 'Mete Consigliate', data: pois.filter(p => p.is_recommended) },
@@ -624,29 +679,129 @@ export default function VetrinaScreen() {
         {/* MODALE SCHEDA EXP (PROFILO AVATAR PREMIUM) */}
         <Modal visible={isExpModalVisible} transparent animationType="slide">
           <View style={styles.modalOverlay}>
-            <View style={{ height: 400, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ height: expandedCard ? 500 : 400, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={width * 0.8} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: width * 0.1, alignItems: 'center' }}>
                 
                 {/* CARD 1: Badge Profilo */}
-                <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025 }]}>
-                  <Image source={levelInfo.badge} style={styles.crownIcon} />
-                  <Text style={styles.expNameBoutique}>{userProfile?.nickname || t.guest}</Text>
-                  <Text style={[styles.expTitleBoutique, { color: levelInfo.color }]}>{levelInfo.title} ({userTokens} XP)</Text>
-                  <Text style={{fontSize: 12, color: '#64748B', textAlign: 'center', marginTop: 10}}>Continua a esplorare per salire di livello.</Text>
+                <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: 'space-between', paddingVertical: 35 }]}>
+                  {!userProfile?.nickname && (
+                    <View style={{ position: 'absolute', top: 20, right: 20 }}>
+                      <TouchableOpacity onPress={() => setEditingNickname(!editingNickname)} style={{ padding: 5 }}>
+                        <MaterialIcons name={editingNickname ? "check" : "edit"} size={20} color={LOTO_PALETTE.SABBIA_DORATA} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <View style={[styles.badgeMedalContainer, { borderColor: levelInfo.color }]}>
+                    <MaterialIcons name={levelInfo.stemma} size={54} color={levelInfo.color} />
+                  </View>
+                  <View style={{ alignItems: 'center', width: '100%' }}>
+                    {editingNickname ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <TextInput
+                          style={{ borderBottomWidth: 1, borderBottomColor: LOTO_PALETTE.SABBIA_DORATA, fontSize: 24, fontWeight: 'bold', color: LOTO_PALETTE.EBANO, textAlign: 'center', minWidth: 150 }}
+                          value={tempNickname}
+                          onChangeText={setTempNickname}
+                          autoFocus
+                          onSubmitEditing={salvaNickname}
+                        />
+                      </View>
+                    ) : (
+                      <Text style={styles.expNameBoutique}>{userProfile?.nickname || t.guest}</Text>
+                    )}
+                    <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0 }]}>{levelInfo.title} ({userXp} XP)</Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 16, paddingHorizontal: 5, marginTop: 15 }}>Continua a esplorare per salire di livello.</Text>
                 </View>
 
                 {/* CARD 2: CO2 Counter */}
-                <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: 'center' }]}>
-                   <MaterialIcons name="eco" size={60} color={LOTO_PALETTE.VERDE_OLIVA} style={{marginBottom: 20}} />
-                   <Text style={[styles.mStatValBoutique, { fontSize: 32, color: LOTO_PALETTE.VERDE_OLIVA }]}>{userProfile?.total_co2?.toFixed(2) || '0.25'} kg</Text>
+                <TouchableOpacity 
+                  activeOpacity={0.9}
+                  onPress={() => setExpandedCard(expandedCard === 'co2' ? null : 'co2')}
+                  style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'co2' ? 'flex-start' : 'center', height: expandedCard === 'co2' ? 450 : 310 }]}
+                >
+                   <MaterialIcons name="eco" size={expandedCard === 'co2' ? 40 : 60} color={LOTO_PALETTE.VERDE_OLIVA} style={{marginBottom: expandedCard === 'co2' ? 10 : 20}} />
+                   <Text style={[styles.mStatValBoutique, { fontSize: expandedCard === 'co2' ? 24 : 32, color: LOTO_PALETTE.VERDE_OLIVA }]}>{userProfile?.total_co2?.toFixed(2) ?? '0.00'} kg</Text>
                    <Text style={[styles.mStatLab, { fontSize: 14 }]}>CO₂ Risparmiata</Text>
-                </View>
+                   
+                   {expandedCard === 'co2' && (
+                     <View style={{ flex: 1, width: '100%', marginTop: 20 }}>
+                       <Text style={{fontSize:12, fontWeight:'bold', color: LOTO_PALETTE.EBANO, marginBottom:10, alignSelf:'flex-start'}}>CRONOLOGIA IMPATTO</Text>
+                       {userTransactions.filter(tx => tx.co2_saved > 0).length === 0 ? (
+                         <Text style={{fontSize:12, color:'#64748B', textAlign:'center', marginTop:20}}>Nessuna attività registrata.</Text>
+                       ) : (
+                         <FlatList
+                           data={userTransactions.filter(tx => tx.co2_saved > 0)}
+                           keyExtractor={item => item.id}
+                           showsVerticalScrollIndicator={false}
+                           renderItem={({item}) => (
+                             <View style={{flexDirection:'row', justifyContent:'space-between', borderBottomWidth:1, borderBottomColor:'#E2E8F0', paddingVertical:10}}>
+                               <View>
+                                 <Text style={{fontSize:12, fontWeight:'bold', color: LOTO_PALETTE.EBANO}}>{item.action_type || 'Attività Eco'}</Text>
+                                 <Text style={{fontSize:10, color:'#64748B'}}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                               </View>
+                               <Text style={{fontSize:14, fontWeight:'bold', color: LOTO_PALETTE.VERDE_OLIVA}}>+{item.co2_saved.toFixed(1)} kg</Text>
+                             </View>
+                           )}
+                         />
+                       )}
+                     </View>
+                   )}
+                </TouchableOpacity>
 
                 {/* CARD 3: PTI Counter */}
-                <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: 'center' }]}>
-                   <MaterialIcons name="toll" size={60} color={LOTO_PALETTE.SABBIA_DORATA} style={{marginBottom: 20}} />
-                   <Text style={[styles.mStatValBoutique, { fontSize: 32, color: LOTO_PALETTE.SABBIA_DORATA }]}>{userProfile?.total_tokens || 120} PTI</Text>
+                <TouchableOpacity 
+                  activeOpacity={0.9}
+                  onPress={() => setExpandedCard(expandedCard === 'pts' ? null : 'pts')}
+                  style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'pts' ? 'flex-start' : 'center', height: expandedCard === 'pts' ? 450 : 310 }]}
+                >
+                   <MaterialIcons name="toll" size={expandedCard === 'pts' ? 40 : 60} color={LOTO_PALETTE.SABBIA_DORATA} style={{marginBottom: expandedCard === 'pts' ? 10 : 20}} />
+                   <Text style={[styles.mStatValBoutique, { fontSize: expandedCard === 'pts' ? 24 : 32, color: LOTO_PALETTE.SABBIA_DORATA }]}>{userProfile?.total_tokens ?? 0} PTI</Text>
                    <Text style={[styles.mStatLab, { fontSize: 14 }]}>LOTO Tokens</Text>
+
+                   {expandedCard === 'pts' && (
+                     <View style={{ flex: 1, width: '100%', marginTop: 20 }}>
+                       <Text style={{fontSize:12, fontWeight:'bold', color: LOTO_PALETTE.EBANO, marginBottom:10, alignSelf:'flex-start'}}>CRONOLOGIA GUADAGNI</Text>
+                       {userTransactions.filter(tx => tx.tokens_earned > 0).length === 0 ? (
+                         <Text style={{fontSize:12, color:'#64748B', textAlign:'center', marginTop:20}}>Nessun LOTO PTI accumulato.</Text>
+                       ) : (
+                         <FlatList
+                           data={userTransactions.filter(tx => tx.tokens_earned > 0)}
+                           keyExtractor={item => item.id}
+                           showsVerticalScrollIndicator={false}
+                           renderItem={({item}) => (
+                             <View style={{flexDirection:'row', justifyContent:'space-between', borderBottomWidth:1, borderBottomColor:'#E2E8F0', paddingVertical:10}}>
+                               <View>
+                                 <Text style={{fontSize:12, fontWeight:'bold', color: LOTO_PALETTE.EBANO}}>{item.action_type || 'Bonus LOTO'}</Text>
+                                 <Text style={{fontSize:10, color:'#64748B'}}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                               </View>
+                               <Text style={{fontSize:14, fontWeight:'bold', color: LOTO_PALETTE.SABBIA_DORATA}}>+{item.tokens_earned} PTI</Text>
+                             </View>
+                           )}
+                         />
+                       )}
+                     </View>
+                   )}
+                </TouchableOpacity>
+
+                {/* CARD 4: Crea Percorso */}
+                <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden' }]}>
+                  <Image source={require('../../assets/images/route_creation_flat.png')} style={{ width: '100%', height: 140 }} resizeMode="cover" />
+                  <View style={{ flex: 1, padding: 20, justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={[styles.mStatValBoutique, { fontSize: 22, color: LOTO_PALETTE.EBANO, fontFamily: 'serif', textAlign: 'center', marginBottom: 6 }]}>Crea Percorso</Text>
+                      <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 16, paddingHorizontal: 5 }}>Disegna itinerari personali, scegli mobilità ecologiche e condividili sui social per guadagnare punti.</Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={{ backgroundColor: LOTO_PALETTE.TERRACOTTA, paddingVertical: 10, paddingHorizontal: 22, borderRadius: 25, flexDirection: 'row', alignItems: 'center', marginTop: 10, elevation: 2 }}
+                      onPress={() => {
+                        setIsExpModalVisible(false);
+                        router.push('/route-creation-mockup');
+                      }}
+                    >
+                      <MaterialIcons name="add-circle-outline" size={16} color="#FFF" style={{ marginRight: 6 }} />
+                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>INIZIA ORA</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
               </ScrollView>
@@ -701,7 +856,7 @@ const styles = StyleSheet.create({
   langBadge: { position: 'absolute', bottom: -5, right: -5, backgroundColor: LOTO_PALETTE.EBANO, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 8 },
   langBadgeText: { color: '#FFF', fontSize: 8, fontWeight: 'bold' },
   mobilityPillHeader: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 20,
     justifyContent: 'center',
@@ -716,10 +871,10 @@ const styles = StyleSheet.create({
 
   // RETTANGOLO PRESTIGE
   prestigePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: LOTO_PALETTE.VERDE_OLIVA, marginTop: 10, marginBottom: 25, marginRight: 25, paddingVertical: 26, paddingLeft: 6, paddingRight: 10, borderTopRightRadius: 50, borderBottomRightRadius: 50, elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
-  prestigeCenterCol: { flex: 1, marginLeft: 8, marginRight: 15, justifyContent: 'center', alignItems: 'flex-start' },
+  prestigeCenterCol: { flex: 1, marginLeft: 8, marginRight: 8, justifyContent: 'center', alignItems: 'flex-start' },
   prestigeTierTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFF', fontFamily: 'serif', marginBottom: 3, textAlign: 'left' },
   prestigeBadgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' },
-  prestigePillBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginRight: 6 },
+  prestigePillBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginRight: 6 },
   prestigePillBadgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
   avatarCirclePill: { width: 54, height: 54, borderRadius: 27, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF', marginLeft: 5, marginRight: 2 },
   avatarInitialPill: { color: '#FFF', fontWeight: 'bold', fontSize: 22, fontFamily: 'serif' },
@@ -728,7 +883,7 @@ const styles = StyleSheet.create({
   archesSection: { marginHorizontal: 20, marginBottom: 25 },
   archesMainTitle: { color: LOTO_PALETTE.EBANO, fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'serif', textAlign: 'center', marginBottom: 15 },
   archesContainer: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  impactArch: { flex: 1, alignItems: 'center', paddingTop: 25, paddingBottom: 55, borderTopLeftRadius: 80, borderTopRightRadius: 80, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, elevation: 6, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
+  impactArch: { flex: 1, alignItems: 'center', paddingTop: 25, paddingBottom: 35, borderTopLeftRadius: 80, borderTopRightRadius: 80, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, elevation: 6, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
   archVal: { color: '#FFF', fontSize: 26, fontWeight: 'bold' },
   archLabel: { color: '#FFF', fontSize: 10, opacity: 0.9, textAlign: 'center', marginTop: 4, fontWeight: '500' },
 
@@ -762,11 +917,24 @@ const styles = StyleSheet.create({
   motorizedToastText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(26, 28, 30, 0.6)', justifyContent: 'center', alignItems: 'center' },
   closeExpModal: { marginTop: 25, backgroundColor: '#FFF', padding: 15, borderRadius: 30, elevation: 5 },
-  expCardBoutique: { width: '85%', backgroundColor: LOTO_PALETTE.CREMA, borderRadius: 30, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: LOTO_PALETTE.SABBIA_DORATA, elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20 },
-  closeBtn: { alignSelf: 'flex-end', position: 'absolute', top: 20, right: 20, padding: 5 },
-  crownIcon: { width: 140, height: 140, marginBottom: 15 },
-  expNameBoutique: { fontSize: 26, fontWeight: '900', color: LOTO_PALETTE.EBANO, fontFamily: 'serif', marginBottom: 5 },
-  expTitleBoutique: { fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 30 },
+  expCardBoutique: { width: '85%', height: 310, backgroundColor: LOTO_PALETTE.CREMA, borderRadius: 30, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: LOTO_PALETTE.SABBIA_DORATA, elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20 },
+  crownIcon: { width: 110, height: 110 },
+  badgeMedalContainer: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3
+  },
+  expNameBoutique: { fontSize: 24, fontWeight: '900', color: LOTO_PALETTE.EBANO, fontFamily: 'serif', marginTop: 10 },
+  expTitleBoutique: { fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
   modalStatsRowBoutique: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', backgroundColor: '#FFF', padding: 20, borderRadius: 20, borderWidth: 0.5, borderColor: '#C9C4B8', elevation: 2 },
   modalStat: { alignItems: 'center', flex: 1 },
   mStatValBoutique: { fontSize: 18, fontWeight: 'bold' },
