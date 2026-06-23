@@ -2,17 +2,22 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { TenantConfig, TENANTS, DEFAULT_TENANT, findTenantByCoords } from '../config/tenants';
+import { supabase } from '../utils/supabase';
 
 const MANUAL_TENANT_KEY = 'loto_manual_tenant_id';
 const GPS_MODE_KEY = 'loto_gps_mode_active';
 
+export interface DynamicTenantConfig extends TenantConfig {
+  ticker_text?: string;
+}
+
 interface TenantContextType {
-  currentTenant: TenantConfig;
+  currentTenant: DynamicTenantConfig;
   setTenantManual: (tenantId: string) => Promise<void>;
   isGpsMode: boolean;
   enableGpsMode: () => Promise<void>;
   loading: boolean;
-  availableTenants: TenantConfig[];
+  availableTenants: DynamicTenantConfig[];
 }
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -22,12 +27,13 @@ interface TenantProviderProps {
 }
 
 export function TenantProvider({ children }: TenantProviderProps) {
-  const [currentTenant, setCurrentTenant] = useState<TenantConfig>(DEFAULT_TENANT);
+  const [availableTenants, setAvailableTenants] = useState<DynamicTenantConfig[]>(TENANTS);
+  const [currentTenant, setCurrentTenant] = useState<DynamicTenantConfig>(DEFAULT_TENANT);
   const [isGpsMode, setIsGpsMode] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Riferimenti per gestire l'isteresi del cambio di confine
-  const pendingTenantRef = useRef<TenantConfig | null>(null);
+  const pendingTenantRef = useRef<DynamicTenantConfig | null>(null);
   const hysteresisTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
 
@@ -35,6 +41,28 @@ export function TenantProvider({ children }: TenantProviderProps) {
   useEffect(() => {
     const initializeTenant = async () => {
       try {
+        // A. Carica i Tenants dal Database Supabase
+        console.log('[TenantContext] Fetching tenants da Supabase...');
+        const { data: dbTerritories, error } = await supabase.from('territories').select('*');
+        let dynamicTenants = TENANTS; // fallback
+        
+        if (!error && dbTerritories && dbTerritories.length > 0) {
+          dynamicTenants = dbTerritories.map(t => ({
+            id: t.name.toLowerCase(), // Usiamo il nome in minuscolo come ID provvisorio se l'ID è un UUID
+            name: t.name,
+            colors: t.colors || DEFAULT_TENANT.colors,
+            assets: t.assets || DEFAULT_TENANT.assets,
+            mapboxStyle: t.mapbox_style || DEFAULT_TENANT.mapboxStyle,
+            center: t.center || DEFAULT_TENANT.center,
+            boundaries: t.boundaries || DEFAULT_TENANT.boundaries,
+            ticker_text: t.ticker_text
+          }));
+          setAvailableTenants(dynamicTenants);
+          console.log(`[TenantContext] Caricati ${dynamicTenants.length} tenants dal database.`);
+        } else {
+          console.log('[TenantContext] Usa tenants locali (fallback).');
+        }
+
         const savedGpsMode = await AsyncStorage.getItem(GPS_MODE_KEY);
         const savedManualId = await AsyncStorage.getItem(MANUAL_TENANT_KEY);
 
@@ -42,7 +70,7 @@ export function TenantProvider({ children }: TenantProviderProps) {
 
         if (savedGpsMode === 'false' && savedManualId) {
           // L'utente ha disabilitato il GPS e forzato un comune manuale
-          const tenant = TENANTS.find(t => t.id === savedManualId);
+          const tenant = dynamicTenants.find(t => t.id === savedManualId);
           if (tenant) {
             setCurrentTenant(tenant);
             setIsGpsMode(false);
@@ -53,7 +81,7 @@ export function TenantProvider({ children }: TenantProviderProps) {
         }
 
         // Altrimenti, proviamo ad avviare la geolocalizzazione automatica
-        await startGpsDetection();
+        await startGpsDetection(dynamicTenants);
       } catch (error) {
         console.error('[TenantContext] Errore durante inizializzazione tenant:', error);
         setLoading(false);
@@ -74,14 +102,14 @@ export function TenantProvider({ children }: TenantProviderProps) {
   }, []);
 
   // 2. Funzione principale per rilevamento GPS
-  const startGpsDetection = async () => {
+  const startGpsDetection = async (tenantsList = availableTenants) => {
     try {
       console.log('[TenantContext] Avvio rilevamento GPS...');
       const { status } = await Location.requestForegroundPermissionsAsync();
       
       if (status !== 'granted') {
         console.log('[TenantContext] Permessi GPS negati. Fallback alla selezione manuale.');
-        await handleGpsFailure();
+        await handleGpsFailure(tenantsList);
         return;
       }
 
@@ -90,7 +118,31 @@ export function TenantProvider({ children }: TenantProviderProps) {
         accuracy: Location.Accuracy.Balanced,
       });
 
-      const detectedTenant = findTenantByCoords(location.coords.latitude, location.coords.longitude);
+      // Modifica la ricerca per usare la lista dinamica al posto di TENANTS (che è in config)
+      // findTenantByCoords usa TENANTS internamente, la adattiamo usando un loop locale.
+      let detectedTenant = null;
+      for (const tenant of tenantsList) {
+        const coords = tenant.boundaries?.coordinates;
+        if (!coords) continue;
+        for (const multipolygon of coords) {
+          for (const polygon of multipolygon) {
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            for (const pt of polygon) {
+              const [lon, lat] = pt;
+              if (lon < minX) minX = lon;
+              if (lon > maxX) maxX = lon;
+              if (lat < minY) minY = lat;
+              if (lat > maxY) maxY = lat;
+            }
+            if (location.coords.longitude >= minX && location.coords.longitude <= maxX && location.coords.latitude >= minY && location.coords.latitude <= maxY) {
+              detectedTenant = tenant;
+              break;
+            }
+          }
+          if (detectedTenant) break;
+        }
+        if (detectedTenant) break;
+      }
       
       if (detectedTenant) {
         console.log('[TenantContext] GPS Rilevato tenant corrente:', detectedTenant.name);
@@ -99,7 +151,7 @@ export function TenantProvider({ children }: TenantProviderProps) {
         setIsGpsMode(true);
       } else {
         console.log('[TenantContext] L\'utente è fuori dai confini attivi. Fallback manuale.');
-        await handleGpsFailure();
+        await handleGpsFailure(tenantsList);
       }
 
       // Avvia l'ascolto continuo per gestire l'isteresi del cambio di confine
@@ -107,20 +159,20 @@ export function TenantProvider({ children }: TenantProviderProps) {
 
     } catch (error) {
       console.error('[TenantContext] Errore nel rilevamento GPS:', error);
-      await handleGpsFailure();
+      await handleGpsFailure(tenantsList);
     } finally {
       setLoading(false);
     }
   };
 
   // 3. Gestione fallimento GPS (Coordinate non valide o permessi negati)
-  const handleGpsFailure = async () => {
+  const handleGpsFailure = async (tenantsList = availableTenants) => {
     setIsGpsMode(false);
     await AsyncStorage.setItem(GPS_MODE_KEY, 'false');
 
     // Recupera l'ultimo tenant impostato manualmente o il default
     const savedManualId = await AsyncStorage.getItem(MANUAL_TENANT_KEY);
-    const tenant = TENANTS.find(t => t.id === savedManualId) || DEFAULT_TENANT;
+    const tenant = tenantsList.find(t => t.id === savedManualId) || tenantsList[0] || DEFAULT_TENANT;
     
     console.log('[TenantContext] Fallback GPS attivo. Tenant caricato:', tenant.name);
     setCurrentTenant(tenant);
@@ -197,7 +249,7 @@ export function TenantProvider({ children }: TenantProviderProps) {
 
   // 5. Metodo per impostare manualmente il tenant
   const setTenantManual = async (tenantId: string) => {
-    const tenant = TENANTS.find(t => t.id === tenantId);
+    const tenant = availableTenants.find(t => t.id === tenantId);
     if (!tenant) return;
 
     console.log('[TenantContext] Selezione manuale tenant effettuata:', tenant.name);
@@ -232,7 +284,7 @@ export function TenantProvider({ children }: TenantProviderProps) {
         isGpsMode,
         enableGpsMode,
         loading,
-        availableTenants: TENANTS,
+        availableTenants,
       }}
     >
       {children}

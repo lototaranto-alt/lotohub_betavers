@@ -8,7 +8,7 @@ import PoiDetailSheet from '../../components/PoiDetailSheet';
 import BreathingLeaf from '../../components/BreathingLeaf';
 import { calculateDistance } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
-
+import { useTenant } from '../../context/TenantContext';
 const { width, height } = Dimensions.get('window');
 
 
@@ -89,18 +89,6 @@ const DICTIONARY = {
   }
 };
 
-const getPOIImage = (name: string) => {
-  try {
-    if (name.includes('Castello')) return require('../../assets/images/castello-evento.png');
-    if (name.includes('Fontana') || name.includes('Piazza Fontana')) return require('../../assets/images/fontana.jpg');
-    if (name.includes('MArTA') || name.includes('LOTO')) return require('../../assets/images/logo-LOTO.png');
-    if (name.includes('MuDi') || name.includes('Museo Diocesano')) return require('../../assets/images/poi_mudi.jpg');
-    if (name.includes('Oasi') || name.includes('Palude La Vela')) return require('../../assets/images/poi_oasi.png');
-    return null;
-  } catch (e) {
-    return null;
-  }
-};
 
 const getMobilityPillStyle = (type: string) => {
   switch (type) {
@@ -132,11 +120,14 @@ const getMobilityPillStyle = (type: string) => {
 };
 
 export default function VetrinaScreen() {
+  const { currentTenant } = useTenant();
   const { mobilityType, forceReopenWizard } = useMobility();
   const [pois, setPois] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userTransactions, setUserTransactions] = useState<any[]>([]);
+  const [userItineraries, setUserItineraries] = useState<any[]>([]);
 
   // --- STATO TRIANGOLO DELLA VERITÀ (INTEGRALE) ---
   const [isMotorized, setIsMotorized] = useState(false);
@@ -157,12 +148,12 @@ export default function VetrinaScreen() {
   const [openAccordion, setOpenAccordion] = useState<string | null>('recommended');
 
   // STATI DIARIO E PROFILO
-  const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingNickname, setEditingNickname] = useState(false);
   const [tempNickname, setTempNickname] = useState('');
 
   const t = DICTIONARY[lang];
+  const tickerText = currentTenant?.ticker_text || t.ticker;
 
   const getLevelInfo = (tokens: number) => {
     if (tokens >= 500) return { title: t.levelGold, badge: require('../../assets/images/badge_gold_1775676641737.png'), color: LOTO_PALETTE.SABBIA_DORATA, stemma: 'workspace-premium' as any };
@@ -192,6 +183,10 @@ export default function VetrinaScreen() {
           setTempNickname(profile.nickname || '');
           const { data: trans } = await supabase.from('impact_transactions').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(20);
           if (trans) setUserTransactions(trans);
+          
+          // Fetch itinerari
+          const { data: itinData } = await supabase.rpc('get_user_itineraries');
+          if(itinData) setUserItineraries(itinData);
         }
       }
 
@@ -522,7 +517,7 @@ export default function VetrinaScreen() {
         )}
       <View style={styles.tickerBar}>
         <Text style={styles.tickerText}>
-          {t.ticker}
+          {tickerText}
         </Text>
       </View>
 
@@ -551,7 +546,7 @@ export default function VetrinaScreen() {
   };
 
   const renderPOI = ({ item }: { item: any }) => {
-    const img = getPOIImage(item.name);
+    const img = item.image_url ? { uri: item.image_url } : require('../../assets/images/eco_bg.png');
     const isCrowded = (item.crowd_level || 0) >= 80;
     const hasWater = item.has_water === true;
     const userTokens = userProfile?.total_tokens || 0;
@@ -682,17 +677,21 @@ export default function VetrinaScreen() {
             <View style={{ height: expandedCard ? 500 : 400, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={width * 0.8} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: width * 0.1, alignItems: 'center' }}>
                 
-                {/* CARD 1: Badge Profilo */}
-                <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: 'space-between', paddingVertical: 35 }]}>
-                  {!userProfile?.nickname && (
+                {/* CARD 1: Badge Profilo & I Miei Itinerari */}
+                <TouchableOpacity 
+                  activeOpacity={0.9}
+                  onPress={() => setExpandedCard(expandedCard === 'profile' ? null : 'profile')}
+                  style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'profile' ? 'flex-start' : 'center', paddingVertical: expandedCard === 'profile' ? 20 : 35, height: expandedCard === 'profile' ? 450 : 310 }]}
+                >
+                  {!userProfile?.nickname && expandedCard !== 'profile' && (
                     <View style={{ position: 'absolute', top: 20, right: 20 }}>
                       <TouchableOpacity onPress={() => setEditingNickname(!editingNickname)} style={{ padding: 5 }}>
                         <MaterialIcons name={editingNickname ? "check" : "edit"} size={20} color={LOTO_PALETTE.SABBIA_DORATA} />
                       </TouchableOpacity>
                     </View>
                   )}
-                  <View style={[styles.badgeMedalContainer, { borderColor: levelInfo.color }]}>
-                    <MaterialIcons name={levelInfo.stemma} size={54} color={levelInfo.color} />
+                  <View style={[styles.badgeMedalContainer, { borderColor: levelInfo.color, marginBottom: expandedCard === 'profile' ? 10 : 0 }]}>
+                    <MaterialIcons name={levelInfo.stemma} size={expandedCard === 'profile' ? 40 : 54} color={levelInfo.color} />
                   </View>
                   <View style={{ alignItems: 'center', width: '100%' }}>
                     {editingNickname ? (
@@ -706,12 +705,51 @@ export default function VetrinaScreen() {
                         />
                       </View>
                     ) : (
-                      <Text style={styles.expNameBoutique}>{userProfile?.nickname || t.guest}</Text>
+                      <Text style={[styles.expNameBoutique, expandedCard === 'profile' && { fontSize: 20 }]}>{userProfile?.nickname || t.guest}</Text>
                     )}
-                    <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0 }]}>{levelInfo.title} ({userXp} XP)</Text>
+                    <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0, fontSize: expandedCard === 'profile' ? 14 : 16 }]}>{levelInfo.title} ({userXp} XP)</Text>
                   </View>
-                  <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 16, paddingHorizontal: 5, marginTop: 15 }}>Continua a esplorare per salire di livello.</Text>
-                </View>
+                  
+                  {expandedCard !== 'profile' && (
+                    <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 16, paddingHorizontal: 5, marginTop: 15 }}>Continua a esplorare per salire di livello.</Text>
+                  )}
+
+                  {expandedCard === 'profile' && (
+                    <View style={{ flex: 1, width: '100%', marginTop: 20, borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 15 }}>
+                      <Text style={{fontSize:12, fontWeight:'bold', color: LOTO_PALETTE.EBANO, marginBottom:10, alignSelf:'flex-start'}}>I MIEI ITINERARI</Text>
+                      {userItineraries.length === 0 ? (
+                        <Text style={{fontSize:12, color:'#64748B', textAlign:'center', marginTop:20}}>Nessun itinerario salvato. Creane uno per riempire questa sezione!</Text>
+                      ) : (
+                        <FlatList
+                          data={userItineraries}
+                          keyExtractor={item => item.id}
+                          showsVerticalScrollIndicator={false}
+                          renderItem={({item}) => (
+                            <View style={{borderBottomWidth:1, borderBottomColor:'#E2E8F0', paddingVertical:12}}>
+                              <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
+                                <View style={{ flex: 1 }}>
+                                  <Text style={{fontSize:14, fontWeight:'bold', color: LOTO_PALETTE.EBANO}} numberOfLines={1}>{item.title}</Text>
+                                  <View style={{flexDirection:'row', marginTop: 4}}>
+                                    <Text style={{fontSize:11, color: LOTO_PALETTE.SABBIA_DORATA, fontWeight: 'bold'}}>{item.potential_xp} PTI potenziali</Text>
+                                    <Text style={{fontSize:11, color: '#64748B', marginLeft: 10}}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                                  </View>
+                                </View>
+                                <TouchableOpacity 
+                                  style={{ backgroundColor: LOTO_PALETTE.EBANO, padding: 8, borderRadius: 12, marginLeft: 10 }}
+                                  onPress={() => {
+                                     Alert.alert('Condividi Itinerario', `Condivisione di "${item.title}" in arrivo!`);
+                                  }}
+                                >
+                                  <MaterialIcons name="share" size={16} color="#FFF" />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          )}
+                        />
+                      )}
+                    </View>
+                  )}
+                </TouchableOpacity>
 
                 {/* CARD 2: CO2 Counter */}
                 <TouchableOpacity 
@@ -803,6 +841,7 @@ export default function VetrinaScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
+
 
               </ScrollView>
               

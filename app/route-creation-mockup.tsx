@@ -43,6 +43,7 @@ export default function RouteCreationMockupScreen() {
   // Modals & Banners
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -107,11 +108,34 @@ export default function RouteCreationMockupScreen() {
 
   const stats = getPointsInfo();
 
+  const handleSaveAndShare = async () => {
+    setIsSaving(true);
+    try {
+      // Chiama RPC per salvare nel DB
+      const { data, error } = await supabase.rpc('create_itinerary', {
+        p_title: routeTitle || 'Il Mio Percorso',
+        p_pois: selectedSpots,
+        p_mobility: mobility
+      });
+      if (error) throw error;
+      
+      // Apri la modale di condivisione
+      setShareModalVisible(true);
+    } catch (err: any) {
+      console.log('Errore salvataggio itinerario:', err.message);
+      alert('Non è stato possibile salvare l\'itinerario.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleShareOption = (platform: string) => {
     setShareModalVisible(false);
     setShowSuccessToast(true);
     setTimeout(() => {
       setShowSuccessToast(false);
+      // Ritorna alla home dopo 2 secondi
+      setTimeout(() => router.push('/(tabs)'), 2000);
     }, 4000);
   };
 
@@ -284,12 +308,16 @@ export default function RouteCreationMockupScreen() {
 
         {/* SALVA E CONDIVIDI ACTION */}
         <TouchableOpacity 
-          style={[styles.saveShareBtn, selectedSpots.length === 0 && { opacity: 0.6 }]}
-          disabled={selectedSpots.length === 0}
-          onPress={() => setShareModalVisible(true)}
+          style={[styles.saveShareBtn, (selectedSpots.length === 0 || isSaving) && { opacity: 0.6 }]}
+          disabled={selectedSpots.length === 0 || isSaving}
+          onPress={handleSaveAndShare}
         >
-          <MaterialIcons name="share" size={20} color="#FFF" style={{ marginRight: 8 }} />
-          <Text style={styles.saveShareBtnText}>SALVA E CONDIVIDI NELLA COMMUNITY</Text>
+          {isSaving ? (
+            <ActivityIndicator color="#FFF" style={{ marginRight: 8 }} />
+          ) : (
+            <MaterialIcons name="save" size={20} color="#FFF" style={{ marginRight: 8 }} />
+          )}
+          <Text style={styles.saveShareBtnText}>SALVA ITINERARIO E CONDIVIDI</Text>
         </TouchableOpacity>
       </ScrollView>
 

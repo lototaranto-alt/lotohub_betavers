@@ -21,7 +21,7 @@ const WIZARD_ASSETS = [
 ];
 
 const PERSONAS = [
-  { id: 'Standard', label: 'LOTO Explorer', desc: 'Turista standard, nessun limite.' },
+  { id: 'Standard', label: 'LOTO Explorer', desc: 'Utente standard, nessun limite.' },
   { id: 'Senior', label: 'Senior Cruiser', desc: 'Percorsi rilassati e frequenti soste.' },
   { id: '♿', label: 'Accessibile (♿)', desc: 'Percorsi privi di barriere architettoniche.' }
 ];
@@ -117,7 +117,7 @@ export default function WizardScreen() {
           </View>
 
           <Text style={[styles.label, { marginTop: 30 }]}>Punto di Rientro</Text>
-          <Text style={styles.formSubtitle}>Serve per il "Panic Mode" (rientro sicuro veloce).</Text>
+          <Text style={styles.formSubtitle}>Serve per il "Punto di Ritorno" (rientro sicuro veloce).</Text>
           <View style={styles.returnPointsContainer}>
             {RETURN_POINTS.map(rp => (
               <TouchableOpacity
