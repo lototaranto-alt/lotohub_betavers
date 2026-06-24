@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, ScrollView, Alert, Linking, Dimensions, ActivityIndicator } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
 import { supabase } from '../utils/supabase';
 import { LruCacheManager } from '../utils/LruCacheManager';
 import { OfflineQueueManager } from '../utils/OfflineQueueManager';
 import NetInfo from '@react-native-community/netinfo';
+import { useTheme } from '../context/ThemeContext';
 
-// LOTO_PALETTE definita qua per semplicità, ma in un progetto reale verrebbe importata
 const LOTO_PALETTE = {
-  VERDE_OLIVA: '#5F713D',  // Uniformato con la palette premium
+  VERDE_OLIVA: '#5F713D',
   TERRACOTTA: '#C36B4D',
   EBANO: '#1A1C1E',
   SABBIA_DORATA: '#D9A05B',
@@ -28,12 +29,16 @@ type PoiDetailSheetProps = {
 };
 
 export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValidate, isBooked, initialPartySize }: PoiDetailSheetProps) {
+  const router = useRouter();
+  const { theme, isElite } = useTheme();
+  
   const [partySize, setPartySize] = useState(initialPartySize || 1);
   const [mobilityMode, setMobilityMode] = useState<'mezzo_proprio' | 'loto_mobility' | null>(null);
   
   // Stati per la gestione del Vault Multimediale
   const [vaultMedia, setVaultMedia] = useState<any[]>([]);
   const [mediaStatus, setMediaStatus] = useState<{[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'}>({});
+  const [premiumMockVisible, setPremiumMockVisible] = useState(false);
 
   useEffect(() => {
     if (visible && poi) {
@@ -57,7 +62,15 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
       }
 
       if (data) {
-        setVaultMedia(data);
+        // --- MOCK INJECTION BINDING ---
+        let finalData = [...data];
+        if (poi.media && poi.media.length > 0) {
+          const mockMediaIds = poi.media.map((m: any) => m.id);
+          finalData = finalData.filter((d: any) => !mockMediaIds.includes(d.id));
+          finalData = [...finalData, ...poi.media];
+        }
+        
+        setVaultMedia(finalData);
         
         const statusMap: {[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'} = {};
         const { data: { user } } = await supabase.auth.getUser();
@@ -74,8 +87,8 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
         const offlineQueue = await OfflineQueueManager.getQueue();
         const queuedIds = offlineQueue.map(item => item.mediaId);
 
-        for (const media of data) {
-          const fileName = media.media_path.split('/').pop() || `${media.id}.mp4`;
+        for (const media of finalData) {
+          const fileName = media.media_path?.split('/').pop() || `${media.id}.mp4`;
           const exists = await LruCacheManager.fileExists(fileName);
           
           if (exists) {
@@ -153,6 +166,15 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
     }
 
     try {
+      if (media.id === 'm3') {
+        setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
+        setTimeout(() => {
+          setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
+          Alert.alert("Successo!", `Hai decifrato il tag NFC e ottenuto l'accesso all'Archivio!`);
+        }, 1500);
+        return;
+      }
+
       setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
       const { data, error } = await supabase.rpc('sblocca_media', {
         p_media_id: media.id
@@ -203,7 +225,12 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
   };
 
   const handlePlayMedia = async (media: any) => {
-    const fileName = media.media_path.split('/').pop() || `${media.id}.mp4`;
+    if (media.id === 'm3') {
+      setPremiumMockVisible(true);
+      return;
+    }
+
+    const fileName = media.media_path?.split('/').pop() || `${media.id}.mp4`;
     const localPath = LruCacheManager.getLocalPath(fileName);
     
     // Aggiorna l'ultimo accesso per la cache LRU
@@ -239,14 +266,14 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
         
-        <View style={styles.sheetContainer}>
+        <View style={[styles.sheetContainer, { backgroundColor: theme.surface }]}>
           <View style={styles.dragHandle} />
           
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* 1. Header Image */}
             <View style={styles.imageContainer}>
-              <View style={[styles.imagePlaceholder, { backgroundColor: poi.category === 'partner' ? LOTO_PALETTE.EBANO : LOTO_PALETTE.VERDE_OLIVA }]}>
-                <MaterialIcons name={poi.category === 'partner' ? "store" : "account-balance"} size={48} color="#FFF" />
+              <View style={[styles.imagePlaceholder, { backgroundColor: theme.primary }]}>
+                <MaterialIcons name={poi.category === 'partner' ? "store" : "account-balance"} size={48} color={theme.background} />
               </View>
               <View style={styles.closeBtn}>
                 <TouchableOpacity onPress={onClose}>
@@ -256,13 +283,13 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
             </View>
 
             {/* 2. Header Info */}
-            <View style={styles.infoSection}>
-              <Text style={styles.title}>{poi.name}</Text>
-              <Text style={styles.subtitle}>{poi.category === 'free' ? 'Accesso Libero' : (poi.category === 'partner' ? 'B2B Partner' : 'Storia Segreta')}</Text>
+            <View style={[styles.infoSection, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.title, { color: theme.text }]}>{poi.name}</Text>
+              <Text style={[styles.subtitle, { color: theme.textMuted }]}>{poi.category === 'free' ? 'Accesso Libero' : (poi.category === 'partner' ? 'B2B Partner' : 'Storia Segreta')}</Text>
               
               <View style={styles.badgesRow}>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>+{poi.xp_reward || 15} XP</Text>
+                <View style={[styles.badge, { backgroundColor: theme.border }]}>
+                  <Text style={[styles.badgeText, { color: theme.text }]}>+{poi.xp_reward || 15} XP</Text>
                 </View>
                 {poi.has_water && (
                   <View style={[styles.badge, { backgroundColor: '#E0F2FE' }]}>
@@ -272,64 +299,94 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
               </View>
             </View>
 
-            {/* SEZIONE VAULT MULTIMEDIALE */}
+            {/* SEZIONE VAULT MULTIMEDIALE (TEASE & REVEAL) */}
             {vaultMedia.length > 0 && (
-              <View style={styles.vaultSection}>
-                <Text style={styles.sectionTitle}>🎒 L.O.T.O. VAULT MULTIMEDIALE</Text>
+              <View style={[styles.vaultSection, { borderBottomColor: theme.border }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>🎒 RISORSE ESCLUSIVE</Text>
                 {vaultMedia.map(media => {
                   const status = mediaStatus[media.id] || 'locked';
                   return (
-                    <View key={media.id} style={styles.mediaRow}>
+                    <View key={media.id} style={[styles.mediaRow, { backgroundColor: theme.background, borderColor: theme.border }]}>
                       <View style={styles.mediaInfo}>
                         <MaterialIcons 
-                          name={media.media_type === 'audio' ? "audiotrack" : "videocam"} 
+                          name={media.media_type === 'audio' ? "audiotrack" : (media.media_type === 'digital_file' ? "description" : "videocam")} 
                           size={24} 
-                          color={LOTO_PALETTE.VERDE_OLIVA} 
+                          color={theme.primary} 
                         />
                         <View style={{ marginLeft: 12, flex: 1 }}>
-                          <Text style={styles.mediaTitle}>{media.title}</Text>
-                          <Text style={styles.mediaTypeLabel}>
+                          <Text style={[styles.mediaTitle, { color: theme.text }]}>{media.title}</Text>
+                          <Text style={[styles.mediaTypeLabel, { color: theme.textMuted }]}>
                             {media.media_type.toUpperCase()} • {media.loto_cost} LOTO PTI
                           </Text>
                         </View>
                       </View>
                       
-                      {status === 'ready' && (
-                        <TouchableOpacity 
-                          style={[styles.vaultBtn, { backgroundColor: LOTO_PALETTE.VERDE_OLIVA }]}
-                          onPress={() => handlePlayMedia(media)}
-                        >
-                          <MaterialIcons name="play-arrow" size={20} color="#FFF" style={{ marginRight: 4 }} />
-                          <Text style={styles.vaultBtnText}>Ascolta</Text>
-                        </TouchableOpacity>
-                      )}
-
-                      {status === 'downloading' && (
-                        <View style={styles.vaultBtnDisabled}>
-                          <ActivityIndicator size="small" color={LOTO_PALETTE.VERDE_OLIVA} />
-                          <Text style={[styles.vaultBtnTextDisabled, { marginLeft: 6 }]}>Download...</Text>
-                        </View>
-                      )}
-
-                      {status === 'queued' && (
-                        <View style={[styles.vaultBtnDisabled, { backgroundColor: '#FEF3C7' }]}>
-                          <MaterialIcons name="schedule" size={16} color="#D97706" style={{ marginRight: 4 }} />
-                          <Text style={[styles.vaultBtnTextDisabled, { color: '#D97706', fontSize: 11 }]}>In coda</Text>
-                        </View>
-                      )}
-
-                      {status === 'locked' && (
-                        <TouchableOpacity 
-                          style={styles.vaultBtn}
-                          onPress={() => handleUnlockMedia(media)}
-                        >
-                          <MaterialIcons name="lock-open" size={16} color="#FFF" style={{ marginRight: 4 }} />
-                          <Text style={styles.vaultBtnText}>Sblocca</Text>
-                        </TouchableOpacity>
-                      )}
+                        {media.is_premium && !isElite ? (
+                          <TouchableOpacity 
+                            style={[styles.vaultBtn, { backgroundColor: theme.text }]}
+                            onPress={() => { onClose(); router.push('/upgrade'); }}
+                          >
+                            <MaterialIcons name="workspace-premium" size={16} color={theme.accent} style={{ marginRight: 4 }} />
+                            <Text style={[styles.vaultBtnText, { color: theme.accent }]}>Esclusiva Premium</Text>
+                          </TouchableOpacity>
+                        ) : status === 'ready' ? (
+                          <TouchableOpacity 
+                            style={[styles.vaultBtn, { backgroundColor: theme.primary }]}
+                            onPress={() => handlePlayMedia(media)}
+                          >
+                            <MaterialIcons name={media.media_type === 'digital_file' ? "folder-open" : "play-arrow"} size={20} color={theme.background} style={{ marginRight: 4 }} />
+                            <Text style={[styles.vaultBtnText, { color: theme.background }]}>{media.media_type === 'digital_file' ? 'Apri' : 'Ascolta'}</Text>
+                          </TouchableOpacity>
+                        ) : status === 'downloading' ? (
+                          <View style={[styles.vaultBtnDisabled, { borderColor: theme.border }]}>
+                            <ActivityIndicator size="small" color={theme.primary} />
+                          </View>
+                        ) : status === 'queued' ? (
+                          <View style={[styles.vaultBtnDisabled, { backgroundColor: '#FEF3C7', borderColor: '#F59E0B' }]}>
+                            <MaterialIcons name="schedule" size={16} color="#D97706" style={{ marginRight: 4 }} />
+                            <Text style={[styles.vaultBtnTextDisabled, { color: '#D97706', fontSize: 11 }]}>In coda</Text>
+                          </View>
+                        ) : media.is_premium && isElite ? (
+                          <TouchableOpacity 
+                            style={[styles.vaultBtn, { backgroundColor: theme.accent }]}
+                            onPress={() => handleUnlockMedia(media)}
+                          >
+                            <MaterialIcons name="nfc" size={16} color={theme.background} style={{ marginRight: 4 }} />
+                            <Text style={[styles.vaultBtnText, { color: theme.background }]}>Sblocca con NFC</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity 
+                            style={[styles.vaultBtn, { backgroundColor: theme.primary }]}
+                            onPress={() => handleUnlockMedia(media)}
+                          >
+                            <MaterialIcons name="lock-open" size={16} color={theme.background} style={{ marginRight: 4 }} />
+                            <Text style={[styles.vaultBtnText, { color: theme.background }]}>Sblocca ({media.loto_cost} PTI)</Text>
+                          </TouchableOpacity>
+                        )}
                     </View>
                   );
                 })}
+              </View>
+            )}
+
+            {/* EVENTI PARTNER */}
+            {poi.events && poi.events.length > 0 && (
+              <View style={[styles.vaultSection, { borderBottomColor: theme.border, marginTop: 15 }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>📅 PROSSIMI EVENTI</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+                  {poi.events.map((ev: any) => (
+                    <View key={ev.id} style={{ backgroundColor: theme.background, padding: 15, borderRadius: 15, marginRight: 15, width: 200, borderWidth: 1, borderColor: theme.border }}>
+                      <Text style={{ fontWeight: 'bold', fontSize: 14, color: theme.text }}>{ev.title}</Text>
+                      <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 5 }}>{new Date(ev.date).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
+                      <TouchableOpacity 
+                        style={{ marginTop: 10, backgroundColor: ev.is_premium ? theme.accent : theme.primary, paddingVertical: 8, borderRadius: 10, alignItems: 'center' }}
+                        onPress={() => ev.is_premium && !isElite ? router.push('/upgrade') : Alert.alert('Iscritto!', 'Sei in lista per questo evento.')}
+                      >
+                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Partecipa {ev.is_premium ? '🌟' : ''}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
               </View>
             )}
 
@@ -338,97 +395,137 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
               
               {isBooked ? (
                 // STATO: PRENOTATO
-                <View style={styles.bookedContainer}>
-                  <MaterialIcons name="check-circle" size={48} color={LOTO_PALETTE.VERDE_OLIVA} style={{ alignSelf: 'center', marginBottom: 10 }} />
-                  <Text style={styles.bookedTitle}>Prenotazione Attiva</Text>
-                  <Text style={styles.bookedSub}>Hai riservato i tuoi posti. Raggiungi il luogo per sbloccare i punti.</Text>
+                <View style={[styles.bookedContainer, { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }]}>
+                  <MaterialIcons name="check-circle" size={48} color={theme.primary} style={{ alignSelf: 'center', marginBottom: 10 }} />
+                  <Text style={[styles.bookedTitle, { color: theme.text }]}>Prenotazione Attiva</Text>
+                  <Text style={[styles.bookedSub, { color: theme.textMuted }]}>Hai riservato i tuoi posti. Raggiungi il luogo per sbloccare i punti.</Text>
                   
-                  <TouchableOpacity style={styles.mainBtn} onPress={() => onValidate(poi)}>
-                    <Text style={styles.mainBtnText}>Convalida Arrivo</Text>
+                  <TouchableOpacity style={[styles.mainBtn, { backgroundColor: theme.primary }]} onPress={() => onValidate(poi)}>
+                    <Text style={[styles.mainBtnText, { color: theme.background }]}>Convalida Arrivo</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 // STATO: DA PRENOTARE
                 <>
-                  <Text style={styles.sectionTitle}>Conferma Ospiti</Text>
-                  <View style={styles.partySelector}>
-                    <TouchableOpacity style={styles.partyBtn} onPress={() => setPartySize(Math.max(1, partySize - 1))}>
-                      <MaterialIcons name="remove" size={20} color={LOTO_PALETTE.EBANO} />
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>Conferma Ospiti</Text>
+                  <View style={[styles.partySelector, { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }]}>
+                    <TouchableOpacity style={[styles.partyBtn, { backgroundColor: theme.surface }]} onPress={() => setPartySize(Math.max(1, partySize - 1))}>
+                      <MaterialIcons name="remove" size={20} color={theme.text} />
                     </TouchableOpacity>
-                    <Text style={styles.partyText}>{partySize} {partySize > 1 ? 'Persone' : 'Persona'}</Text>
-                    <TouchableOpacity style={styles.partyBtn} onPress={() => setPartySize(partySize + 1)}>
-                      <MaterialIcons name="add" size={20} color={LOTO_PALETTE.EBANO} />
+                    <Text style={[styles.partyText, { color: theme.text }]}>{partySize} {partySize > 1 ? 'Persone' : 'Persona'}</Text>
+                    <TouchableOpacity style={[styles.partyBtn, { backgroundColor: theme.surface }]} onPress={() => setPartySize(partySize + 1)}>
+                      <MaterialIcons name="add" size={20} color={theme.text} />
                     </TouchableOpacity>
                   </View>
 
-                  <Text style={styles.sectionTitle}>Come raggiungerai la destinazione?</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>Come raggiungerai la destinazione?</Text>
                   <View style={styles.bivioContainer}>
                     <TouchableOpacity 
-                      style={[styles.bivioBtn, mobilityMode === 'mezzo_proprio' && styles.bivioBtnActive]}
+                      style={[styles.bivioBtn, { backgroundColor: mobilityMode === 'mezzo_proprio' ? theme.primary : theme.background, borderColor: theme.border, borderWidth: 1 }]}
                       onPress={() => setMobilityMode('mezzo_proprio')}
                     >
-                      <MaterialIcons name="directions-car" size={24} color={mobilityMode === 'mezzo_proprio' ? '#FFF' : '#64748B'} />
-                      <Text style={[styles.bivioText, mobilityMode === 'mezzo_proprio' && { color: '#FFF' }]}>Mezzo Proprio</Text>
+                      <MaterialIcons name="directions-car" size={24} color={mobilityMode === 'mezzo_proprio' ? theme.background : theme.textMuted} />
+                      <Text style={[styles.bivioText, { color: mobilityMode === 'mezzo_proprio' ? theme.background : theme.textMuted }]}>Mezzo Proprio</Text>
                     </TouchableOpacity>
                     
                     <TouchableOpacity 
-                      style={[styles.bivioBtn, mobilityMode === 'loto_mobility' && styles.bivioBtnActive]}
+                      style={[styles.bivioBtn, { backgroundColor: mobilityMode === 'loto_mobility' ? theme.primary : theme.background, borderColor: theme.border, borderWidth: 1 }]}
                       onPress={() => setMobilityMode('loto_mobility')}
                     >
-                      <MaterialIcons name="directions-walk" size={24} color={mobilityMode === 'loto_mobility' ? '#FFF' : '#64748B'} />
-                      <Text style={[styles.bivioText, mobilityMode === 'loto_mobility' && { color: '#FFF' }]}>Proposte L.O.T.O.</Text>
+                      <MaterialIcons name="directions-walk" size={24} color={mobilityMode === 'loto_mobility' ? theme.background : theme.textMuted} />
+                      <Text style={[styles.bivioText, { color: mobilityMode === 'loto_mobility' ? theme.background : theme.textMuted }]}>Proposte L.O.T.O.</Text>
                     </TouchableOpacity>
                   </View>
 
                   {/* ESPANSIONE BIVIO */}
                   {mobilityMode === 'mezzo_proprio' && hasParkingSuggestion && (
-                    <View style={styles.governanceCard}>
+                    <View style={[styles.governanceCard, { backgroundColor: 'rgba(217, 160, 91, 0.1)', borderColor: theme.accent }]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                        <MaterialIcons name="local-parking" size={20} color={LOTO_PALETTE.SABBIA_DORATA} />
-                        <Text style={styles.governanceTitle}>Suggerimento Sosta Strategica</Text>
+                        <MaterialIcons name="local-parking" size={20} color={theme.accent} />
+                        <Text style={[styles.governanceTitle, { color: theme.accent }]}>Suggerimento Sosta Strategica</Text>
                       </View>
-                      <Text style={styles.governanceText}>
-                        La zona intorno a {poi.name} è a traffico limitato o congestionata. Parcheggia comodamente a &quot;Park Porto Antico&quot; e guadagna <Text style={{fontWeight: 'bold', color: LOTO_PALETTE.SABBIA_DORATA}}>+10 PTI</Text>.
+                      <Text style={[styles.governanceText, { color: theme.textMuted }]}>
+                        La zona intorno a {poi.name} è a traffico limitato o congestionata. Parcheggia comodamente a &quot;Park Porto Antico&quot; e guadagna <Text style={{fontWeight: 'bold', color: theme.accent}}>+10 PTI</Text>.
                       </Text>
-                      <TouchableOpacity style={styles.navParkingBtn} onPress={() => handleNavigate('driving', true)}>
-                        <MaterialIcons name="navigation" size={16} color="#FFF" style={{ marginRight: 5 }} />
-                        <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Naviga al Parcheggio</Text>
+                      <TouchableOpacity style={[styles.navParkingBtn, { backgroundColor: theme.accent }]} onPress={() => handleNavigate('driving', true)}>
+                        <MaterialIcons name="navigation" size={16} color={theme.background} style={{ marginRight: 5 }} />
+                        <Text style={{ color: theme.background, fontWeight: 'bold' }}>Naviga al Parcheggio</Text>
                       </TouchableOpacity>
                     </View>
                   )}
 
                   {mobilityMode === 'loto_mobility' && (
-                    <View style={styles.mobilityRow}>
+                    <View style={[styles.mobilityRow, { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }]}>
                       <TouchableOpacity style={styles.mobilityItem} onPress={() => handleNavigate('walking')}>
-                        <MaterialIcons name="directions-walk" size={24} color={LOTO_PALETTE.VERDE_OLIVA} />
-                        <Text style={styles.mobilityLabel}>15 min</Text>
-                        <Text style={styles.mobilityBonus}>+5 XP</Text>
+                        <MaterialIcons name="directions-walk" size={24} color={theme.primary} />
+                        <Text style={[styles.mobilityLabel, { color: theme.textMuted }]}>15 min</Text>
+                        <Text style={[styles.mobilityBonus, { color: theme.primary }]}>+5 XP</Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={styles.mobilityItem} onPress={() => handleNavigate('bicycling')}>
-                        <MaterialIcons name="directions-bike" size={24} color={LOTO_PALETTE.VERDE_OLIVA} />
-                        <Text style={styles.mobilityLabel}>6 min</Text>
-                        <Text style={styles.mobilityBonus}>+10 XP</Text>
+                        <MaterialIcons name="directions-bike" size={24} color={theme.primary} />
+                        <Text style={[styles.mobilityLabel, { color: theme.textMuted }]}>6 min</Text>
+                        <Text style={[styles.mobilityBonus, { color: theme.primary }]}>+10 XP</Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={styles.mobilityItem} onPress={() => handleNavigate('transit')}>
-                        <MaterialIcons name="directions-bus" size={24} color={LOTO_PALETTE.VERDE_OLIVA} />
-                        <Text style={styles.mobilityLabel}>Bus 1/2</Text>
-                        <Text style={styles.mobilityBonus}>-1.2kg CO₂</Text>
+                        <MaterialIcons name="directions-bus" size={24} color={theme.primary} />
+                        <Text style={[styles.mobilityLabel, { color: theme.textMuted }]}>Bus 1/2</Text>
+                        <Text style={[styles.mobilityBonus, { color: theme.primary }]}>-1.2kg CO₂</Text>
                       </TouchableOpacity>
                     </View>
                   )}
 
                   <TouchableOpacity 
-                    style={[styles.mainBtn, (!mobilityMode) && { opacity: 0.5 }]} 
+                    style={[styles.mainBtn, { backgroundColor: theme.primary }, (!mobilityMode) && { opacity: 0.5 }]} 
                     disabled={!mobilityMode}
                     onPress={() => onBook(poi, partySize)}
                   >
-                    <Text style={styles.mainBtnText}>Prenota Visita</Text>
+                    <Text style={[styles.mainBtnText, { color: theme.background }]}>Prenota Visita</Text>
                   </TouchableOpacity>
                 </>
+              )}
+
+              {/* PITCH UPGRADE PREMIUM */}
+              {!isElite && poi.category !== 'partner' && (
+                <TouchableOpacity onPress={() => { onClose(); router.push('/upgrade'); }} activeOpacity={0.9} style={{ backgroundColor: theme.text, padding: 15, borderRadius: 15, marginTop: 20 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                    <MaterialIcons name="workspace-premium" size={24} color={theme.accent} />
+                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16, marginLeft: 10 }}>Turista Premium</Text>
+                  </View>
+                  <Text style={{ color: '#E2E8F0', fontSize: 12, lineHeight: 18 }}>
+                    Diventa Premium per sbloccare gratuitamente i file digitali scansionando il tag NFC del luogo e guadagnare bonus discreti!
+                  </Text>
+                </TouchableOpacity>
               )}
             </View>
           </ScrollView>
         </View>
+
+        {/* MOCK VISUALIZZATORE PREMIUM ALTO LIVELLO */}
+        {premiumMockVisible && (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: '#121417', zIndex: 1000 }]}>
+            <Image 
+              source={require('../assets/images/archivio_aragonese.png')} 
+              style={{ width: '100%', height: '60%', resizeMode: 'cover' }} 
+            />
+            <View style={{ padding: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                <MaterialIcons name="workspace-premium" size={24} color="#C5A059" />
+                <Text style={{ color: '#F2ECE4', fontSize: 24, fontWeight: 'bold', marginLeft: 10, fontFamily: 'serif' }}>L'Archivio Segreto</Text>
+              </View>
+              <Text style={{ color: '#9B968B', fontSize: 16, lineHeight: 24, fontStyle: 'italic' }}>
+                Un antico manoscritto del 1400 ritrovato nei sotterranei, contenente le rotte commerciali segrete della dinastia Aragonese. 
+              </Text>
+              <Text style={{ color: '#C5A059', fontSize: 14, marginTop: 20, fontWeight: 'bold' }}>ESCLUSIVA L.O.T.O. PREMIUM</Text>
+            </View>
+            <TouchableOpacity 
+              style={{ position: 'absolute', top: 50, right: 20, backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 20 }}
+              onPress={() => setPremiumMockVisible(false)}
+            >
+              <MaterialIcons name="close" size={24} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+        )}
+
       </View>
     </Modal>
   );

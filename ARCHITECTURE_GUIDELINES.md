@@ -21,4 +21,6 @@ Ogni pacchetto aggiunto deve essere compatibile con le build native tramite EAS.
 ## 7. UX e Gamification (Anti-TripAdvisor Rule)
 * L'app NON deve includere sistemi di recensione pubblica visibili tra utenti. I feedback sui P.O.I./Partner saranno raccolti in forma privata/anonima per le dashboard B2B. L'interazione social degli utenti si limiterà alla creazione e condivisione dei "Percorsi" personali.
 
-
+## 8. Logistica Hardware (NFC NTAG424)
+* **Gestione Frizione B2B:** Sebbene l'NFC sia la scelta ingegneristica primaria per l'anti-cheat (sostituendo l'OCR), la distribuzione, installazione e manutenzione fisica dei tag presso i partner (ristoranti/lidi) rappresenta un "collo di bottiglia" logistico. 
+* **Regola di Onboarding:** Il processo di acquisizione partner deve sempre prevedere un *Concierge Onboarding* umano (installazione guidata) per limitare la frizione, o prevedere procedure di sostituzione tag automatiche e indolori per l'esercente in caso di danneggiamento.

@@ -104,17 +104,7 @@ export default function WizardScreen() {
             ))}
           </View>
 
-          <Text style={[styles.label, { marginTop: 30 }]}>In quanti siete? (Party Size)</Text>
-          <Text style={styles.formSubtitle}>Il tuo impatto e i LOTO PTI guadagnati verranno moltiplicati per i membri del gruppo.</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', alignSelf: 'flex-start', borderRadius: 25, borderWidth: 0.5, borderColor: '#C9C4B8', padding: 5 }}>
-            <TouchableOpacity onPress={() => setPartySize(Math.max(1, partySize - 1))} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: LOTO_PALETTE.CREMA, justifyContent: 'center', alignItems: 'center' }}>
-              <MaterialIcons name="remove" size={20} color={LOTO_PALETTE.EBANO} />
-            </TouchableOpacity>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginHorizontal: 20, color: LOTO_PALETTE.EBANO }}>{partySize}</Text>
-            <TouchableOpacity onPress={() => setPartySize(Math.min(20, partySize + 1))} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: LOTO_PALETTE.TERRACOTTA, justifyContent: 'center', alignItems: 'center' }}>
-              <MaterialIcons name="add" size={20} color="#FFF" />
-            </TouchableOpacity>
-          </View>
+
 
           <Text style={[styles.label, { marginTop: 30 }]}>Punto di Rientro</Text>
           <Text style={styles.formSubtitle}>Serve per il "Punto di Ritorno" (rientro sicuro veloce).</Text>

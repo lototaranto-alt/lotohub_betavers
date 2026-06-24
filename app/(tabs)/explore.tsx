@@ -3,19 +3,16 @@ import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Alert
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import { supabase } from '@/utils/supabase';
+import { useTheme } from '@/context/ThemeContext';
 import PoiDetailSheet from '@/components/PoiDetailSheet';
+import PoiCard from '@/components/PoiCard';
 import { calculateDistance } from '@/utils/haversine';
 
-const LOTO_PALETTE = {
-  VERDE_OLIVA: '#5F713D',
-  TERRACOTTA: '#C36B4D',
-  CREMA: '#FDF8F2',
-  EBANO: '#1A1C1E',
-  SABBIA_DORATA: '#D9A05B',
-};
 
 // Questa pagina ospiterà la directory completa disaccoppiata dalla Home
 export default function ExploreScreen() {
+  const { theme, isElite } = useTheme();
+  const styles = getStyles(theme);
   const [pois, setPois] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'free' | 'partner' | 'secret'>('free');
 
@@ -46,9 +43,64 @@ export default function ExploreScreen() {
   };
 
   const fetchPois = async () => {
-    // get_pois() restituisce l'intera directory, non solo quelli consigliati
-    const { data } = await supabase.rpc('get_pois');
-    if (data) setPois(data);
+    try {
+      const { data, error } = await supabase.rpc('get_pois');
+      if (data) {
+        // --- INIEZIONE MOCK DATI PROFESSIONALE ---
+        // Mutiamo i dati reali esistenti per non creare duplicati fittizi visivamente sgradevoli
+        const processedPois = data.map((poi: any) => {
+          if (poi.name && poi.name.includes('Castello Aragonese')) {
+            return {
+              ...poi,
+              difficulty_score: 85,
+              crowd_level: 40,
+              media: [
+                { id: 'm1', title: 'Audioguida Storica', media_type: 'audio', loto_cost: 0 },
+                { id: 'm2', title: 'Planimetria Antica HR', media_type: 'digital_file', loto_cost: 50 },
+                { id: 'm3', title: 'Archivio Segreto Aragonese', media_type: 'digital_file', loto_cost: 0, is_premium: true }
+              ]
+            };
+          }
+          if (poi.name && poi.name.includes('Borgo Valle Rita')) {
+            return { ...poi, crowd_level: 20 };
+          }
+          if (poi.name && poi.name.includes('Canneto Beach')) {
+            return { ...poi, crowd_level: 95 };
+          }
+          return poi;
+        });
+
+        // Mutiamo il primo Partner esistente per aggiungere la logica degli Eventi
+        const firstPartnerIndex = processedPois.findIndex((p: any) => p.category === 'partner');
+        if (firstPartnerIndex !== -1) {
+          processedPois[firstPartnerIndex] = {
+            ...processedPois[firstPartnerIndex],
+            events: [
+              { id: 'e1', title: 'Aperitivo Ecosostenibile', date: '2026-07-01T18:00:00Z', is_premium: false },
+              { id: 'e2', title: 'Tramonto DJ Set VIP', date: '2026-07-02T20:00:00Z', is_premium: true }
+            ]
+          };
+        } else {
+          // Fallback solo se il DB non ha nessun partner
+          processedPois.push({
+            id: 'mock-partner-1',
+            name: 'Lido LOTO (Partner)',
+            category: 'partner',
+            latitude: 40.4500,
+            longitude: 17.2500,
+            crowd_level: 40,
+            events: [
+              { id: 'e1', title: 'Aperitivo Ecosostenibile', date: '2026-07-01T18:00:00Z', is_premium: false },
+              { id: 'e2', title: 'Tramonto DJ Set VIP', date: '2026-07-02T20:00:00Z', is_premium: true }
+            ]
+          });
+        }
+
+        setPois(processedPois);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const filteredPois = pois.filter(p => p.category === activeTab);
@@ -100,21 +152,21 @@ export default function ExploreScreen() {
       {/* 3-TAB FILTER */}
       <View style={styles.tabContainer}>
         <TouchableOpacity 
-          style={[styles.tabBtn, activeTab === 'free' && { backgroundColor: LOTO_PALETTE.VERDE_OLIVA }]} 
+          style={[styles.tabBtn, activeTab === 'free' && { backgroundColor: theme.primary }]} 
           onPress={() => setActiveTab('free')}
         >
           <Text style={[styles.tabText, activeTab === 'free' && { color: '#FFF' }]}>Culturali</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.tabBtn, activeTab === 'partner' && { backgroundColor: LOTO_PALETTE.EBANO }]} 
+          style={[styles.tabBtn, activeTab === 'partner' && { backgroundColor: theme.text }]} 
           onPress={() => setActiveTab('partner')}
         >
           <Text style={[styles.tabText, activeTab === 'partner' && { color: '#FFF' }]}>Partner</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.tabBtn, activeTab === 'secret' && { backgroundColor: LOTO_PALETTE.SABBIA_DORATA }]} 
+          style={[styles.tabBtn, activeTab === 'secret' && { backgroundColor: theme.accent }]} 
           onPress={() => setActiveTab('secret')}
         >
           <Text style={[styles.tabText, activeTab === 'secret' && { color: '#FFF' }]}>Secret</Text>
@@ -126,24 +178,17 @@ export default function ExploreScreen() {
         keyExtractor={item => item.id}
         contentContainerStyle={{ padding: 20 }}
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.card}
-            onPress={() => {
-              setSelectedPoi(item);
+          <PoiCard 
+            item={item}
+            userLocation={userLocation}
+            userProfile={userProfile}
+            onAction={() => {}} // L'azione primaria (Es. Prenota Visita) può rimanere vuota nell'esplora o fare da scorciatoia
+            onPress={(poi) => {
+              setSelectedPoi(poi);
               setIsSheetVisible(true);
             }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.poiName}>{item.name}</Text>
-              <Text style={styles.poiCat}>{item.category === 'free' ? 'Accesso Libero' : (item.category === 'partner' ? 'B2B Partner' : 'Storia Segreta')}</Text>
-              <Text style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
-                <MaterialIcons name="place" size={12} color="#64748B" /> {userLocation && item.latitude && item.longitude ? calculateDistance(userLocation.coords.latitude, userLocation.coords.longitude, item.latitude, item.longitude) : 'Calcolo...'}
-              </Text>
-            </View>
-            <View style={styles.xpBadge}>
-              <Text style={styles.xpText}>+{item.xp_reward || 15} XP</Text>
-            </View>
-          </TouchableOpacity>
+            t={{ crowdWarning: 'Rilevata Congestione', btnAlternative: 'Cerca Alternativa', scanBtn: 'Esegui Check-in NFC' }}
+          />
         )}
       />
 
@@ -160,9 +205,9 @@ export default function ExploreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: LOTO_PALETTE.CREMA },
-  title: { fontSize: 28, fontWeight: '900', fontFamily: 'serif', color: LOTO_PALETTE.EBANO, marginLeft: 20, marginTop: 30 },
+const getStyles = (theme: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
+  title: { fontSize: 28, fontWeight: '900', fontFamily: 'serif', color: theme.text, marginLeft: 20, marginTop: 30 },
   subtitle: { fontSize: 13, color: '#64748B', marginLeft: 20, marginBottom: 20 },
   
   tabContainer: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 15, backgroundColor: '#E2E8F0', borderRadius: 25, padding: 5 },
@@ -170,9 +215,9 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 11, fontWeight: 'bold', color: '#64748B', textTransform: 'uppercase', letterSpacing: 1 },
   
   card: { flexDirection: 'row', alignItems: 'center', padding: 20, backgroundColor: '#FFF', borderRadius: 20, marginBottom: 15, elevation: 4, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, borderWidth: 0.5, borderColor: '#C9C4B8' },
-  poiName: { fontSize: 18, fontWeight: 'bold', color: LOTO_PALETTE.EBANO, fontFamily: 'serif' },
-  poiCat: { fontSize: 11, color: LOTO_PALETTE.TERRACOTTA, marginTop: 5, textTransform: 'uppercase', fontWeight: 'bold' },
+  poiName: { fontSize: 18, fontWeight: 'bold', color: theme.text, fontFamily: 'serif' },
+  poiCat: { fontSize: 11, color: theme.secondary, marginTop: 5, textTransform: 'uppercase', fontWeight: 'bold' },
   
   xpBadge: { backgroundColor: 'rgba(217, 160, 91, 0.15)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 15 },
-  xpText: { color: LOTO_PALETTE.SABBIA_DORATA, fontWeight: '900', fontSize: 12 }
+  xpText: { color: theme.accent, fontWeight: '900', fontSize: 12 }
 });

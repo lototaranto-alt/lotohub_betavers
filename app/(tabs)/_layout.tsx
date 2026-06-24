@@ -1,7 +1,8 @@
 import { Tabs } from 'expo-router';
 import React, { useState, createContext, useContext } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, Dimensions, Alert } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 
 // 1. Context Globale per lo Scanner (accessibile da ogni pagina del tab)
 const ScannerContext = createContext({
@@ -11,19 +12,30 @@ const ScannerContext = createContext({
 export const useScanner = () => useContext(ScannerContext);
 
 export default function TabLayout() {
+  const { theme, isElite } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+
+  const simulateNfcScan = () => {
+    Alert.alert(
+      "NFC Scansionato", 
+      isElite 
+        ? "Benvenuto Esploratore Elite! Hai ricevuto +50 PTI Bonus discreti e sbloccato il Certificato Digitale Esclusivo del P.O.I. gratuito."
+        : "Check-in confermato! Passa a Elite per sbloccare i segreti del territorio."
+    );
+    setModalVisible(false);
+  };
 
   return (
     <ScannerContext.Provider value={{ openScanner: () => setModalVisible(true) }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#5F713D', // Verde Oliva
-          tabBarInactiveTintColor: '#C9C4B8',
+          tabBarActiveTintColor: theme.primary,
+          tabBarInactiveTintColor: theme.textMuted,
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: '#FDFBF2', // Boutique Ivory
+            backgroundColor: theme.background,
             borderTopWidth: 0.5,
-            borderTopColor: '#C9C4B8',
+            borderTopColor: theme.border,
             height: 65,
             paddingBottom: 12,
             paddingTop: 8,
@@ -86,25 +98,26 @@ export default function TabLayout() {
         <Tabs.Screen name="events" options={{ href: null, title: 'Eventi' }} />
       </Tabs>
 
-      {/* OVERLAY MODALE GLOBALE PER LO SCANNER */}
+      {/* OVERLAY MODALE GLOBALE PER LO SCANNER NFC */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalBg}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Certificazione Hub</Text>
-            <Text style={styles.modalSubtitle}>Scegli l&apos;azione da intraprendere sul territorio.</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
+            <MaterialIcons name="nfc" size={60} color={theme.primary} style={{ marginBottom: 15 }} />
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Scansione NTAG424</Text>
+            <Text style={[styles.modalSubtitle, { color: theme.textMuted }]}>
+              Avvicina il telefono all'adesivo L.O.T.O. HUB per il check-in "Pay-Per-Footstep".
+            </Text>
             
-            <TouchableOpacity style={styles.actionBtn}>
-              <MaterialIcons name="receipt-long" size={32} color="#FFF" />
-              <Text style={styles.actionBtnText}>SCANSIONA SCONTRINO (OCR)</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#0056D2', marginTop: 15}]}>
-              <MaterialIcons name="water-drop" size={32} color="#FFF" />
-              <Text style={styles.actionBtnText}>SBLOCCA FONTANELLA (QR)</Text>
+            <TouchableOpacity 
+              style={[styles.actionBtn, { backgroundColor: theme.primary }]} 
+              onPress={simulateNfcScan}
+            >
+              <MaterialIcons name="tap-and-play" size={28} color={theme.background} />
+              <Text style={[styles.actionBtnText, { color: theme.background }]}>SIMULA SCANSIONE NFC</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeBtnText}>ANNULLA</Text>
+              <Text style={[styles.closeBtnText, { color: theme.textMuted }]}>ANNULLA</Text>
             </TouchableOpacity>
           </View>
         </View>

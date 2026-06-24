@@ -10,6 +10,7 @@ import { supabase } from '@/utils/supabase';
 import { TenantProvider } from '../context/TenantContext';
 import { CityProvider } from '../context/CityContext';
 import { MobilityProvider } from '../context/MobilityContext';
+import { ThemeProvider as AppThemeProvider } from '../context/ThemeContext';
 import MobilityWizard from '../components/MobilityWizard';
 
 export const unstable_settings = {
@@ -49,22 +50,25 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <TenantProvider>
-      <CityProvider>
-        <MobilityProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="wizard" options={{ headerShown: false, animation: 'fade' }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-              <Stack.Screen name="route-creation-mockup" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
-            </Stack>
-            <StatusBar style="auto" />
-            <MobilityWizard />
-          </ThemeProvider>
-        </MobilityProvider>
-      </CityProvider>
-    </TenantProvider>
+    <AppThemeProvider>
+      <TenantProvider>
+        <CityProvider>
+          <MobilityProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="wizard" options={{ headerShown: false, animation: 'fade' }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                <Stack.Screen name="route-creation-mockup" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+                <Stack.Screen name="upgrade" options={{ presentation: 'modal', headerShown: false }} />
+              </Stack>
+              <StatusBar style="auto" />
+              <MobilityWizard />
+            </ThemeProvider>
+          </MobilityProvider>
+        </CityProvider>
+      </TenantProvider>
+    </AppThemeProvider>
   );
 }
 

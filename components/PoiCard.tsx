@@ -1,0 +1,108 @@
+import React from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useTheme } from '../context/ThemeContext';
+import { calculateDistance } from '../utils/haversine';
+import { LocationObject } from 'expo-location';
+
+type PoiCardProps = {
+  item: any;
+  userLocation: LocationObject | null;
+  userProfile: any;
+  onAction: (poi: any) => void;
+  onAlternative?: (poi: any) => void;
+  onPress?: (poi: any) => void;
+  isBooked?: boolean;
+  t: any; // dictionary
+};
+
+export default function PoiCard({ item, userLocation, userProfile, onAction, onAlternative, onPress, isBooked, t }: PoiCardProps) {
+  const { theme } = useTheme();
+
+  const img = item.image_url ? { uri: item.image_url } : (item.image ? (typeof item.image === 'string' ? { uri: item.image } : item.image) : require('../assets/images/eco_bg.png'));
+  const isCrowded = item.crowd_level && item.crowd_level > 80;
+  const hasWater = item.amenities?.includes('water');
+  const userTokens = userProfile?.total_tokens || 0;
+  const canUnlockStory = userTokens >= 100 && item.category !== 'partner';
+  
+  const isAccessibleUser = userProfile?.accessibility_mode === true;
+  const isDifficult = (item.difficulty_score || (item.name?.includes('Castello') ? 80 : 20)) > 70;
+  const showAccessibilityWarning = isAccessibleUser && isDifficult;
+
+  const CardWrapper = onPress ? TouchableOpacity : View;
+
+  return (
+    <CardWrapper 
+      style={[styles.poiCardHarmonious, isCrowded && { borderWidth: 1, borderColor: theme.secondary }]}
+      onPress={onPress ? () => onPress(item) : undefined}
+      activeOpacity={0.9}
+    >
+      <View style={styles.poiImageContainer}>
+        {img ? <Image source={img} style={styles.poiImageHarmonious} /> : <View style={[styles.poiImageHarmonious, { backgroundColor: '#E2E8F0' }]} />}
+        <View style={[styles.recommendedBadge, { backgroundColor: theme.accent, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }]}>
+          <MaterialIcons name="workspace-premium" size={14} color="#FFF" />
+          <Text style={[styles.recommendedText, { color: '#FFF', marginLeft: 4, fontSize: 10, fontWeight: 'bold' }]}>BONUS +10 PTI</Text>
+        </View>
+      </View>
+
+      <View style={styles.poiInfoHarmonious}>
+        <Text style={[styles.poiNameHarmonious, { color: theme.text }]}>{item.name}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+          <MaterialIcons name="place" size={14} color={theme.primary} />
+          <Text style={styles.poiDistHarmonious}> {userLocation && item.latitude && item.longitude ? calculateDistance(userLocation.coords.latitude, userLocation.coords.longitude, item.latitude, item.longitude) : 'Calcolo...'} • <Text style={{ color: isCrowded ? theme.secondary : theme.primary }}>{isCrowded ? 'Affollato' : 'Capacità Sicura'}</Text></Text>
+        </View>
+        
+        {showAccessibilityWarning && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(217, 160, 91, 0.15)', padding: 8, borderRadius: 10, marginTop: 10 }}>
+            <MaterialIcons name="warning-amber" size={16} color={theme.accent} />
+            <Text style={{ fontSize: 10, color: theme.accent, marginLeft: 5, flex: 1, fontWeight: 'bold' }}>Questo sito presenta sfide architettoniche o barriere strutturali.</Text>
+          </View>
+        )}
+
+        {isCrowded ? (
+          <View style={{ marginTop: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: theme.secondary, fontWeight: 'bold', fontSize: 11 }}>{t.crowdWarning} ({(item.crowd_level || 85)}%)</Text>
+            {onAlternative && (
+              <TouchableOpacity
+                style={[styles.btnActionHarmonious, { backgroundColor: theme.secondary }]}
+                onPress={() => onAlternative(item)}
+              >
+                <Text style={styles.btnActionTextHarmonious}>{t.btnAlternative}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <View style={{ marginTop: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            {hasWater ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialIcons name="water-drop" size={16} color={theme.primary} />
+                <Text style={{ color: theme.primary, fontWeight: 'bold', fontSize: 11, marginLeft: 4 }}>BONUS IDRICO</Text>
+              </View>
+            ) : <View />}
+            <TouchableOpacity
+              style={[styles.btnActionHarmonious, { backgroundColor: item.category === 'partner' ? '#0056D2' : (canUnlockStory ? theme.accent : theme.primary) }]}
+              onPress={() => onAction(item)}
+            >
+              <Text style={styles.btnActionTextHarmonious}>
+                {item.category === 'partner' ? 'Scansiona Scontrino' : (isBooked ? "Convalida Arrivo" : "Prenota Visita")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </CardWrapper>
+  );
+}
+
+const styles = StyleSheet.create({
+  poiCardHarmonious: { marginHorizontal: 20, backgroundColor: '#FFF', borderRadius: 30, overflow: 'hidden', elevation: 6, marginBottom: 25, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 15, borderWidth: 1, borderColor: 'rgba(0, 0, 0, 0.06)' },
+  poiImageContainer: { width: '100%', height: 180 },
+  poiImageHarmonious: { width: '100%', height: '100%', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
+  recommendedBadge: { position: 'absolute', top: 15, right: 15, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  recommendedText: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 1, marginLeft: 4 },
+  poiInfoHarmonious: { padding: 25, backgroundColor: '#FFF', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  poiNameHarmonious: { fontSize: 22, fontWeight: 'bold', fontFamily: 'serif' },
+  poiDistHarmonious: { color: '#64748B', fontSize: 14, fontWeight: '500' },
+  btnActionHarmonious: { borderRadius: 20, alignItems: 'center', paddingVertical: 10, paddingHorizontal: 16, alignSelf: 'flex-start' },
+  btnActionTextHarmonious: { color: '#FFF', fontWeight: 'bold', fontSize: 11, letterSpacing: 0.5 },
+});
