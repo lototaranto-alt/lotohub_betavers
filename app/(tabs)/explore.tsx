@@ -7,6 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import PoiDetailSheet from '@/components/PoiDetailSheet';
 import PoiCard from '@/components/PoiCard';
 import { calculateDistance } from '@/utils/haversine';
+import { injectPoisMock } from '@/utils/mockInjector';
 
 
 // Questa pagina ospiterà la directory completa disaccoppiata dalla Home
@@ -46,56 +47,7 @@ export default function ExploreScreen() {
     try {
       const { data, error } = await supabase.rpc('get_pois');
       if (data) {
-        // --- INIEZIONE MOCK DATI PROFESSIONALE ---
-        // Mutiamo i dati reali esistenti per non creare duplicati fittizi visivamente sgradevoli
-        const processedPois = data.map((poi: any) => {
-          if (poi.name && poi.name.includes('Castello Aragonese')) {
-            return {
-              ...poi,
-              difficulty_score: 85,
-              crowd_level: 40,
-              media: [
-                { id: 'm1', title: 'Audioguida Storica', media_type: 'audio', loto_cost: 0 },
-                { id: 'm2', title: 'Planimetria Antica HR', media_type: 'digital_file', loto_cost: 50 },
-                { id: 'm3', title: 'Archivio Segreto Aragonese', media_type: 'digital_file', loto_cost: 0, is_premium: true }
-              ]
-            };
-          }
-          if (poi.name && poi.name.includes('Borgo Valle Rita')) {
-            return { ...poi, crowd_level: 20 };
-          }
-          if (poi.name && poi.name.includes('Canneto Beach')) {
-            return { ...poi, crowd_level: 95 };
-          }
-          return poi;
-        });
-
-        // Mutiamo il primo Partner esistente per aggiungere la logica degli Eventi
-        const firstPartnerIndex = processedPois.findIndex((p: any) => p.category === 'partner');
-        if (firstPartnerIndex !== -1) {
-          processedPois[firstPartnerIndex] = {
-            ...processedPois[firstPartnerIndex],
-            events: [
-              { id: 'e1', title: 'Aperitivo Ecosostenibile', date: '2026-07-01T18:00:00Z', is_premium: false },
-              { id: 'e2', title: 'Tramonto DJ Set VIP', date: '2026-07-02T20:00:00Z', is_premium: true }
-            ]
-          };
-        } else {
-          // Fallback solo se il DB non ha nessun partner
-          processedPois.push({
-            id: 'mock-partner-1',
-            name: 'Lido LOTO (Partner)',
-            category: 'partner',
-            latitude: 40.4500,
-            longitude: 17.2500,
-            crowd_level: 40,
-            events: [
-              { id: 'e1', title: 'Aperitivo Ecosostenibile', date: '2026-07-01T18:00:00Z', is_premium: false },
-              { id: 'e2', title: 'Tramonto DJ Set VIP', date: '2026-07-02T20:00:00Z', is_premium: true }
-            ]
-          });
-        }
-
+        const processedPois = injectPoisMock(data);
         setPois(processedPois);
       }
     } catch (e) {

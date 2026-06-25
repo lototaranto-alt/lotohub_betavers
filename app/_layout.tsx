@@ -58,7 +58,6 @@ export default function RootLayout() {
               <Stack>
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="wizard" options={{ headerShown: false, animation: 'fade' }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
                 <Stack.Screen name="route-creation-mockup" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="upgrade" options={{ presentation: 'modal', headerShown: false }} />
               </Stack>

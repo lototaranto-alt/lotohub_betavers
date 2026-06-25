@@ -1,14 +1,14 @@
 import { View, StyleSheet, ScrollView, Text } from 'react-native';
 import LotoPassCard from '../../components/LotoPassCard';
-import { useTenant } from '../../context/TenantContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function ProfileScreen() {
-  const { currentTenant } = useTenant();
+  const { theme } = useTheme();
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: currentTenant.colors.CREMA }]}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: currentTenant.colors.EBANO }]}>Il tuo Backup</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Il tuo Backup</Text>
         <Text style={styles.headerSubtitle}>L'unico modo per non perdere i tuoi LOTO PTI</Text>
       </View>
       <LotoPassCard />

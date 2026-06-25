@@ -4,6 +4,10 @@ import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../utils/supabase';
+import { injectPoisMock } from '../../utils/mockInjector';
+import { ThemeProvider as AppThemeProvider } from '../../context/ThemeContext';
+import MobilityWizard from '../../components/MobilityWizard';
+import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
@@ -134,11 +138,6 @@ export default function VetrinaScreen() {
   const [isSheetVisible, setIsSheetVisible] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>('recommended');
 
-  // STATI DIARIO E PROFILO
-  const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  const [editingNickname, setEditingNickname] = useState(false);
-  const [tempNickname, setTempNickname] = useState('');
-
   const t = DICTIONARY[lang];
   const tickerText = currentTenant?.ticker_text || t.ticker;
 
@@ -161,56 +160,8 @@ export default function VetrinaScreen() {
         console.log("ERRORE RPC get_pois:", error);
       }
       if (poiData) {
-        // --- INIEZIONE MOCK DATI PROFESSIONALE ---
-        // Mutiamo i dati reali esistenti per non creare duplicati fittizi visivamente sgradevoli
-        const processedPois = poiData.map((poi: any) => {
-          if (poi.name && poi.name.includes('Castello Aragonese')) {
-            return {
-              ...poi,
-              difficulty_score: 85,
-              crowd_level: 40,
-              media: [
-                { id: 'm1', title: 'Audioguida Storica', media_type: 'audio', loto_cost: 0 },
-                { id: 'm2', title: 'Planimetria Antica HR', media_type: 'digital_file', loto_cost: 50 },
-                { id: 'm3', title: 'Archivio Segreto Aragonese', media_type: 'digital_file', loto_cost: 0, is_premium: true }
-              ]
-            };
-          }
-          if (poi.name && poi.name.includes('Borgo Valle Rita')) {
-            return { ...poi, crowd_level: 20 };
-          }
-          if (poi.name && poi.name.includes('Canneto Beach')) {
-            return { ...poi, crowd_level: 95 };
-          }
-          return poi;
-        });
-
-        // Mutiamo il primo Partner esistente per aggiungere la logica degli Eventi
-        const firstPartnerIndex = processedPois.findIndex((p: any) => p.category === 'partner');
-        if (firstPartnerIndex !== -1) {
-          processedPois[firstPartnerIndex] = {
-            ...processedPois[firstPartnerIndex],
-            events: [
-              { id: 'e1', title: 'Aperitivo Ecosostenibile', date: '2026-07-01T18:00:00Z', is_premium: false },
-              { id: 'e2', title: 'Tramonto DJ Set VIP', date: '2026-07-02T20:00:00Z', is_premium: true }
-            ]
-          };
-        } else {
-          // Fallback solo se il DB non ha nessun partner
-          processedPois.push({
-            id: 'mock-partner-1',
-            name: 'Lido LOTO (Partner)',
-            category: 'partner',
-            latitude: 40.4500,
-            longitude: 17.2500,
-            crowd_level: 40,
-            events: [
-              { id: 'e1', title: 'Aperitivo Ecosostenibile', date: '2026-07-01T18:00:00Z', is_premium: false },
-              { id: 'e2', title: 'Tramonto DJ Set VIP', date: '2026-07-02T20:00:00Z', is_premium: true }
-            ]
-          });
-        }
-
+        // --- INIEZIONE MOCK DATI PROFESSIONALE TRAMITE HELPER ---
+        const processedPois = injectPoisMock(poiData);
         setPois(processedPois);
       }
 
@@ -219,7 +170,6 @@ export default function VetrinaScreen() {
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         if (profile) {
           setUserProfile(profile);
-          setTempNickname(profile.nickname || '');
           const { data: trans } = await supabase.from('impact_transactions').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(20);
           if (trans) setUserTransactions(trans);
           
@@ -242,27 +192,7 @@ export default function VetrinaScreen() {
     }
   };
 
-  const salvaNickname = async () => {
-    const newNick = tempNickname.trim();
-    if (!newNick) {
-      setEditingNickname(false);
-      return;
-    }
 
-    // Controlla se il nickname è già in uso
-    const { data: existing } = await supabase.from('profiles').select('id').ilike('nickname', newNick).maybeSingle();
-    if (existing && existing.id !== userProfile?.id) {
-      Alert.alert("Errore", "Questo nickname è già in uso da un altro utente. Scegline un altro.");
-      return;
-    }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from('profiles').update({ nickname: newNick }).eq('id', user.id);
-      setUserProfile((prev: any) => ({ ...prev, nickname: newNick }));
-      setEditingNickname(false);
-    }
-  };
 
   const avviaFiltroCinematico = async () => {
     const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
@@ -656,194 +586,19 @@ export default function VetrinaScreen() {
         )}
 
 
-        {/* MODALE SCHEDA EXP (PROFILO AVATAR PREMIUM) */}
-        <Modal visible={isExpModalVisible} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={{ height: expandedCard ? 500 : 400, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={width * 0.8} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: width * 0.1, alignItems: 'center' }}>
-                
-                {/* CARD 1: Badge Profilo & I Miei Itinerari */}
-                <TouchableOpacity 
-                  activeOpacity={0.9}
-                  onPress={() => setExpandedCard(expandedCard === 'profile' ? null : 'profile')}
-                  style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'profile' ? 'flex-start' : 'center', paddingVertical: expandedCard === 'profile' ? 20 : 35, height: expandedCard === 'profile' ? 450 : 310 }]}
-                >
-                  {!userProfile?.nickname && expandedCard !== 'profile' && (
-                    <View style={{ position: 'absolute', top: 20, right: 20 }}>
-                      <TouchableOpacity onPress={() => setEditingNickname(!editingNickname)} style={{ padding: 5 }}>
-                        <MaterialIcons name={editingNickname ? "check" : "edit"} size={20} color={theme.accent} />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  <View style={[styles.badgeMedalContainer, { borderColor: levelInfo.color, marginBottom: expandedCard === 'profile' ? 10 : 0 }]}>
-                    <MaterialIcons name={levelInfo.stemma} size={expandedCard === 'profile' ? 40 : 54} color={levelInfo.color} />
-                  </View>
-                  <View style={{ alignItems: 'center', width: '100%' }}>
-                    {editingNickname ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <TextInput
-                          style={{ borderBottomWidth: 1, borderBottomColor: theme.accent, fontSize: 24, fontWeight: 'bold', color: theme.text, textAlign: 'center', minWidth: 150 }}
-                          value={tempNickname}
-                          onChangeText={setTempNickname}
-                          autoFocus
-                          onSubmitEditing={salvaNickname}
-                        />
-                      </View>
-                    ) : (
-                      <Text style={[styles.expNameBoutique, expandedCard === 'profile' && { fontSize: 20 }]}>{userProfile?.nickname || t.guest}</Text>
-                    )}
-                    <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0, fontSize: expandedCard === 'profile' ? 14 : 16 }]}>{levelInfo.title} ({userXp} XP)</Text>
-                  </View>
-                  
-                  {expandedCard !== 'profile' && (
-                    <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 16, paddingHorizontal: 5, marginTop: 15 }}>Continua a esplorare per salire di livello.</Text>
-                  )}
-
-                  {expandedCard === 'profile' && (
-                    <View style={{ flex: 1, width: '100%', marginTop: 20, borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 15 }}>
-                      <Text style={{fontSize:12, fontWeight:'bold', color: theme.text, marginBottom:10, alignSelf:'flex-start'}}>I MIEI ITINERARI</Text>
-                      {userItineraries.length === 0 ? (
-                        <Text style={{fontSize:12, color:'#64748B', textAlign:'center', marginTop:20}}>Nessun itinerario salvato. Creane uno per riempire questa sezione!</Text>
-                      ) : (
-                        <FlatList
-                          data={userItineraries}
-                          keyExtractor={item => item.id}
-                          showsVerticalScrollIndicator={false}
-                          renderItem={({item}) => (
-                            <View style={{borderBottomWidth:1, borderBottomColor:'#E2E8F0', paddingVertical:12}}>
-                              <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
-                                <View style={{ flex: 1 }}>
-                                  <Text style={{fontSize:14, fontWeight:'bold', color: theme.text}} numberOfLines={1}>{item.title}</Text>
-                                  <View style={{flexDirection:'row', marginTop: 4}}>
-                                    <Text style={{fontSize:11, color: theme.accent, fontWeight: 'bold'}}>{item.potential_xp} PTI potenziali</Text>
-                                    <Text style={{fontSize:11, color: '#64748B', marginLeft: 10}}>{new Date(item.created_at).toLocaleDateString()}</Text>
-                                  </View>
-                                </View>
-                                <TouchableOpacity 
-                                  style={{ backgroundColor: theme.text, padding: 8, borderRadius: 12, marginLeft: 10 }}
-                                  onPress={() => {
-                                     Alert.alert('Condividi Itinerario', `Condivisione di "${item.title}" in arrivo!`);
-                                  }}
-                                >
-                                  <MaterialIcons name="share" size={16} color="#FFF" />
-                                </TouchableOpacity>
-                              </View>
-                            </View>
-                          )}
-                        />
-                      )}
-                      
-                      <TouchableOpacity
-                        style={{ backgroundColor: theme.text, padding: 12, borderRadius: 12, marginTop: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
-                        onPress={() => { setIsExpModalVisible(false); router.push('/upgrade'); }}
-                      >
-                        <MaterialIcons name="workspace-premium" size={20} color={theme.accent} style={{ marginRight: 8 }} />
-                        <Text style={{ color: theme.background, fontWeight: 'bold' }}>Gestisci Piano LOTO</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </TouchableOpacity>
-
-                {/* CARD 2: CO2 Counter */}
-                <TouchableOpacity 
-                  activeOpacity={0.9}
-                  onPress={() => setExpandedCard(expandedCard === 'co2' ? null : 'co2')}
-                  style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'co2' ? 'flex-start' : 'center', height: expandedCard === 'co2' ? 450 : 310 }]}
-                >
-                   <MaterialIcons name="eco" size={expandedCard === 'co2' ? 40 : 60} color={theme.primary} style={{marginBottom: expandedCard === 'co2' ? 10 : 20}} />
-                   <Text style={[styles.mStatValBoutique, { fontSize: expandedCard === 'co2' ? 24 : 32, color: theme.primary }]}>{userProfile?.total_co2?.toFixed(2) ?? '0.00'} kg</Text>
-                   <Text style={[styles.mStatLab, { fontSize: 14 }]}>CO₂ Risparmiata</Text>
-                   
-                   {expandedCard === 'co2' && (
-                     <View style={{ flex: 1, width: '100%', marginTop: 20 }}>
-                       <Text style={{fontSize:12, fontWeight:'bold', color: theme.text, marginBottom:10, alignSelf:'flex-start'}}>CRONOLOGIA IMPATTO</Text>
-                       {userTransactions.filter(tx => tx.co2_saved > 0).length === 0 ? (
-                         <Text style={{fontSize:12, color:'#64748B', textAlign:'center', marginTop:20}}>Nessuna attività registrata.</Text>
-                       ) : (
-                         <FlatList
-                           data={userTransactions.filter(tx => tx.co2_saved > 0)}
-                           keyExtractor={item => item.id}
-                           showsVerticalScrollIndicator={false}
-                           renderItem={({item}) => (
-                             <View style={{flexDirection:'row', justifyContent:'space-between', borderBottomWidth:1, borderBottomColor:'#E2E8F0', paddingVertical:10}}>
-                               <View>
-                                 <Text style={{fontSize:12, fontWeight:'bold', color: theme.text}}>{item.action_type || 'Attività Eco'}</Text>
-                                 <Text style={{fontSize:10, color:'#64748B'}}>{new Date(item.created_at).toLocaleDateString()}</Text>
-                               </View>
-                               <Text style={{fontSize:14, fontWeight:'bold', color: theme.primary}}>+{item.co2_saved.toFixed(1)} kg</Text>
-                             </View>
-                           )}
-                         />
-                       )}
-                     </View>
-                   )}
-                </TouchableOpacity>
-
-                {/* CARD 3: PTI Counter */}
-                <TouchableOpacity 
-                  activeOpacity={0.9}
-                  onPress={() => setExpandedCard(expandedCard === 'pts' ? null : 'pts')}
-                  style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'pts' ? 'flex-start' : 'center', height: expandedCard === 'pts' ? 450 : 310 }]}
-                >
-                   <MaterialIcons name="toll" size={expandedCard === 'pts' ? 40 : 60} color={theme.accent} style={{marginBottom: expandedCard === 'pts' ? 10 : 20}} />
-                   <Text style={[styles.mStatValBoutique, { fontSize: expandedCard === 'pts' ? 24 : 32, color: theme.accent }]}>{userProfile?.total_tokens ?? 0} PTI</Text>
-                   <Text style={[styles.mStatLab, { fontSize: 14 }]}>LOTO Tokens</Text>
-
-                   {expandedCard === 'pts' && (
-                     <View style={{ flex: 1, width: '100%', marginTop: 20 }}>
-                       <Text style={{fontSize:12, fontWeight:'bold', color: theme.text, marginBottom:10, alignSelf:'flex-start'}}>CRONOLOGIA GUADAGNI</Text>
-                       {userTransactions.filter(tx => tx.tokens_earned > 0).length === 0 ? (
-                         <Text style={{fontSize:12, color:'#64748B', textAlign:'center', marginTop:20}}>Nessun LOTO PTI accumulato.</Text>
-                       ) : (
-                         <FlatList
-                           data={userTransactions.filter(tx => tx.tokens_earned > 0)}
-                           keyExtractor={item => item.id}
-                           showsVerticalScrollIndicator={false}
-                           renderItem={({item}) => (
-                             <View style={{flexDirection:'row', justifyContent:'space-between', borderBottomWidth:1, borderBottomColor:'#E2E8F0', paddingVertical:10}}>
-                               <View>
-                                 <Text style={{fontSize:12, fontWeight:'bold', color: theme.text}}>{item.action_type || 'Bonus LOTO'}</Text>
-                                 <Text style={{fontSize:10, color:'#64748B'}}>{new Date(item.created_at).toLocaleDateString()}</Text>
-                               </View>
-                               <Text style={{fontSize:14, fontWeight:'bold', color: theme.accent}}>+{item.tokens_earned} PTI</Text>
-                             </View>
-                           )}
-                         />
-                       )}
-                     </View>
-                   )}
-                </TouchableOpacity>
-
-                {/* CARD 4: Crea Percorso */}
-                <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden' }]}>
-                  <Image source={require('../../assets/images/route_creation_flat.png')} style={{ width: '100%', height: 140 }} resizeMode="cover" />
-                  <View style={{ flex: 1, padding: 20, justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <View style={{ alignItems: 'center' }}>
-                      <Text style={[styles.mStatValBoutique, { fontSize: 22, color: theme.text, fontFamily: 'serif', textAlign: 'center', marginBottom: 6 }]}>Crea Percorso</Text>
-                      <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 16, paddingHorizontal: 5 }}>Disegna itinerari personali, scegli mobilità ecologiche e condividili sui social per guadagnare punti.</Text>
-                    </View>
-                    <TouchableOpacity 
-                      style={{ backgroundColor: theme.secondary, paddingVertical: 10, paddingHorizontal: 22, borderRadius: 25, flexDirection: 'row', alignItems: 'center', marginTop: 10, elevation: 2 }}
-                      onPress={() => {
-                        setIsExpModalVisible(false);
-                        router.push('/route-creation-mockup');
-                      }}
-                    >
-                      <MaterialIcons name="add-circle-outline" size={16} color="#FFF" style={{ marginRight: 6 }} />
-                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>INIZIA ORA</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-
-              </ScrollView>
-              
-              <TouchableOpacity style={styles.closeExpModal} onPress={() => setIsExpModalVisible(false)}>
-                <MaterialIcons name="close" size={24} color="#333" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+        {/* MODALE SCHEDA EXP (PROFILO AVATAR PREMIUM) ESTRATTO */}
+        <ProfileModal
+          visible={isExpModalVisible}
+          onClose={() => setIsExpModalVisible(false)}
+          userProfile={userProfile}
+          userXp={userXp}
+          levelInfo={levelInfo}
+          userItineraries={userItineraries}
+          userTransactions={userTransactions}
+          theme={theme}
+          t={t}
+          setUserProfile={setUserProfile}
+        />
 
         {/* BOTTOM SHEET SPRINT B */}
         <PoiDetailSheet
