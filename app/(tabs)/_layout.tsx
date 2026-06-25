@@ -56,7 +56,16 @@ export default function TabLayout() {
           }}
         />
 
-        {/* 2. VISIBILE: Pulsante centrale SCAN (Intercepted) */}
+        {/* 2. VISIBILE: Profilo (L.O.T.O. Pass) */}
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Profilo',
+            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="account-circle" color={color} />,
+          }}
+        />
+
+        {/* 3. VISIBILE: Pulsante centrale SCAN (Intercepted) */}
         <Tabs.Screen
           name="scan"
           options={{
@@ -74,21 +83,12 @@ export default function TabLayout() {
           }}
         />
 
-        {/* 3. VISIBILE: Info */}
+        {/* 4. VISIBILE: Options */}
         <Tabs.Screen
-          name="info"
+          name="options"
           options={{
-            title: 'Info',
-            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="info-outline" color={color} />,
-          }}
-        />
-
-        {/* 4. VISIBILE: Profilo (L.O.T.O. Pass) */}
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Profilo',
-            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="account-circle" color={color} />,
+            title: 'Opzioni',
+            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="settings" color={color} />,
           }}
         />
 

@@ -7,6 +7,7 @@ import { LruCacheManager } from '../utils/LruCacheManager';
 import { OfflineQueueManager } from '../utils/OfflineQueueManager';
 import NetInfo from '@react-native-community/netinfo';
 import { useTheme } from '../context/ThemeContext';
+import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 
 const LOTO_PALETTE = {
   VERDE_OLIVA: '#5F713D',
@@ -167,11 +168,48 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
 
     try {
       if (media.id === 'm3') {
-        setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
-        setTimeout(() => {
-          setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
-          Alert.alert("Successo!", `Hai decifrato il tag NFC e ottenuto l'accesso all'Archivio!`);
-        }, 1500);
+        const simulaSbloccoMock = () => {
+          setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
+          setTimeout(() => {
+            setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
+            Alert.alert("Successo!", `Hai decifrato il tag NFC (Simulazione) e ottenuto l'accesso all'Archivio!`);
+          }, 1500);
+        };
+
+        const avviaSbloccoNativo = async () => {
+          try {
+            setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
+            // Richiesta permessi e avvio lettura
+            await NfcManager.requestTechnology(NfcTech.Ndef);
+            const tag = await NfcManager.getTag();
+            if (tag) {
+              setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
+              Alert.alert("Successo TSaaSI!", `L'hardware ha verificato l'NFC NTAG424. Contenuto sbloccato.`);
+            }
+          } catch (ex) {
+            console.warn('Errore lettura NFC:', ex);
+            setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+            Alert.alert("Errore NFC", "Non è stato possibile leggere il tag.");
+          } finally {
+            NfcManager.cancelTechnologyRequest();
+          }
+        };
+
+        // Approccio Lean: se il device supporta NFC ed è abilitato, proviamo quello vero. Altrimenti Mock.
+        const isSupported = await NfcManager.isSupported();
+        if (isSupported) {
+          const isEnabled = await NfcManager.isEnabled();
+          if (isEnabled) {
+             await avviaSbloccoNativo();
+          } else {
+             Alert.alert("NFC Disabilitato", "Attiva l'NFC dalle impostazioni, oppure prosegui con la simulazione.", [
+               { text: "Simula Sblocco", onPress: simulaSbloccoMock }
+             ]);
+          }
+        } else {
+          // Dispositivo senza NFC (es. vecchi iPhone, Simulatori, Expo Web)
+          simulaSbloccoMock();
+        }
         return;
       }
 

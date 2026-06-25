@@ -12,6 +12,10 @@ import { CityProvider } from '../context/CityContext';
 import { MobilityProvider } from '../context/MobilityContext';
 import { ThemeProvider as AppThemeProvider } from '../context/ThemeContext';
 import MobilityWizard from '../components/MobilityWizard';
+import NfcManager from 'react-native-nfc-manager';
+
+// Inizializzazione Globale Hardware NFC
+NfcManager.start().catch(e => console.warn('NFC non supportato in questo ambiente (es. Web/Simulatore)'));
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -50,8 +54,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <AppThemeProvider>
-      <TenantProvider>
+    <TenantProvider>
+      <AppThemeProvider>
         <CityProvider>
           <MobilityProvider>
             <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -66,8 +70,8 @@ export default function RootLayout() {
             </ThemeProvider>
           </MobilityProvider>
         </CityProvider>
-      </TenantProvider>
-    </AppThemeProvider>
+      </AppThemeProvider>
+    </TenantProvider>
   );
 }
 

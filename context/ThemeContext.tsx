@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
+import { useTenant } from './TenantContext';
 
 // Palette Colori
 export const FREEMIUM_THEME = {
@@ -41,8 +42,24 @@ const ThemeContext = createContext<ThemeContextProps>({
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isElite, setIsElite] = useState(false);
+  const { currentTenant } = useTenant();
 
-  const theme = isElite ? ELITE_THEME : FREEMIUM_THEME;
+  // Se l'utente non è Elite, usa i colori dinamici del Tenant (effetto Camaleonte)
+  // Se è Elite, usa il dark theme universale (status symbol)
+  const baseTheme = isElite ? ELITE_THEME : FREEMIUM_THEME;
+  
+  const theme = isElite 
+    ? baseTheme // Modalità Elite sempre scura/universale
+    : {
+        ...baseTheme,
+        primary: currentTenant.colors.primary || baseTheme.primary,
+        secondary: currentTenant.colors.secondary || baseTheme.secondary,
+        background: currentTenant.colors.background || baseTheme.background,
+        surface: currentTenant.colors.card || baseTheme.surface,
+        card: currentTenant.colors.card || baseTheme.surface, // Alias
+        text: currentTenant.colors.text || baseTheme.text,
+        tint: currentTenant.colors.tint || baseTheme.primary,
+      };
 
   const setElite = (status: boolean) => {
     setIsElite(status);

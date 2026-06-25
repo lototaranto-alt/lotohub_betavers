@@ -249,7 +249,10 @@ export function TenantProvider({ children }: TenantProviderProps) {
 
   // 5. Metodo per impostare manualmente il tenant
   const setTenantManual = async (tenantId: string) => {
-    const tenant = availableTenants.find(t => t.id === tenantId);
+    let tenant = availableTenants.find(t => t.id === tenantId);
+    if (!tenant) {
+      tenant = TENANTS.find(t => t.id === tenantId);
+    }
     if (!tenant) return;
 
     console.log('[TenantContext] Selezione manuale tenant effettuata:', tenant.name);

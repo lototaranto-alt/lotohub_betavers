@@ -3,9 +3,12 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../utils/supabase';
 import { injectPoisMock } from '../../utils/mockInjector';
+import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
 import { ThemeProvider as AppThemeProvider } from '../../context/ThemeContext';
+import { useCity } from '../../context/CityContext';
 import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
@@ -111,6 +114,7 @@ const getMobilityPillStyle = (type: string) => {
 export default function VetrinaScreen() {
   const { currentTenant } = useTenant();
   const { theme, isElite } = useTheme();
+  const { currentCity, setCurrentCity } = useCity();
   const styles = getStyles(theme);
   const { mobilityType, forceReopenWizard } = useMobility();
   const [pois, setPois] = useState<any[]>([]);
@@ -131,7 +135,7 @@ export default function VetrinaScreen() {
   // STATI LOGICI
   const [lang, setLang] = useState<'IT' | 'UK'>('IT');
   const [isExpModalVisible, setIsExpModalVisible] = useState(false);
-  const [bookedSessions, setBookedSessions] = useState<Record<string, string>>({});
+  const [bookedSessions, setBookedSessions] = useState<{ [key: string]: string }>({});
   
   // STATI SPRINT B (Bottom Sheet e Accordion)
   const [selectedPoi, setSelectedPoi] = useState<any | null>(null);
@@ -185,6 +189,15 @@ export default function VetrinaScreen() {
           setUserLocation(loc);
         });
       }
+
+      // Check per prompt GPS automatico e gentile
+      const hasSeenPrompt = await AsyncStorage.getItem('loto_gps_prompt_seen');
+      if (!hasSeenPrompt && userProfile?.flow_role !== 'LOTO Partner') {
+        setTimeout(() => {
+          promptGentleGps();
+        }, 1500); // Ritardo leggero per non sovrapporsi al wizard
+      }
+
     } catch (e) {
       console.log("Errore caricaDati:", e);
     } finally {
@@ -220,6 +233,40 @@ export default function VetrinaScreen() {
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  };
+
+  const [isGeofenceActive, setIsGeofenceActive] = useState(false);
+
+  const promptGentleGps = async () => {
+    if (!isGeofenceActive) {
+      await AsyncStorage.setItem('loto_gps_prompt_seen', 'true');
+      Alert.alert(
+        "Ottieni il massimo da L.O.T.O.",
+        "Vuoi attivare la localizzazione in background? Ti permetterà di guadagnare LOTO PTI camminando per la città in automatico e sbloccare i Whisper. Puoi spegnerli in qualsiasi momento dalle Impostazioni.",
+        [
+          { text: "Non ora", style: "cancel" },
+          { 
+            text: "Attiva", 
+            onPress: async () => {
+              await startBackgroundLocationUpdates();
+              setIsGeofenceActive(true);
+            }
+          }
+        ]
+      );
+    }
+  };
+
+  const toggleSensors = async () => {
+    if (!isGeofenceActive) {
+      await startBackgroundLocationUpdates();
+      setIsGeofenceActive(true);
+      Alert.alert("Sensori Attivati", "Ora guadagnerai LOTO PTI camminando!");
+    } else {
+      Alert.alert("Risparmio Energetico", "I sensori in background sono stati spenti.");
+      setIsGeofenceActive(false);
+      await stopBackgroundLocationUpdates();
+    }
   };
 
   const executeScan = async (poi: any) => {
@@ -355,11 +402,12 @@ export default function VetrinaScreen() {
 
         {/* 1. HEADER 'SYMMETRY' */}
         <View style={styles.topBar}>
-          <Text style={styles.hubTitleSymmetry}>{isPartner ? 'L.O.T.O. B2B' : 'L.O.T.O. HUB'}</Text>
-          <TouchableOpacity onPress={() => setLang(lang === 'IT' ? 'UK' : 'IT')} style={styles.languageIconWrapper}>
-            <MaterialIcons name="language" size={24} color={theme.text} />
-            <View style={styles.langBadge}><Text style={styles.langBadgeText}>{lang}</Text></View>
-          </TouchableOpacity>
+          <View style={{ alignItems: 'flex-start' }}>
+            <Text style={styles.hubTitleSymmetry}>{isPartner ? 'L.O.T.O. B2B' : 'L.O.T.O. HUB'}</Text>
+            <Text style={{ color: theme.tint, fontSize: 15, fontFamily: 'serif', fontStyle: 'italic', letterSpacing: 1, marginTop: 2, opacity: 0.9 }}>
+              {currentCity === 'taranto' ? 'Taranto' : 'Lecce'}
+            </Text>
+          </View>
         </View>
 
         {isPartner ? (
@@ -488,6 +536,7 @@ export default function VetrinaScreen() {
                 </View>
               </View>
             </View>
+
           </>
         )}
       <View style={styles.tickerBar}>

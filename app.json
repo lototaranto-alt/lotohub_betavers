@@ -9,7 +9,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NFCReaderUsageDescription": "L.O.T.O. HUB ha bisogno del lettore NFC per scansionare i tag fisici (Zero-IoT) e sbloccare i check-in e le conversioni B2B.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ],
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Serve la posizione in background per permettere all'app Camaleonte di aggiornarsi automaticamente senza consumare batteria in primo piano."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -20,7 +28,13 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.lotoappfresh"
+      "package": "com.lotohub.app",
+      "permissions": [
+        "android.permission.NFC",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -43,9 +57,17 @@
       [
         "@rnmapbox/maps",
         {
-          "RNMapboxMapsDownloadToken": "sk.eyJ1IjoibG90b2h1YiIsImEiOiJjbW55ajB6amcwMWQ2MnhzZGYydDR4aWJuIn0.DB2PNMU7oM-VsDa8ulxWzw"
+          "RNMapboxMapsImpl": "mapbox"
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Consenti a L.O.T.O. HUB di usare la tua posizione per aggiornare il Geofencing anche in tasca.",
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      "react-native-nfc-manager",
       "expo-font",
       "expo-web-browser"
     ],
