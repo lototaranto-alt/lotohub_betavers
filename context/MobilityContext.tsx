@@ -36,7 +36,7 @@ const STORAGE_KEYS = {
 };
 
 export function MobilityProvider({ children }: MobilityProviderProps) {
-  const [mobilityType, setMobilityType] = useState<MobilityType>(null);
+  const [mobilityType, setMobilityType] = useState<MobilityType>('dolce');
   const [mobilityRadius, setMobilityRadius] = useState<MobilityRadius>(2);
   const [lastWizardDate, setLastWizardDate] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -56,7 +56,7 @@ export function MobilityProvider({ children }: MobilityProviderProps) {
           if (savedType) {
             setMobilityType(savedType as MobilityType);
           } else {
-            setMobilityType(null);
+            setMobilityType('dolce');
           }
 
           if (savedRadius) {
@@ -70,9 +70,9 @@ export function MobilityProvider({ children }: MobilityProviderProps) {
           setLastWizardDate(savedDate);
           console.log('[MobilityContext] Stato della mobilità ripristinato per oggi:', { savedType, savedRadius, savedDate });
         } else {
-          // Se la data è diversa o assente, resettiamo mobilityType a null (innescherà il wizard)
-          console.log('[MobilityContext] Data assente o diversa da oggi. Reset di mobilityType a null. Data salvata:', savedDate, 'Oggi:', todayStr);
-          setMobilityType(null);
+          // Se la data è diversa o assente, resettiamo mobilityType a dolce (Immediacy-First)
+          console.log('[MobilityContext] Data assente o diversa da oggi. Reset a dolce.');
+          setMobilityType('dolce');
           setLastWizardDate(savedDate);
         }
       } catch (error) {

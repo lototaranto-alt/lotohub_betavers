@@ -83,12 +83,12 @@ export default function TabLayout() {
           }}
         />
 
-        {/* 4. VISIBILE: Options */}
+        {/* 4. VISIBILE: Options (diventato Menu) */}
         <Tabs.Screen
           name="options"
           options={{
-            title: 'Opzioni',
-            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="settings" color={color} />,
+            title: 'Menu',
+            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="menu" color={color} />,
           }}
         />
 

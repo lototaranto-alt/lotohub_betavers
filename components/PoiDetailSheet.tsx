@@ -8,6 +8,7 @@ import { OfflineQueueManager } from '../utils/OfflineQueueManager';
 import NetInfo from '@react-native-community/netinfo';
 import { useTheme } from '../context/ThemeContext';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
+import { useRouteBuilder } from '../context/RouteContext';
 
 const LOTO_PALETTE = {
   VERDE_OLIVA: '#5F713D',
@@ -35,6 +36,10 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
   
   const [partySize, setPartySize] = useState(initialPartySize || 1);
   const [mobilityMode, setMobilityMode] = useState<'mezzo_proprio' | 'loto_mobility' | null>(null);
+  
+  // Route Builder
+  const { isPoiInRoute, addPoiToRoute, removePoiFromRoute } = useRouteBuilder();
+  const inRoute = poi ? isPoiInRoute(poi.id) : false;
   
   // Stati per la gestione del Vault Multimediale
   const [vaultMedia, setVaultMedia] = useState<any[]>([]);
@@ -167,50 +172,67 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
     }
 
     try {
-      if (media.id === 'm3') {
+      // Gestione Mock Data (m1, m2, m3)
+      if (media.id.startsWith('m')) {
         const simulaSbloccoMock = () => {
           setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
           setTimeout(() => {
             setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
-            Alert.alert("Successo!", `Hai decifrato il tag NFC (Simulazione) e ottenuto l'accesso all'Archivio!`);
+            if (media.id === 'm3') {
+              Alert.alert("Successo!", `Hai decifrato il tag NFC (Simulazione) e ottenuto l'accesso all'Archivio!`);
+            } else {
+              Alert.alert("Successo!", `"${media.title}" è stato sbloccato con successo (Simulazione)`);
+            }
           }, 1500);
         };
 
-        const avviaSbloccoNativo = async () => {
-          try {
-            setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
-            // Richiesta permessi e avvio lettura
-            await NfcManager.requestTechnology(NfcTech.Ndef);
-            const tag = await NfcManager.getTag();
-            if (tag) {
-              setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
-              Alert.alert("Successo TSaaSI!", `L'hardware ha verificato l'NFC NTAG424. Contenuto sbloccato.`);
+        if (media.id === 'm3') {
+          const avviaSbloccoNativo = async () => {
+            try {
+              setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
+              // Richiesta permessi e avvio lettura
+              await NfcManager.requestTechnology(NfcTech.Ndef);
+              const tag = await NfcManager.getTag();
+              if (tag) {
+                setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
+                Alert.alert("Successo TSaaSI!", `L'hardware ha verificato l'NFC NTAG424. Contenuto sbloccato.`);
+              }
+            } catch (ex) {
+              console.warn('Errore lettura NFC:', ex);
+              setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+              Alert.alert("Errore NFC", "Non è stato possibile leggere il tag.");
+            } finally {
+              NfcManager.cancelTechnologyRequest();
             }
-          } catch (ex) {
-            console.warn('Errore lettura NFC:', ex);
-            setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
-            Alert.alert("Errore NFC", "Non è stato possibile leggere il tag.");
-          } finally {
-            NfcManager.cancelTechnologyRequest();
-          }
-        };
+          };
 
-        // Approccio Lean: se il device supporta NFC ed è abilitato, proviamo quello vero. Altrimenti Mock.
-        const isSupported = await NfcManager.isSupported();
-        if (isSupported) {
-          const isEnabled = await NfcManager.isEnabled();
-          if (isEnabled) {
-             await avviaSbloccoNativo();
+          // Approccio Lean: se il device supporta NFC ed è abilitato, proviamo quello vero. Altrimenti Mock.
+          let isSupported = false;
+          try {
+            isSupported = await NfcManager.isSupported();
+          } catch (nfcErr) {
+            console.log('[NFC] Modulo nativo non trovato (ambiente Expo Go). Uso fallback.');
+          }
+          
+          if (isSupported) {
+            const isEnabled = await NfcManager.isEnabled();
+            if (isEnabled) {
+               await avviaSbloccoNativo();
+            } else {
+               Alert.alert("NFC Disabilitato", "Attiva l'NFC dalle impostazioni, oppure prosegui con la simulazione.", [
+                 { text: "Simula Sblocco", onPress: simulaSbloccoMock }
+               ]);
+            }
           } else {
-             Alert.alert("NFC Disabilitato", "Attiva l'NFC dalle impostazioni, oppure prosegui con la simulazione.", [
-               { text: "Simula Sblocco", onPress: simulaSbloccoMock }
-             ]);
+            // Dispositivo senza NFC (es. vecchi iPhone, Simulatori, Expo Web)
+            simulaSbloccoMock();
           }
         } else {
-          // Dispositivo senza NFC (es. vecchi iPhone, Simulatori, Expo Web)
+          // Per m1 o m2, simula subito
           simulaSbloccoMock();
         }
-        return;
+        
+        return; // Interrompe per qualsiasi mock
       }
 
       setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
@@ -310,14 +332,52 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* 1. Header Image */}
             <View style={styles.imageContainer}>
-              <View style={[styles.imagePlaceholder, { backgroundColor: theme.primary }]}>
-                <MaterialIcons name={poi.category === 'partner' ? "store" : "account-balance"} size={48} color={theme.background} />
-              </View>
+              {poi.id === 'mena' ? (
+                <Image 
+                  source={require('../assets/images/mena_logo.jpg')} 
+                  style={styles.coverImage} 
+                  resizeMode="contain" 
+                />
+              ) : poi.id === 'diseducation' ? (
+                <Image 
+                  source={require('../assets/images/diseducation_logo.jpg')} 
+                  style={styles.coverImage} 
+                  resizeMode="contain" 
+                />
+              ) : poi.id === 'castello' || (poi.name && poi.name.includes('Castello Aragonese')) ? (
+                <Image 
+                  source={require('../assets/images/castello-evento.png')} 
+                  style={styles.coverImage} 
+                  resizeMode="cover" 
+                />
+              ) : poi.image_url ? (
+                <Image 
+                  source={{ uri: poi.image_url }} 
+                  style={styles.coverImage} 
+                  resizeMode="cover" 
+                />
+              ) : (
+                <View style={[styles.imagePlaceholder, { backgroundColor: theme.primary }]}>
+                  <MaterialIcons name={poi.category === 'partner' ? "store" : "account-balance"} size={48} color={theme.background} />
+                </View>
+              )}
               <View style={styles.closeBtn}>
                 <TouchableOpacity onPress={onClose}>
                   <MaterialIcons name="close" size={24} color="#333" />
                 </TouchableOpacity>
               </View>
+
+              {/* ROUTE BUILDER FAB (uguale alla mappa) */}
+              <TouchableOpacity 
+                style={[styles.fabCircleRoute, { backgroundColor: inRoute ? theme.primary : '#FFF' }]}
+                onPress={() => {
+                  if (inRoute) removePoiFromRoute(poi.id);
+                  else addPoiToRoute(poi);
+                }}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name={inRoute ? "explore" : "add-location-alt"} size={22} color={inRoute ? '#FFF' : theme.text} />
+              </TouchableOpacity>
             </View>
 
             {/* 2. Header Info */}
@@ -586,8 +646,23 @@ const styles = StyleSheet.create({
   },
   dragHandle: { width: 40, height: 5, backgroundColor: '#E2E8F0', borderRadius: 3, alignSelf: 'center', marginBottom: 15 },
   imageContainer: { width: '100%', height: 200, position: 'relative' },
+  coverImage: { width: '100%', height: '100%' },
   imagePlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
-  closeBtn: { position: 'absolute', top: 15, right: 15, backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 20, padding: 5 },
+  closeBtn: { position: 'absolute', top: 15, right: 15, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8 },
+  fabCircleRoute: { 
+    position: 'absolute', 
+    top: 15, 
+    left: 15, 
+    width: 48, 
+    height: 48, 
+    borderRadius: 24, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    elevation: 8, 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.3, 
+    shadowRadius: 5 
+  },
   infoSection: { padding: 20, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   title: { fontSize: 26, fontWeight: '900', fontFamily: 'serif', color: LOTO_PALETTE.EBANO },
   subtitle: { fontSize: 14, color: '#64748B', marginTop: 4 },

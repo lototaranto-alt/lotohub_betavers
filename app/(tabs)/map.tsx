@@ -1,26 +1,74 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, Dimensions, TouchableOpacity, ScrollView, ImageBackground, Animated } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Constants from 'expo-constants';
+import { useMobility } from '../../context/MobilityContext';
+import { useTenant } from '../../context/TenantContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useRouteBuilder } from '../../context/RouteContext';
+import { mockEvents } from '../../utils/mockEvents';
+import { supabase } from '../../utils/supabase';
+import { injectPoisMock } from '../../utils/mockInjector';
+import * as Linking from 'expo-linking';
+import PoiDetailSheet from '../../components/PoiDetailSheet';
+import EventDetailSheet from '../../components/EventDetailSheet';
+import RouteSummarySheet from '../../components/RouteSummarySheet';
 
-// ==========================================
-// MAPBOX SHELL COMPONENT
-// Questo file è disaccoppiato da index.tsx
-// Preparato per @rnmapbox/maps (Development Build)
-// ==========================================
+const { width, height } = Dimensions.get('window');
 
-const LOTO_PALETTE = {
-  VERDE_OLIVA: '#5F713D',
-  TERRACOTTA: '#C36B4D',
-  CREMA: '#FDF8F2',
-  EBANO: '#1A1C1E',
-  SABBIA_DORATA: '#D9A05B',
+// Bounding box (approssimativo) di Taranto Città Vecchia per il Mockup
+const MAP_BOUNDS = {
+  north: 40.485,
+  south: 40.460,
+  west: 17.220,
+  east: 17.255
 };
 
 export default function MapScreen() {
-  const [hasMapbox, setHasMapbox] = useState(false);
-  const [mobilityFilter, setMobilityFilter] = useState('walking'); // walking, bike, bus, driver
+  const { mobilityType, saveMobilityChoice } = useMobility();
+  const { currentTenant } = useTenant();
+  const { theme } = useTheme();
+
+  const [pois, setPois] = useState<any[]>([]);
+  const [activeLayer, setActiveLayer] = useState('all'); // Filtro categoria
+  const [selectedPoi, setSelectedPoi] = useState<any>(null);
+  
+  // Local toggles that were in the original map sidebar
   const [accessibilityOn, setAccessibilityOn] = useState(false);
-  const [activeLayer, setActiveLayer] = useState('all');
+  const [heatmapOn, setHeatmapOn] = useState(true);
+  
+  // Eventi Community
+  const [eventsOn, setEventsOn] = useState(false);
+  const [eventsEverToggled, setEventsEverToggled] = useState(false);
+  const [isLayerDropdownOpen, setIsLayerDropdownOpen] = useState(false);
+
+  
+  // Route Builder
+  const { routePois, routeEvents, addPoiToRoute, removePoiFromRoute, isPoiInRoute, isEventInRoute, addEventToRoute, removeEventFromRoute } = useRouteBuilder();
+  const [isRouteSheetVisible, setIsRouteSheetVisible] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+
+  // Animazione menu mobilità
+  const [isMobilityExpanded, setIsMobilityExpanded] = useState(false);
+  const mobilityWidth = useRef(new Animated.Value(48)).current; // 48 è la larghezza di base del cerchio
+
+  const toggleMobilityMenu = () => {
+    setIsMobilityExpanded(!isMobilityExpanded);
+    Animated.timing(mobilityWidth, {
+      toValue: isMobilityExpanded ? 48 : 160,
+      duration: 300,
+      useNativeDriver: false
+    }).start();
+  };
+
+  const getMobilityIcon = (type: string) => {
+    if (type === 'pubblica') return 'directions-bus';
+    if (type === 'privata') return 'local-taxi';
+    return 'pedal-bike'; // Dolce
+  };
+
+  const scrollVerticalRef = React.useRef<ScrollView>(null);
+  const scrollHorizontalRef = React.useRef<ScrollView>(null);
 
   const layers = [
     { id: 'all', title: 'Tutti', icon: 'public' },
@@ -29,102 +77,336 @@ export default function MapScreen() {
     { id: 'secret', title: 'Secret', icon: 'vpn-key' }
   ];
 
-  return (
-    <SafeAreaView style={styles.container}>
+  useEffect(() => {
+    const fetchMapPois = async () => {
+      const { data, error } = await supabase.rpc('get_pois');
+
+      if (!error && data) {
+        const injected = injectPoisMock(data);
+        console.log('[Map Mockup] POIs fetchati:', injected.length);
+        setPois(injected);
+      } else {
+        console.log('[Map Mockup] Errore Supabase:', error);
+      }
+    };
+    fetchMapPois();
+  }, [currentTenant]);
+
+  // Listener per Deferred Deep Linking
+  useEffect(() => {
+    if (pois.length === 0) return;
+
+    const handleDeepLink = (url: string | null) => {
+      if (!url) return;
+      const parsed = Linking.parse(url);
+      if (parsed.path && parsed.path.startsWith('p/')) {
+        const poiId = parsed.path.split('/')[1];
+        const poi = pois.find(p => p.id === poiId);
+        
+        if (poi && scrollVerticalRef.current && scrollHorizontalRef.current) {
+          // Calcoliamo la posizione approssimativa X e Y basandoci sulle percentuali 
+          // width: width * 2, height: height * 1.2 (come in styles.mapImage)
+          const coords = getPinCoordinates(poi.lat, poi.lng);
+          const xPercent = parseFloat(coords.left as string) / 100;
+          const yPercent = parseFloat(coords.top as string) / 100;
+          
+          const targetX = (width * 2 * xPercent) - (width / 2);
+          const targetY = (height * 1.2 * yPercent) - (height / 2);
+          
+          scrollHorizontalRef.current.scrollTo({ x: Math.max(0, targetX), animated: true });
+          scrollVerticalRef.current.scrollTo({ y: Math.max(0, targetY), animated: true });
+          
+          console.log('[Deep Linking] Zoom eseguito su:', poi.name);
+          // L'utente aveva chiesto "manteniamo solo lo zoom senza aprire scheda ingombrabte"
+          // Quindi NON facciamo setSelectedPoi(poi)
+        }
+      }
+    };
+
+    Linking.getInitialURL().then(handleDeepLink);
+    const subscription = Linking.addEventListener('url', ({ url }) => handleDeepLink(url));
+    
+    return () => subscription.remove();
+  }, [pois]);
+
+  const getPinCoordinates = (lat: number, lng: number) => {
+    const x = ((lng - MAP_BOUNDS.west) / (MAP_BOUNDS.east - MAP_BOUNDS.west)) * 100;
+    const y = ((MAP_BOUNDS.north - lat) / (MAP_BOUNDS.north - MAP_BOUNDS.south)) * 100;
+    return { 
+      left: `${Math.max(5, Math.min(x, 95))}%` as any, 
+      top: `${Math.max(5, Math.min(y, 95))}%` as any
+    };
+  };
+
+  const getPosition = (lat: number, lng: number) => getPinCoordinates(lat, lng);
+
+  const getFilteredPois = () => {
+    return pois.filter(poi => {
+      // Filtro Layer Categoria
+      if (activeLayer === 'free' && poi.category !== 'free') return false;
+      if (activeLayer === 'partner' && poi.category !== 'partner') return false;
+      if (activeLayer === 'secret' && poi.type !== 'secret') return false;
       
-      {/* FLOATING PILL BAR (Layer Filter) */}
-      <View style={styles.floatingBarWrapper}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.floatingBarScroll}>
+      // Esempio logica accessibilità (se attivata)
+      if (accessibilityOn && poi.difficulty_score > 30) return false;
+
+      return true;
+    });
+  };
+
+  const filteredPois = getFilteredPois();
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+         {/* FLOATING PILL BAR (Layer Filter) */}
+      <View style={[styles.floatingBarWrapper, { backgroundColor: theme.background, zIndex: 20 }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          
+          {/* Heatmap Toggle */}
+          <TouchableOpacity 
+            style={[styles.pillBtn, { borderColor: heatmapOn ? '#E63946' : theme.border, backgroundColor: heatmapOn ? 'rgba(230, 57, 70, 0.1)' : 'transparent', flex: 1, paddingHorizontal: 5, justifyContent: 'center' }]}
+            onPress={() => setHeatmapOn(!heatmapOn)}
+          >
+            <MaterialIcons name="local-fire-department" size={16} color={heatmapOn ? '#E63946' : theme.primary} />
+            <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text, fontWeight: 'bold' }]}>Densità Folla</Text>
+          </TouchableOpacity>
+          
+          <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 2 }} />
+
+          {/* Filtro POI (Dropdown Trigger) */}
+          <TouchableOpacity 
+            style={[styles.pillBtn, { borderColor: theme.border, flex: 1.2, paddingHorizontal: 5, justifyContent: 'center' }]}
+            onPress={() => setIsLayerDropdownOpen(!isLayerDropdownOpen)}
+          >
+            <MaterialIcons name="place" size={14} color={theme.primary} />
+            <Text style={[styles.pillText, { color: theme.text, fontWeight: 'bold' }]} numberOfLines={1}>
+              {layers.find(l => l.id === activeLayer)?.title || 'Punti di Interesse'}
+            </Text>
+            <MaterialIcons name={isLayerDropdownOpen ? "arrow-drop-up" : "arrow-drop-down"} size={16} color={theme.textMuted} />
+          </TouchableOpacity>
+
+          <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 2 }} />
+
+          {/* Toggle Eventi Community */}
+          <TouchableOpacity 
+            style={[styles.pillBtn, { borderColor: eventsOn ? '#10B981' : theme.border, backgroundColor: eventsOn ? 'rgba(16, 185, 129, 0.1)' : 'transparent', flex: 0.8, paddingHorizontal: 5, justifyContent: 'center', marginRight: 0 }]}
+            onPress={() => {
+              setEventsOn(!eventsOn);
+              setEventsEverToggled(true);
+            }}
+          >
+            <MaterialIcons name="event-star" size={14} color={eventsOn ? '#10B981' : theme.primary} />
+            <Text style={[styles.pillText, { color: eventsOn ? '#10B981' : theme.text, fontWeight: 'bold' }]}>Community</Text>
+          </TouchableOpacity>
+
+        </View>
+      </View>
+
+      {/* DROPDOWN LAYER POI */}
+      {isLayerDropdownOpen && (
+        <View style={[styles.dropdownContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           {layers.map(layer => (
             <TouchableOpacity 
               key={layer.id} 
-              style={[styles.pillBtn, activeLayer === layer.id && styles.pillBtnActive]}
-              onPress={() => setActiveLayer(layer.id)}
+              style={[styles.dropdownItem, activeLayer === layer.id && { backgroundColor: theme.primary + '1A' }]}
+              onPress={() => {
+                setActiveLayer(layer.id);
+                setIsLayerDropdownOpen(false);
+              }}
             >
-              <MaterialIcons name={layer.icon as any} size={16} color={activeLayer === layer.id ? '#FFF' : LOTO_PALETTE.VERDE_OLIVA} />
-              <Text style={[styles.pillText, activeLayer === layer.id && styles.pillTextActive]}>{layer.title}</Text>
+              <MaterialIcons name={layer.icon as any} size={20} color={activeLayer === layer.id ? theme.primary : theme.text} />
+              <Text style={[styles.dropdownItemText, { color: activeLayer === layer.id ? theme.primary : theme.text }]}>{layer.title}</Text>
+              {activeLayer === layer.id && <MaterialIcons name="check" size={18} color={theme.primary} style={{ marginLeft: 'auto' }} />}
             </TouchableOpacity>
           ))}
-        </ScrollView>
-      </View>
-      {hasMapbox ? (
-        <View style={styles.mapContainer}>
-          {/* Il component Mapbox.MapView verrà iniettato qui */}
-          <Text style={styles.mockMapText}>Mappa Attiva (In attesa di Mapbox)</Text>
-          
-          {/* MAP SIDEBAR: Mobility & Accessibility */}
-          <View style={styles.sidebar}>
-            
-            {/* Accessibility Toggle */}
-            <TouchableOpacity 
-              style={[styles.sidebarBtn, accessibilityOn && styles.sidebarBtnActive]} 
-              onPress={() => setAccessibilityOn(!accessibilityOn)}
-            >
-              <MaterialIcons name="accessible" size={24} color={accessibilityOn ? '#FFF' : LOTO_PALETTE.EBANO} />
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            {/* Mobility: Bike */}
-            <TouchableOpacity 
-              style={[styles.sidebarBtn, mobilityFilter === 'bike' && styles.sidebarBtnActive]} 
-              onPress={() => setMobilityFilter('bike')}
-            >
-              <MaterialIcons name="pedal-bike" size={24} color={mobilityFilter === 'bike' ? '#FFF' : LOTO_PALETTE.EBANO} />
-            </TouchableOpacity>
-
-            {/* Mobility: Bus */}
-            <TouchableOpacity 
-              style={[styles.sidebarBtn, mobilityFilter === 'bus' && styles.sidebarBtnActive]} 
-              onPress={() => setMobilityFilter('bus')}
-            >
-              <MaterialIcons name="directions-bus" size={24} color={mobilityFilter === 'bus' ? '#FFF' : LOTO_PALETTE.EBANO} />
-            </TouchableOpacity>
-
-            {/* Mobility: Partner Drivers */}
-            <TouchableOpacity 
-              style={[styles.sidebarBtn, mobilityFilter === 'driver' && styles.sidebarBtnActive]} 
-              onPress={() => setMobilityFilter('driver')}
-            >
-              <MaterialIcons name="local-taxi" size={24} color={mobilityFilter === 'driver' ? '#FFF' : LOTO_PALETTE.EBANO} />
-            </TouchableOpacity>
-
-          </View>
-
-        </View>
-      ) : (
-        <View style={styles.placeholderContainer}>
-          <MaterialIcons name="map" size={100} color="#C9C4B8" style={{ opacity: 0.5 }} />
-          <Text style={styles.placeholderTitle}>LOTO MAP ENGINE</Text>
-          <Text style={styles.placeholderText}>
-            L&apos;infrastruttura geografica è pronta per la Development Build. Inserire il modulo nativo @rnmapbox/maps qui dentro per attivare il Layer.
-          </Text>
-          <TouchableOpacity style={styles.demoBtn} onPress={() => setHasMapbox(true)}>
-            <Text style={styles.demoBtnText}>Attiva (Mockup Sidebar)</Text>
-          </TouchableOpacity>
         </View>
       )}
-    </SafeAreaView>
+
+      {/* MAP MOCKUP INTERATTIVO */}
+      <View style={styles.mapContainer}>
+        <ScrollView ref={scrollVerticalRef} maximumZoomScale={3} minimumZoomScale={1} centerContent showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+          <ScrollView ref={scrollHorizontalRef} horizontal maximumZoomScale={3} minimumZoomScale={1} showsHorizontalScrollIndicator={false}>
+            <ImageBackground 
+              source={require('../../assets/images/map_bg.png')} 
+              style={styles.mapImage} 
+              resizeMode="cover"
+            >
+              {/* RENDER EVENTI COMMUNITY */}
+              {eventsOn && mockEvents.map(ev => {
+                const pos = getPosition(ev.lat, ev.lng);
+                const inRoute = isEventInRoute(ev.id);
+                return (
+                  <TouchableOpacity
+                    key={ev.id}
+                    style={[styles.pin, pos, { zIndex: 95 }]}
+                    onPress={() => setSelectedEvent(ev)}
+                  >
+                    <View style={{ alignItems: 'center' }}>
+                      <View style={[styles.pinDot, { 
+                        backgroundColor: inRoute ? theme.accent : '#10B981',
+                        borderColor: '#FFF',
+                        width: 28, height: 28, borderRadius: 14,
+                        transform: [{ scale: inRoute ? 1.2 : 1 }]
+                      }]}>
+                        <MaterialIcons name="star" size={16} color="#FFF" />
+                      </View>
+                      <View style={[styles.pinLabel, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                        <Text style={[styles.pinLabelText, { color: theme.text }]} numberOfLines={1}>{ev.title}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {/* RENDER HEATMAP */}
+              {heatmapOn && filteredPois.map(poi => {
+                const coords = getPinCoordinates(poi.lat, poi.lng);
+                const crowd = poi.crowd_level || 20;
+                const isHighDensity = crowd > 70;
+                const isMediumDensity = crowd > 35 && crowd <= 70;
+                const heatColor = isHighDensity ? 'rgba(230, 57, 70, 0.45)' : isMediumDensity ? 'rgba(244, 162, 97, 0.4)' : 'rgba(42, 157, 143, 0.35)';
+                const heatSize = isHighDensity ? 140 : isMediumDensity ? 90 : 60;
+                return (
+                  <View 
+                    key={`heat-${poi.id}`} 
+                    style={[
+                      { position: 'absolute', width: heatSize, height: heatSize, borderRadius: heatSize/2, backgroundColor: heatColor, marginLeft: -(heatSize/2)+8, marginTop: -(heatSize/2)+8 },
+                      coords
+                    ]} 
+                  />
+                );
+              })}
+
+              {/* RENDER PINS */}
+              {filteredPois.map(poi => {
+                const pos = getPinCoordinates(poi.lat, poi.lng);
+                const isSelected = selectedPoi?.id === poi.id;
+                const inRoute = isPoiInRoute(poi.id);
+                return (
+                  <TouchableOpacity
+                    key={poi.id}
+                    style={[styles.pin, pos, { zIndex: isSelected ? 100 : inRoute ? 90 : 10 }]}
+                    onPress={() => setSelectedPoi(poi)}
+                  >
+                    <View style={{ alignItems: 'center' }}>
+                      <View style={[styles.pinDot, { 
+                        backgroundColor: inRoute ? theme.accent : isSelected ? theme.primary : '#FFF',
+                        borderColor: inRoute ? '#FFF' : theme.primary,
+                        transform: [{ scale: isSelected ? 1.3 : inRoute ? 1.2 : 1 }]
+                      }]}>
+                        {inRoute && <MaterialIcons name="check" size={12} color="#FFF" />}
+                        {isSelected && !inRoute && <MaterialIcons name="place" size={14} color="#FFF" />}
+                      </View>
+                      <View style={[styles.pinLabel, { backgroundColor: isSelected ? theme.surface : 'rgba(0,0,0,0.6)', borderColor: isSelected ? theme.border : 'transparent' }]}>
+                        <Text style={[styles.pinLabelText, { color: isSelected ? theme.text : '#FFF' }]} numberOfLines={1}>{poi.name}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ImageBackground>
+          </ScrollView>
+        </ScrollView>
+        
+        {/* FAB GROUP (Bottom Right) */}
+        <View style={{ position: 'absolute', bottom: 25, right: 20, alignItems: 'flex-end' }}>
+          
+          {/* FAB 1: Accessibilità */}
+          <TouchableOpacity 
+            style={[styles.fabCircle, accessibilityOn && { backgroundColor: theme.primary }]}
+            onPress={() => setAccessibilityOn(!accessibilityOn)}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="accessible" size={20} color={accessibilityOn ? theme.background : theme.text} />
+          </TouchableOpacity>
+
+          {/* FAB 2: Mobilità (Espandibile a sinistra) */}
+          <Animated.View style={[styles.fabPill, { width: mobilityWidth, backgroundColor: theme.surface }]}>
+            {isMobilityExpanded ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', flex: 1, paddingHorizontal: 5 }}>
+                <TouchableOpacity onPress={() => { saveMobilityChoice('dolce', 2); toggleMobilityMenu(); }}>
+                  <MaterialIcons name="pedal-bike" size={20} color={mobilityType === 'dolce' ? theme.primary : theme.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { saveMobilityChoice('pubblica', 10); toggleMobilityMenu(); }}>
+                  <MaterialIcons name="directions-bus" size={20} color={mobilityType === 'pubblica' ? theme.primary : theme.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { saveMobilityChoice('privata', 30); toggleMobilityMenu(); }}>
+                  <MaterialIcons name="local-taxi" size={20} color={mobilityType === 'privata' ? theme.primary : theme.text} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} onPress={toggleMobilityMenu}>
+                <MaterialIcons name={getMobilityIcon(mobilityType || 'dolce')} size={20} color={theme.primary} />
+              </TouchableOpacity>
+            )}
+          </Animated.View>
+
+          {/* FAB 3: Crea Percorso */}
+          <TouchableOpacity 
+            style={[styles.fabCircle, { backgroundColor: routePois.length > 0 ? theme.primary : theme.surface }]}
+            onPress={() => {
+              setIsRouteSheetVisible(true);
+              if (!eventsEverToggled) {
+                setEventsOn(true);
+                setEventsEverToggled(true);
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="explore" size={20} color={routePois.length > 0 ? '#FFF' : theme.text} />
+            {routePois.length > 0 && (
+              <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: theme.accent, borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold' }}>{routePois.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+        </View>
+
+      </View>
+
+      {/* SCHEDE DETTAGLIO */}
+      <PoiDetailSheet 
+        poi={selectedPoi} 
+        visible={!!selectedPoi} 
+        onClose={() => setSelectedPoi(null)} 
+        onBook={() => {}}
+        onValidate={() => {}}
+        isBooked={false}
+        initialPartySize={1}
+      />
+
+      <EventDetailSheet
+        event={selectedEvent}
+        visible={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+      />
+
+      {/* RIEPILOGO PERCORSO */}
+      <RouteSummarySheet 
+        visible={isRouteSheetVisible} 
+        onClose={() => setIsRouteSheetVisible(false)} 
+      />
+
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FDFBF2' },
-  mapContainer: { flex: 1, backgroundColor: '#F0EBE1', justifyContent: 'center', alignItems: 'center' },
-  mockMapText: { color: LOTO_PALETTE.EBANO, fontSize: 18, fontFamily: 'serif', opacity: 0.3 },
-  sidebar: { position: 'absolute', right: 20, top: 100, backgroundColor: 'rgba(253, 248, 242, 0.9)', padding: 10, borderRadius: 30, elevation: 5, shadowColor: '#000', shadowOffset: {width:0, height:5}, shadowOpacity: 0.15, shadowRadius: 10, borderWidth: 0.5, borderColor: '#C9C4B8', alignItems: 'center' },
-  sidebarBtn: { width: 45, height: 45, borderRadius: 22.5, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center', marginVertical: 5 },
-  sidebarBtnActive: { backgroundColor: LOTO_PALETTE.VERDE_OLIVA, elevation: 3 },
-  divider: { width: 30, height: 1, backgroundColor: '#C9C4B8', marginVertical: 10 },
-  placeholderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  placeholderTitle: { fontSize: 24, fontWeight: '900', color: LOTO_PALETTE.EBANO, fontFamily: 'serif', marginTop: 20 },
-  placeholderText: { textAlign: 'center', color: '#64748B', marginTop: 10, lineHeight: 22 },
-  demoBtn: { marginTop: 30, padding: 15, backgroundColor: LOTO_PALETTE.VERDE_OLIVA, borderRadius: 20 },
-  demoBtnText: { color: '#FFF', fontWeight: 'bold' },
-  floatingBarWrapper: { position: 'absolute', top: 50, left: 0, right: 0, zIndex: 10 },
-  floatingBarScroll: { paddingHorizontal: 20, paddingVertical: 10 },
-  pillBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(253, 248, 242, 0.95)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 25, elevation: 4, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.1, shadowRadius: 5, borderWidth: 0.5, borderColor: '#E2E8F0', marginRight: 10 },
-  pillBtnActive: { backgroundColor: LOTO_PALETTE.VERDE_OLIVA, borderColor: LOTO_PALETTE.VERDE_OLIVA },
-  pillText: { marginLeft: 6, fontSize: 13, fontWeight: 'bold', color: LOTO_PALETTE.EBANO },
-  pillTextActive: { color: '#FFF' }
+  container: { flex: 1 },
+  floatingBarWrapper: { paddingTop: Constants.statusBarHeight + 10, paddingBottom: 10, paddingHorizontal: 10, zIndex: 10, elevation: 5 },
+  floatingBarScroll: { paddingRight: 20 },
+  pillBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  pillText: { fontSize: 13, fontWeight: 'bold', marginLeft: 4 },
+  dropdownContainer: { position: 'absolute', top: Constants.statusBarHeight + 60, left: 130, zIndex: 30, borderRadius: 12, borderWidth: 1, elevation: 10, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.15, shadowRadius: 10, paddingVertical: 5, minWidth: 160 },
+  dropdownItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 15 },
+  dropdownItemText: { fontSize: 14, fontWeight: 'bold', marginLeft: 10 },
+  mapContainer: { flex: 1, overflow: 'hidden', backgroundColor: '#e0e0e0', position: 'relative' },
+  mapImage: { width: width * 2, height: height * 1.2, position: 'relative' },
+  pin: { position: 'absolute', alignItems: 'center', justifyContent: 'center', width: 100, marginLeft: -50, marginTop: -15 },
+  pinDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 3, borderColor: '#FFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3, elevation: 5, justifyContent: 'center', alignItems: 'center' },
+  pinLabel: { fontSize: 10, fontWeight: '900', color: '#FFF', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginTop: 4, overflow: 'hidden' },
+  pinLabelText: { fontSize: 10, fontWeight: 'bold' },
+  fabCircle: { backgroundColor: '#FFF', width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOffset: {width: 0, height: 3}, shadowOpacity: 0.2, shadowRadius: 5, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  fabPill: { backgroundColor: '#FFF', height: 44, borderRadius: 22, elevation: 5, shadowColor: '#000', shadowOffset: {width: 0, height: 3}, shadowOpacity: 0.2, shadowRadius: 5, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', overflow: 'hidden' }
 });

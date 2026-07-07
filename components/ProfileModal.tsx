@@ -22,8 +22,20 @@ interface ProfileModalProps {
 export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userItineraries, userTransactions, theme, t, setUserProfile }: ProfileModalProps) {
   const router = useRouter();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [activeProfileSection, setActiveProfileSection] = useState<'badges' | 'itineraries'>('badges');
   const [editingNickname, setEditingNickname] = useState(false);
   const [tempNickname, setTempNickname] = useState(userProfile?.nickname || '');
+  const [userBadges, setUserBadges] = useState<string[]>([]);
+
+  React.useEffect(() => {
+    if (visible && userProfile?.id) {
+      const fetchBadges = async () => {
+        const { data } = await supabase.from('user_badges').select('badge_type').eq('user_id', userProfile.id);
+        if (data) setUserBadges(data.map(b => b.badge_type));
+      };
+      fetchBadges();
+    }
+  }, [visible, userProfile?.id]);
 
   const salvaNickname = async () => {
     if (!tempNickname.trim()) return;
@@ -58,7 +70,22 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
     mStatValBoutique: { fontWeight: '900', fontFamily: 'serif' },
     mStatLab: { color: theme.textMuted, fontWeight: '600', marginTop: 5 },
     closeExpModal: { position: 'absolute', top: 20, right: 20, backgroundColor: 'rgba(255,255,255,0.9)', padding: 10, borderRadius: 20, elevation: 5 },
+    badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 15 },
+    badgeSticker: { width: 50, height: 50, borderRadius: 25, backgroundColor: theme.background, margin: 5, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
+    tabHeaderContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.border, marginBottom: 10 },
+    tabHeaderBtn: { flex: 1, paddingVertical: 10, alignItems: 'center' },
   });
+
+  const badgeDefinitions = [
+    { id: 'sentinella', icon: 'visibility', title: 'Osservatore Civico', track: 'Impegno', color: '#4CAF50' },
+    { id: 'esploratore', icon: 'explore', title: 'Esploratore Urbano', track: 'Impegno', color: '#2196F3' },
+    { id: 'attivo', icon: 'security', title: 'Cittadino Attivo', track: 'Impegno', color: '#FF9800' },
+    { id: 'faro', icon: 'wb-incandescent', title: 'Guida Locale', track: 'Impegno', color: '#FFEB3B' },
+    { id: 'custode', icon: 'account-balance', title: 'Custode della Città', track: 'Impegno', color: '#9C27B0' },
+    { id: 'eco', icon: 'record-voice-over', title: 'Voce Risonante', track: 'Impatto', color: '#F44336' },
+    { id: 'forgiatore', icon: 'handyman', title: 'Risolutore', track: 'Impatto', color: '#795548' },
+    { id: 'eroe', icon: 'military-tech', title: 'Artefice del Cambiamento', track: 'Impatto', color: '#FFD700' }
+  ];
 
   return (
     <Modal visible={visible} transparent animationType="slide">
@@ -68,7 +95,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
             
             {/* CARD 1: Badge Profilo & I Miei Itinerari */}
             <TouchableOpacity 
-              activeOpacity={0.9}
+              activeOpacity={1}
               onPress={() => setExpandedCard(expandedCard === 'profile' ? null : 'profile')}
               style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'profile' ? 'flex-start' : 'center', paddingVertical: expandedCard === 'profile' ? 20 : 35, height: expandedCard === 'profile' ? 450 : 310 }]}
             >
@@ -79,8 +106,14 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                   </TouchableOpacity>
                 </View>
               )}
-              <View style={[styles.badgeMedalContainer, { borderColor: levelInfo.color, marginBottom: expandedCard === 'profile' ? 10 : 0 }]}>
-                <MaterialIcons name={levelInfo.stemma} size={expandedCard === 'profile' ? 40 : 54} color={levelInfo.color} />
+              <View style={[styles.badgeMedalContainer, { 
+                width: expandedCard === 'profile' ? 90 : 70,
+                height: expandedCard === 'profile' ? 90 : 70,
+                borderRadius: expandedCard === 'profile' ? 45 : 35,
+                borderColor: levelInfo.color, 
+                marginBottom: expandedCard === 'profile' ? 10 : 0 
+              }]}>
+                <MaterialIcons name={levelInfo.stemma} size={expandedCard === 'profile' ? 40 : 34} color={levelInfo.color} />
               </View>
               <View style={{ alignItems: 'center', width: '100%' }}>
                 {editingNickname ? (
@@ -104,41 +137,91 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
               )}
 
               {expandedCard === 'profile' && (
-                <View style={{ flex: 1, width: '100%', marginTop: 20, borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 15 }}>
-                  <Text style={{fontSize:12, fontWeight:'bold', color: theme.text, marginBottom:10, alignSelf:'flex-start'}}>I MIEI ITINERARI</Text>
-                  {userItineraries.length === 0 ? (
-                    <Text style={{fontSize:12, color: theme.textMuted, textAlign:'center', marginTop:20}}>Nessun itinerario salvato. Creane uno per riempire questa sezione!</Text>
-                  ) : (
-                    <FlatList
-                      data={userItineraries}
-                      keyExtractor={item => item.id}
-                      showsVerticalScrollIndicator={false}
-                      renderItem={({item}) => (
-                        <View style={{borderBottomWidth:1, borderBottomColor: theme.border, paddingVertical:12}}>
-                          <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={{fontSize:14, fontWeight:'bold', color: theme.text}} numberOfLines={1}>{item.title}</Text>
-                              <View style={{flexDirection:'row', marginTop: 4}}>
-                                <Text style={{fontSize:11, color: theme.accent, fontWeight: 'bold'}}>{item.potential_xp} PTI potenziali</Text>
-                                <Text style={{fontSize:11, color: theme.textMuted, marginLeft: 10}}>{new Date(item.created_at).toLocaleDateString()}</Text>
-                              </View>
-                            </View>
+                <View style={{ flex: 1, width: '100%', marginTop: 15, borderTopWidth: 1, borderTopColor: theme.border }}>
+                  
+                  {/* TAB HEADER */}
+                  <View style={styles.tabHeaderContainer}>
+                    <TouchableOpacity 
+                      style={[styles.tabHeaderBtn, { borderBottomWidth: activeProfileSection === 'badges' ? 2 : 0, borderBottomColor: theme.text }]}
+                      onPress={() => setActiveProfileSection('badges')}
+                    >
+                      <Text style={{fontSize:11, fontWeight:'bold', color: activeProfileSection === 'badges' ? theme.text : theme.textMuted}}>MEDAGLIERE</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.tabHeaderBtn, { borderBottomWidth: activeProfileSection === 'itineraries' ? 2 : 0, borderBottomColor: theme.text }]}
+                      onPress={() => setActiveProfileSection('itineraries')}
+                    >
+                      <Text style={{fontSize:11, fontWeight:'bold', color: activeProfileSection === 'itineraries' ? theme.text : theme.textMuted}}>ITINERARI</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {/* TAB CONTENT: BADGES */}
+                  {activeProfileSection === 'badges' && (
+                    <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+                      <View style={styles.badgeGrid}>
+                        {badgeDefinitions.map(badge => {
+                          const hasBadge = userBadges.includes(badge.id);
+                          return (
                             <TouchableOpacity 
-                              style={{ backgroundColor: theme.text, padding: 8, borderRadius: 12, marginLeft: 10 }}
+                              key={badge.id}
+                              style={[styles.badgeSticker, { 
+                                borderColor: hasBadge ? badge.color : theme.border,
+                                opacity: hasBadge ? 1 : 0.3,
+                                backgroundColor: hasBadge ? badge.color + '1A' : theme.background
+                              }]}
                               onPress={() => {
-                                 Alert.alert('Condividi Itinerario', `Condivisione di "${item.title}" in arrivo!`);
+                                if (hasBadge) {
+                                  Alert.alert(badge.title, `Traccia: ${badge.track}\nSbloccato con successo! Puoi condividerlo.`, [{ text: 'Condividi', onPress: () => {} }, { text: 'Chiudi' }]);
+                                } else {
+                                  Alert.alert(badge.title, `Traccia: ${badge.track}\nContinua a inviare segnalazioni e aiutare la città per sbloccare questa medaglia.`);
+                                }
                               }}
                             >
-                              <MaterialIcons name="share" size={16} color={theme.background} />
+                              <MaterialIcons name={badge.icon} size={24} color={hasBadge ? badge.color : theme.textMuted} />
                             </TouchableOpacity>
-                          </View>
-                        </View>
+                          );
+                        })}
+                      </View>
+                    </ScrollView>
+                  )}
+
+                  {/* TAB CONTENT: ITINERARI */}
+                  {activeProfileSection === 'itineraries' && (
+                    <View style={{ flex: 1 }}>
+                      {userItineraries.length === 0 ? (
+                        <Text style={{fontSize:12, color: theme.textMuted, textAlign:'center', marginTop:10}}>Nessun itinerario salvato.</Text>
+                      ) : (
+                        <FlatList
+                          data={userItineraries}
+                          keyExtractor={item => item.id}
+                          showsVerticalScrollIndicator={false}
+                          renderItem={({item}) => (
+                            <View style={{borderBottomWidth:1, borderBottomColor: theme.border, paddingVertical:12}}>
+                              <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
+                                <View style={{ flex: 1 }}>
+                                  <Text style={{fontSize:14, fontWeight:'bold', color: theme.text}} numberOfLines={1}>{item.title}</Text>
+                                  <View style={{flexDirection:'row', marginTop: 4}}>
+                                    <Text style={{fontSize:11, color: theme.accent, fontWeight: 'bold'}}>{item.potential_xp} PTI</Text>
+                                    <Text style={{fontSize:11, color: theme.textMuted, marginLeft: 10}}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                                  </View>
+                                </View>
+                                <TouchableOpacity 
+                                  style={{ backgroundColor: theme.text, padding: 8, borderRadius: 12, marginLeft: 10 }}
+                                  onPress={() => Alert.alert('Condividi Itinerario', `Condivisione di "${item.title}" in arrivo!`)}
+                                >
+                                  <MaterialIcons name="share" size={16} color={theme.background} />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          )}
+                        />
                       )}
-                    />
+                    </View>
                   )}
                   
+                  {/* BOTTOM ACTION */}
                   <TouchableOpacity
-                    style={{ backgroundColor: theme.text, padding: 12, borderRadius: 12, marginTop: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                    style={{ backgroundColor: theme.text, padding: 12, borderRadius: 12, marginTop: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
                     onPress={() => { onClose(); router.push('/upgrade'); }}
                   >
                     <MaterialIcons name="workspace-premium" size={20} color={theme.accent} style={{ marginRight: 8 }} />
@@ -219,7 +302,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
             </TouchableOpacity>
 
             {/* CARD 4: Crea Percorso */}
-            <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden' }]}>
+            <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden', height: 310 }]}>
               <Image source={require('../assets/images/route_creation_flat.png')} style={{ width: '100%', height: 140 }} resizeMode="cover" />
               <View style={{ flex: 1, padding: 20, justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                 <View style={{ alignItems: 'center' }}>

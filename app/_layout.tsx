@@ -11,6 +11,7 @@ import { TenantProvider } from '../context/TenantContext';
 import { CityProvider } from '../context/CityContext';
 import { MobilityProvider } from '../context/MobilityContext';
 import { ThemeProvider as AppThemeProvider } from '../context/ThemeContext';
+import { RouteProvider } from '../context/RouteContext';
 import MobilityWizard from '../components/MobilityWizard';
 import NfcManager from 'react-native-nfc-manager';
 
@@ -25,28 +26,24 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    const initAuth = async () => {
+      const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
-      const checkProfile = async (user: any) => {
-        const { data } = await supabase.from('profiles').select('profile_completed').eq('id', user.id).single();
-        if (data && !data.profile_completed) {
-          router.replace('/wizard');
-        } else {
-          router.replace('/(tabs)');
-        }
+      const navigateToApp = () => {
+        // Redirige direttamente alla Mappa (Immediacy-First)
+        router.replace('/(tabs)/map');
       };
 
       if (!session) {
         const { data, error } = await supabase.auth.signInAnonymously();
         if (error) console.error('[Auth Error] Fallimento login anonimo:', error.message);
         else {
-          console.log('[Auth Success] Entrato come ospite (L.O.T.O. Guest)');
-          if (data?.user) checkProfile(data.user);
+          console.log('[Auth Success] Entrato come ospite anonimo');
+          if (data?.user) navigateToApp();
         }
       } else {
-        console.log('[Auth Success] Sessione esistente ripristinata');
-        checkProfile(session.user);
+        console.log('[Auth Success] Sessione anonima/guest esistente ripristinata');
+        navigateToApp();
       }
     };
 
@@ -58,16 +55,18 @@ export default function RootLayout() {
       <AppThemeProvider>
         <CityProvider>
           <MobilityProvider>
-            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="wizard" options={{ headerShown: false, animation: 'fade' }} />
-                <Stack.Screen name="route-creation-mockup" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
-                <Stack.Screen name="upgrade" options={{ presentation: 'modal', headerShown: false }} />
-              </Stack>
-              <StatusBar style="auto" />
-              <MobilityWizard />
-            </ThemeProvider>
+            <RouteProvider>
+              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                <Stack>
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="route-creation-mockup" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+                  <Stack.Screen name="upgrade" options={{ presentation: 'modal', headerShown: false }} />
+                  <Stack.Screen name="p/[id]" options={{ presentation: 'modal', headerShown: false }} />
+                </Stack>
+                <StatusBar style="auto" />
+                <MobilityWizard />
+              </ThemeProvider>
+            </RouteProvider>
           </MobilityProvider>
         </CityProvider>
       </AppThemeProvider>

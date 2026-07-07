@@ -2,7 +2,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Animated, Easing } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../utils/supabase';
 import { injectPoisMock } from '../../utils/mockInjector';
@@ -12,6 +12,7 @@ import { useCity } from '../../context/CityContext';
 import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
+import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
 import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
 import { calculateDistance } from '../../utils/haversine';
@@ -134,6 +135,8 @@ export default function VetrinaScreen() {
 
   // STATI LOGICI
   const [lang, setLang] = useState<'IT' | 'UK'>('IT');
+  const [isTipsVisible, setIsTipsVisible] = useState(false);
+  const sparkleAnim = useRef(new Animated.Value(1)).current;
   const [isExpModalVisible, setIsExpModalVisible] = useState(false);
   const [bookedSessions, setBookedSessions] = useState<{ [key: string]: string }>({});
   
@@ -154,6 +157,14 @@ export default function VetrinaScreen() {
   useEffect(() => {
     caricaDati();
     const interval = setInterval(() => avviaFiltroCinematico(), KINEMATIC_TIMER_MS);
+    
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(sparkleAnim, { toValue: 1.15, duration: 1500, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(sparkleAnim, { toValue: 1, duration: 1500, useNativeDriver: true, easing: Easing.inOut(Easing.ease) })
+      ])
+    ).start();
+
     return () => clearInterval(interval);
   }, []);
 
@@ -404,10 +415,17 @@ export default function VetrinaScreen() {
         <View style={styles.topBar}>
           <View style={{ alignItems: 'flex-start' }}>
             <Text style={styles.hubTitleSymmetry}>{isPartner ? 'L.O.T.O. B2B' : 'L.O.T.O. HUB'}</Text>
-            <Text style={{ color: theme.tint, fontSize: 15, fontFamily: 'serif', fontStyle: 'italic', letterSpacing: 1, marginTop: 2, opacity: 0.9 }}>
+            <Text style={{ color: theme.primary, fontSize: 15, fontFamily: 'serif', fontStyle: 'italic', letterSpacing: 1, marginTop: 2, opacity: 0.9 }}>
               {currentCity === 'taranto' ? 'Taranto' : 'Lecce'}
             </Text>
           </View>
+          
+          <TouchableOpacity onPress={() => setLang(lang === 'IT' ? 'UK' : 'IT')} style={styles.languageIconWrapper}>
+            <MaterialIcons name="language" size={24} color={theme.text} />
+            <View style={styles.langBadge}>
+              <Text style={styles.langBadgeText}>{lang}</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {isPartner ? (
@@ -471,7 +489,7 @@ export default function VetrinaScreen() {
                           "Completa il tuo profilo anonimo per sbloccare i LOTO PTI. Dicci in quanti viaggiate e il tuo stile di mobilità per ricevere bonus moltiplicatori e aiutarci a preservare l'ecosistema cittadino su misura per te",
                           [
                             { text: "Non ora", style: "cancel" },
-                            { text: "Completa", onPress: () => router.replace('/wizard') }
+                            { text: "Completa", onPress: () => forceReopenWizard() }
                           ]
                         );
                       }}
@@ -624,7 +642,7 @@ export default function VetrinaScreen() {
           data={accordionSections}
           ListHeaderComponent={renderHeader}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 30 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
           renderItem={renderAccordionSection}
         />
 
@@ -660,22 +678,19 @@ export default function VetrinaScreen() {
           initialPartySize={userProfile?.party_size || 1}
         />
 
-      {/* DEV MODE: Tasto rapido per tornare al Wizard */}
-      {__DEV__ && (
+      {/* BOTTONE TIPS BOUTIQUE ANIMATO */}
+      <Animated.View style={{ position: 'absolute', bottom: 30, left: 20, transform: [{ scale: sparkleAnim }] }}>
         <TouchableOpacity 
-          style={{ position: 'absolute', bottom: 30, left: 20, backgroundColor: theme.text, padding: 10, borderRadius: 20, elevation: 5, flexDirection: 'row', alignItems: 'center' }}
-          onPress={async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              await supabase.from('profiles').update({ profile_completed: false }).eq('id', user.id);
-              router.replace('/wizard');
-            }
-          }}
+          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: theme.surface, elevation: 8, shadowColor: theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.border }}
+          onPress={() => setIsTipsVisible(true)}
+          activeOpacity={0.8}
         >
-          <MaterialIcons name="science" size={16} color="#FFF" />
-          <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', marginLeft: 5 }}>RESET WIZARD</Text>
+          <MaterialIcons name="auto-awesome" size={20} color={theme.primary} />
         </TouchableOpacity>
-      )}
+      </Animated.View>
+
+      <TipsBoutiqueSheet visible={isTipsVisible} onClose={() => setIsTipsVisible(false)} />
+
       </SafeAreaView>
     </ImageBackground>
   );
@@ -686,7 +701,7 @@ const getStyles = (theme: any) => StyleSheet.create({
   headerContainer: { paddingBottom: 15 },
 
   // HEADER SYMMETRY
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingLeft: 18, paddingRight: 25, paddingTop: 40, paddingBottom: 15, alignItems: 'center' },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingLeft: 18, paddingRight: 25, paddingTop: 35, paddingBottom: 5, alignItems: 'center' },
   hubTitleSymmetry: { fontSize: 40, fontWeight: '900', color: theme.text, fontFamily: 'serif', letterSpacing: 0.5, lineHeight: 44, includeFontPadding: false, textAlignVertical: 'center' },
   languageIconWrapper: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: theme.secondary, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   langBadge: { position: 'absolute', bottom: -5, right: -5, backgroundColor: theme.text, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 8 },
@@ -706,7 +721,7 @@ const getStyles = (theme: any) => StyleSheet.create({
   },
 
   // RETTANGOLO PRESTIGE
-  prestigePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.primary, marginTop: 10, marginBottom: 25, marginRight: 25, paddingVertical: 26, paddingLeft: 6, paddingRight: 10, borderTopRightRadius: 50, borderBottomRightRadius: 50, elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
+  prestigePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.primary, marginTop: 5, marginBottom: 15, marginRight: 25, paddingVertical: 16, paddingLeft: 6, paddingRight: 10, borderTopRightRadius: 50, borderBottomRightRadius: 50, elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
   prestigeCenterCol: { flex: 1, marginLeft: 8, marginRight: 8, justifyContent: 'center', alignItems: 'flex-start' },
   prestigeTierTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFF', fontFamily: 'serif', marginBottom: 3, textAlign: 'left' },
   prestigeBadgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' },
@@ -716,23 +731,23 @@ const getStyles = (theme: any) => StyleSheet.create({
   avatarInitialPill: { color: '#FFF', fontWeight: 'bold', fontSize: 22, fontFamily: 'serif' },
 
   // IMPACT CARD '3 ARCHI'
-  archesSection: { marginHorizontal: 20, marginBottom: 25 },
-  archesMainTitle: { color: theme.text, fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'serif', textAlign: 'center', marginBottom: 15 },
+  archesSection: { marginHorizontal: 20, marginBottom: 15 },
+  archesMainTitle: { color: theme.text, fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'serif', textAlign: 'center', marginBottom: 10 },
   archesContainer: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  impactArch: { flex: 1, alignItems: 'center', paddingTop: 25, paddingBottom: 35, borderTopLeftRadius: 80, borderTopRightRadius: 80, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, elevation: 6, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
+  impactArch: { flex: 1, alignItems: 'center', paddingTop: 20, paddingBottom: 25, borderTopLeftRadius: 80, borderTopRightRadius: 80, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, elevation: 6, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
   archVal: { color: '#FFF', fontSize: 26, fontWeight: 'bold' },
   archLabel: { color: '#FFF', fontSize: 10, opacity: 0.9, textAlign: 'center', marginTop: 4, fontWeight: '500' },
 
   // COMMUNITY TICKER
-  tickerBar: { backgroundColor: theme.text, paddingVertical: 14, marginHorizontal: 20, borderRadius: 15, marginBottom: 20 },
+  tickerBar: { backgroundColor: theme.text, paddingVertical: 10, marginHorizontal: 20, borderRadius: 15, marginBottom: 10 },
   tickerText: { color: theme.accent, fontSize: 11, fontWeight: 'bold', textAlign: 'center', letterSpacing: 0.5 },
 
   // SWITCHBOARD
-  switchboard: { flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 25, justifyContent: 'space-between', alignItems: 'center' },
+  switchboard: { flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 15, justifyContent: 'space-between', alignItems: 'center' },
   hubBtn: { alignItems: 'center', flex: 1 },
   hubBtnCenter: { transform: [{ translateY: 0 }] },
-  hubIconCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
-  hubBtnText: { color: theme.text, fontWeight: 'bold', fontSize: 11, marginTop: 10, textTransform: 'uppercase' },
+  hubIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
+  hubBtnText: { color: theme.text, fontWeight: 'bold', fontSize: 11, marginTop: 8, textTransform: 'uppercase' },
 
   sectionTitle: { fontSize: 20, fontWeight: 'bold', fontFamily: 'serif', marginLeft: 25, marginBottom: 15, color: theme.text },
 

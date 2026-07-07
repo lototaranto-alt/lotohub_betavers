@@ -34,7 +34,7 @@ export default function SettingsModal({
     modalContainer: {
       width: '90%',
       maxHeight: '80%',
-      backgroundColor: theme.card,
+      backgroundColor: theme.surface,
       borderRadius: 16,
       padding: 20,
     },
@@ -54,7 +54,7 @@ export default function SettingsModal({
     section: {
       marginBottom: 25,
       borderBottomWidth: 1,
-      borderBottomColor: theme.tint + '30',
+      borderBottomColor: theme.primary + '30',
       paddingBottom: 20
     },
     sectionTitle: {
@@ -78,7 +78,7 @@ export default function SettingsModal({
       fontWeight: '500'
     },
     tipBox: {
-      backgroundColor: theme.tint + '15',
+      backgroundColor: theme.primary + '15',
       padding: 15,
       borderRadius: 12,
       marginTop: 10
@@ -145,7 +145,7 @@ export default function SettingsModal({
                 <MaterialIcons name="touch-app" size={20} color={theme.text} />
               </TouchableOpacity>
               <View style={styles.tipBox}>
-                <Text style={[styles.sectionTitle, { fontSize: 14, color: theme.tint }]}>{t.tipsTitle}</Text>
+                <Text style={[styles.sectionTitle, { fontSize: 14, color: theme.primary }]}>{t.tipsTitle}</Text>
                 <View style={{ gap: 8 }}>
                   <Text style={styles.tipText}>{t.tip1}</Text>
                   <Text style={styles.tipText}>{t.tip2}</Text>
@@ -172,13 +172,13 @@ export default function SettingsModal({
               <Text style={styles.sectionTitle}>{t.lang}</Text>
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity 
-                  style={[styles.buttonRow, { flex: 1, borderWidth: lang === 'IT' ? 2 : 0, borderColor: theme.tint }]} 
+                  style={[styles.buttonRow, { flex: 1, borderWidth: lang === 'IT' ? 2 : 0, borderColor: theme.primary }]} 
                   onPress={() => setLang('IT')}
                 >
                   <Text style={styles.buttonText}>Italiano</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.buttonRow, { flex: 1, borderWidth: lang === 'UK' ? 2 : 0, borderColor: theme.tint }]} 
+                  style={[styles.buttonRow, { flex: 1, borderWidth: lang === 'UK' ? 2 : 0, borderColor: theme.primary }]} 
                   onPress={() => setLang('UK')}
                 >
                   <Text style={styles.buttonText}>English</Text>
@@ -191,3 +191,4 @@ export default function SettingsModal({
     </Modal>
   );
 }
+

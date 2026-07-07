@@ -5,7 +5,9 @@ export const injectPoisMock = (poiData: any[]) => {
     if (poi.name && poi.name.includes('Castello Aragonese')) {
       return {
         ...poi,
-        difficulty_score: 85,
+        lat: 40.4750,
+        lng: 17.2280,
+        difficulty_score: 10,
         crowd_level: 40,
         media: [
           { id: 'm1', title: 'Audioguida Storica', media_type: 'audio', loto_cost: 0 },
@@ -46,6 +48,63 @@ export const injectPoisMock = (poiData: any[]) => {
       events: [
         { id: 'e1', title: 'Aperitivo Ecosostenibile', date: '2026-07-01T18:00:00Z', is_premium: false },
         { id: 'e2', title: 'Tramonto DJ Set VIP', date: '2026-07-02T20:00:00Z', is_premium: true }
+      ]
+    });
+  }
+
+  // Inject Mena Mena Mè as an F&B Partner on the map
+  const hasMena = processedPois.some((p: any) => p.name === 'Mena Mena Mè');
+  if (!hasMena) {
+    processedPois.push({
+      id: 'mena',
+      name: 'Mena Mena Mè',
+      category: 'partner',
+      type: 'f&b',
+      lat: 40.4725, // Coordinate fittizie in Città Vecchia
+      lng: 17.2345,
+      base_tokens: 50,
+      difficulty_score: 5,
+      image_url: null,
+      events: []
+    });
+  }
+
+  // Inject Diseducation as a Free/Cultural POI on the map
+  const hasDiseducation = processedPois.some((p: any) => p.name === 'Diseducation');
+  if (!hasDiseducation) {
+    processedPois.push({
+      id: 'diseducation',
+      name: 'Diseducation',
+      category: 'free',
+      type: 'social',
+      lat: 40.4700, 
+      lng: 17.2310,
+      base_tokens: 60,
+      difficulty_score: 5,
+      image_url: null,
+      events: []
+    });
+  }
+
+  // Inject Castello Aragonese as a Free POI if it doesn't exist
+  const hasCastello = processedPois.some((p: any) => p.name && p.name.includes('Castello Aragonese'));
+  if (!hasCastello) {
+    processedPois.push({
+      id: 'castello',
+      name: 'Castello Aragonese',
+      category: 'free',
+      type: 'storia',
+      lat: 40.4750, 
+      lng: 17.2280,
+      base_tokens: 100,
+      difficulty_score: 10,
+      crowd_level: 40,
+      image_url: null,
+      events: [],
+      media: [
+        { id: 'm1', title: 'Audioguida Storica', media_type: 'audio', loto_cost: 0 },
+        { id: 'm2', title: 'Planimetria Antica HR', media_type: 'digital_file', loto_cost: 50 },
+        { id: 'm3', title: 'Archivio Segreto Aragonese', media_type: 'digital_file', loto_cost: 0, is_premium: true }
       ]
     });
   }

@@ -80,15 +80,6 @@ export default function LotoPassCard() {
 
   return (
     <View style={styles.container}>
-      {!isSaved && (
-        <View style={styles.warningBox}>
-          <MaterialIcons name="security" size={24} color={LOTO_PALETTE.TERRACOTTA} />
-          <Text style={styles.warningText}>
-            Crea il tuo backup profilo. Abbiamo a cuore la tua privacy: dovrai effettuare il backup generando il QR che dovrai conservare se accedi da altri dispositivi.
-          </Text>
-        </View>
-      )}
-
       <ViewShot ref={passRef} options={{ format: 'png', quality: 1 }} style={styles.passWrapper}>
         <View style={styles.passCard}>
           <Image source={require('../assets/images/qr_backup_flat.png')} style={styles.cardIllustration} resizeMode="cover" />
