@@ -17,10 +17,10 @@ export default function TabLayout() {
 
   const simulateNfcScan = () => {
     Alert.alert(
-      "NFC Scansionato", 
+      "Indizio Trovato", 
       isElite 
         ? "Benvenuto Esploratore Elite! Hai ricevuto +50 PTI Bonus discreti e sbloccato il Certificato Digitale Esclusivo del P.O.I. gratuito."
-        : "Check-in confermato! Passa a Elite per sbloccare i segreti del territorio."
+        : "Incontro Autentico confermato! Passa a Elite per sbloccare le memorie del territorio."
     );
     setModalVisible(false);
   };
@@ -28,22 +28,30 @@ export default function TabLayout() {
   return (
     <ScannerContext.Provider value={{ openScanner: () => setModalVisible(true) }}>
       <Tabs
+        initialRouteName="map"
         screenOptions={{
           tabBarActiveTintColor: theme.primary,
           tabBarInactiveTintColor: theme.textMuted,
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: theme.background,
-            borderTopWidth: 0.5,
-            borderTopColor: theme.border,
+            backgroundColor: isElite ? '#0A0F14' : theme.background,
+            borderTopWidth: isElite ? 1 : 0.5,
+            borderTopColor: isElite ? '#00F0FF' : theme.border,
             height: 65,
             paddingBottom: 12,
             paddingTop: 8,
+            ...(isElite ? {
+              shadowColor: '#00F0FF',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.5,
+              shadowRadius: 10,
+              elevation: 10
+            } : {})
           },
           tabBarLabelStyle: {
             fontSize: 10,
             fontWeight: '900',
-            fontFamily: 'serif'
+            fontFamily: isElite ? 'sans-serif' : 'serif'
           }
         }}>
         
@@ -105,7 +113,7 @@ export default function TabLayout() {
             <MaterialIcons name="nfc" size={60} color={theme.primary} style={{ marginBottom: 15 }} />
             <Text style={[styles.modalTitle, { color: theme.text }]}>Scansione NTAG424</Text>
             <Text style={[styles.modalSubtitle, { color: theme.textMuted }]}>
-              Avvicina il telefono all'adesivo L.O.T.O. HUB per il check-in "Pay-Per-Footstep".
+              Avvicina il telefono all'Indizio del Luogo...
             </Text>
             
             <TouchableOpacity 

@@ -3,38 +3,55 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
+import XpToast from '../../components/XpToast';
 
 const { height } = Dimensions.get('window');
 
 export default function DeepLinkPoiScreen() {
   const { id } = useLocalSearchParams();
+  const idStr = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
   const { theme } = useTheme();
 
   // Dati Mockati per le Associazioni
   const getPoiData = () => {
-    if (id === 'dis' || id === 'diseducation') {
+    if (idStr === 'dis' || idStr === 'diseducation') {
       return {
         title: 'Diseducation',
         subtitle: 'Associazione Accessibilità - Taranto',
-        description: 'Dis-Education è un nome che richiama l\'idea di educare alle disuguaglianze, favorendo maggiore consapevolezza, senso civico e responsabilità sociale.\n\nL\'associazione sostiene persone con disabilità e chiunque viva condizioni di marginalità sociale, promuovendo rispetto, autonomia e piena partecipazione alla vita della comunità.\n\nAttraverso progetti dedicati all\'accessibilità, percorsi formativi, attività culturali e collaborazioni con scuole, enti e realtà del territorio, lavoriamo per sviluppare comportamenti più attenti e relazioni più consapevoli.\n\nLe nostre iniziative si integrano con reti locali e nazionali, con l\'obiettivo di costruire una società più accogliente, sicura e realmente accessibile per tutte e tutti.',
+        description: 'Dis-Education è un nome che richiama l\'idea di educare alle disuguaglianze, favorendo maggiore consapevolezza, senso civico e responsabilità sociale.\n\nL\'associazione sostiene persone con disabilità e chiunque viva condizioni di marginalità sociale, promuovendo rispetto, autonomia e piena partecipazione alla vita della comunità.\n\n📍 EVENTO ATTIVO: Passeggiata Scan Inaccessibilità. Partecipa con la community per tracciare le barriere architettoniche del quartiere.',
         reward: 60,
+        type: 'PTI' as 'XP'|'PTI',
         tags: ['Accessibilità', 'Sociale', 'Cultura', 'Inclusione']
       };
     }
-    // Default (Mena Mena Mè)
+    if (idStr === 'tgt') {
+      return {
+        title: 'Taranto Grand Tour',
+        subtitle: 'Esplorazione e Patrimonio',
+        description: 'Benvenuto nel cuore storico di Taranto!\n\nTaranto Grand Tour ti invita a scoprire l\'anima più autentica della città, esplorando i vicoli e i segreti del borgo antico.\n\n📍 STORIA SBLOCCATA: Il segreto del vicolo. Hai esplorato un nuovo angolo della mappa!',
+        reward: 15,
+        type: 'XP' as 'XP'|'PTI',
+        tags: ['Cultura', 'Esplorazione', 'Tour']
+      };
+    }
+    // Default (Plasticaqquà)
     return {
-      title: 'Mena Mena Mè',
-      subtitle: 'Associazione di Promozione Sociale - Taranto',
-      description: 'Siamo un\'Associazione di Promozione Sociale. Veniteci a trovare per degustare le prelibatezze che ci offre la natura in base alle stagioni. Buona musica, birra ghiacciata, forte ridondanza sociale e prezzi rigorosamente popolari nel cuore della Città Vecchia!',
-      reward: 50,
-      tags: ['Accessibilità', 'Inclusione', 'Musica', 'Popolare']
+      title: 'Plasticaqquà',
+      subtitle: 'Nodo Civico Ambientale',
+      description: 'Benvenuto nel cuore della rigenerazione urbana!\n\nPlasticaqquà ti invita a scoprire l\'anima più autentica della città unendo la tutela dell\'ambiente marino alla valorizzazione del patrimonio.\n\n📍 MISSIONE ATTIVA: Operazione "Spiagge Pulite". La tua visita genera un impatto reale per il nostro territorio. Hai finanziato la nostra prossima missione!',
+      reward: 10,
+      type: 'PTI' as 'XP'|'PTI',
+      tags: ['Ambiente', 'Civico', 'Impatto']
     };
   };
 
   const poiData = getPoiData();
 
   const [isScanning, setIsScanning] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastXp, setToastXp] = useState(0);
 
   const handleClaim = () => {
     setIsScanning(true);
@@ -42,28 +59,39 @@ export default function DeepLinkPoiScreen() {
     // Simula 3 secondi di Foreground-Triggered BLE Scan
     setTimeout(() => {
       setIsScanning(false);
-      const simulatedBleCount = id === 'mena' ? 34 : 12; // Dati plausibili basati sul POI
+      const simulatedBleCount = idStr === 'plasticaqqua' ? 34 : 12; // Dati plausibili basati sul POI
 
-      Alert.alert(
-        "Validazione Ibrida Completata!",
-        `✅ ${poiData.reward} LOTO PTI guadagnati tramite NFC.\n\n📡 Radar BLE: rilevati ${simulatedBleCount} dispositivi anonimi circostanti.\n\nDato predittivo inviato alla Heatmap urbana in modo sicuro e anonimo.`,
-        [{ text: "Torna alla Mappa", onPress: () => router.replace('/(tabs)/map') }]
-      );
+      setToastMessage(poiData.type === 'PTI' ? `Validazione + ${simulatedBleCount} BLE proxy` : `Hai sbloccato una storia`);
+      setToastXp(poiData.reward);
+      setToastVisible(true);
     }, 3000);
+  };
+
+  const handleToastHide = () => {
+    setToastVisible(false);
+    router.replace('/(tabs)/map');
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Toast Animato */}
+      <XpToast 
+        visible={toastVisible} 
+        xpAmount={toastXp} 
+        message={toastMessage}
+        type={poiData.type}
+        onHide={handleToastHide} 
+      />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 150 }}>
         {/* Header Icon / Image */}
         <View style={[styles.headerIconContainer, { backgroundColor: theme.primary, overflow: 'hidden' }]}>
-          {id === 'mena' ? (
+          {idStr === 'mena' || idStr === 'plasticaqqua' || idStr === 'tgt' ? (
             <Image 
               source={require('../../assets/images/mena_logo.jpg')} 
               style={{ width: '100%', height: '100%' }} 
               resizeMode="contain" 
             />
-          ) : id === 'dis' || id === 'diseducation' ? (
+          ) : idStr === 'dis' || idStr === 'diseducation' ? (
             <Image 
               source={require('../../assets/images/diseducation_logo.jpg')} 
               style={{ width: '100%', height: '100%' }} 
@@ -81,8 +109,8 @@ export default function DeepLinkPoiScreen() {
              <Text style={[styles.badgeText, { color: theme.primary }]}>Partner L.O.T.O. Verificato</Text>
           </View>
 
-          <Text style={[styles.title, { color: theme.text }]}>{id === 'mena' ? poiData.title : 'Punto di Interesse'}</Text>
-          <Text style={[styles.subtitle, { color: theme.textMuted }]}>{id === 'mena' ? poiData.subtitle : 'Dettagli non trovati'}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{(idStr === 'mena' || idStr === 'plasticaqqua' || idStr === 'tgt' || idStr === 'dis' || idStr === 'diseducation') ? poiData.title : 'Punto di Interesse'}</Text>
+          <Text style={[styles.subtitle, { color: theme.textMuted }]}>{(idStr === 'mena' || idStr === 'plasticaqqua' || idStr === 'tgt' || idStr === 'dis' || idStr === 'diseducation') ? poiData.subtitle : 'Dettagli non trovati'}</Text>
 
           <View style={styles.tagsRow}>
             {poiData.tags.map(tag => (
@@ -94,7 +122,7 @@ export default function DeepLinkPoiScreen() {
 
           <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.description, { color: theme.text }]}>
-              {id === 'mena' ? poiData.description : 'Contenuto sbloccato tramite Deep Link NDEF.'}
+              {(idStr === 'mena' || idStr === 'plasticaqqua' || idStr === 'tgt' || idStr === 'dis' || idStr === 'diseducation') ? poiData.description : 'Contenuto sbloccato tramite Deep Link NDEF.'}
             </Text>
           </View>
         </View>

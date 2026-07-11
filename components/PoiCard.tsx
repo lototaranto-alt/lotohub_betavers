@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../context/ThemeContext';
 import { calculateDistance } from '../utils/haversine';
@@ -14,12 +15,13 @@ type PoiCardProps = {
   onPress?: (poi: any) => void;
   isBooked?: boolean;
   t: any; // dictionary
+  onOpenWebsite?: (poi: any) => void;
 };
 
 export default function PoiCard({ item, userLocation, userProfile, onAction, onAlternative, onPress, isBooked, t }: PoiCardProps) {
   const { theme } = useTheme();
 
-  const img = item.image_url ? { uri: item.image_url } : (item.image ? (typeof item.image === 'string' ? { uri: item.image } : item.image) : require('../assets/images/eco_bg.png'));
+  const img = (item.id === 'castello' || (item.name && item.name.includes('Castello Aragonese'))) ? require('../assets/images/castello-evento.png') : (item.image_url ? { uri: item.image_url } : (item.image ? (typeof item.image === 'string' ? { uri: item.image } : item.image) : require('../assets/images/eco_bg.png')));
   const isCrowded = item.crowd_level && item.crowd_level > 80;
   const hasWater = item.amenities?.includes('water');
   const userTokens = userProfile?.total_tokens || 0;
@@ -79,14 +81,32 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
                 <Text style={{ color: theme.primary, fontWeight: 'bold', fontSize: 11, marginLeft: 4 }}>BONUS IDRICO</Text>
               </View>
             ) : <View />}
-            <TouchableOpacity
-              style={[styles.btnActionHarmonious, { backgroundColor: item.category === 'partner' ? '#0056D2' : (canUnlockStory ? theme.accent : theme.primary) }]}
-              onPress={() => onAction(item)}
-            >
-              <Text style={styles.btnActionTextHarmonious}>
-                {item.category === 'partner' ? 'Scansiona Scontrino' : (isBooked ? "Convalida Arrivo" : "Prenota Visita")}
-              </Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={[styles.btnActionHarmonious, { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' }]}
+                onPress={async () => {
+                  try {
+                    const url = item.website_url || `https://www.google.com/search?q=${encodeURIComponent(item.name + ' Taranto')}`;
+                    await WebBrowser.openBrowserAsync(url);
+                  } catch (e) {
+                    Alert.alert('Errore', 'Impossibile aprire il browser');
+                  }
+                }}
+              >
+                <Text style={[styles.btnActionTextHarmonious, { color: '#475569' }]}>
+                  Info & Sito
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.btnActionHarmonious, { backgroundColor: item.category === 'partner' ? '#0056D2' : (canUnlockStory ? theme.accent : theme.primary) }]}
+                onPress={() => onAction(item)}
+              >
+                <Text style={styles.btnActionTextHarmonious}>
+                  {item.category === 'partner' ? 'Tocca l\'Indizio' : 'Scopri & Sblocca'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </View>

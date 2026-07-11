@@ -31,7 +31,7 @@ const TIPS_DATA = [
     id: 'civic',
     title: 'Gamification Civica',
     icon: 'volunteer-activism',
-    content: 'Usa la mobilità dolce e segnala le barriere architettoniche. Contribuirai a rendere la città migliore e verrai premiato nella Classifica di Condotta cittadina.'
+    content: 'Usa la mobilità dolce e segnala le barriere architettoniche. Contribuirai a rendere la città migliore e verrai premiato nel tuo Impatto sulla Comunità.'
   }
 ];
 

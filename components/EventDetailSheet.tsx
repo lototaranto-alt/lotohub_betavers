@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Dim
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../context/ThemeContext';
 import { useRouteBuilder } from '../context/RouteContext';
+import { useTenant } from '../context/TenantContext';
 
 const { height, width } = Dimensions.get('window');
 
@@ -15,13 +16,16 @@ interface EventDetailSheetProps {
 export default function EventDetailSheet({ event, visible, onClose }: EventDetailSheetProps) {
   const { theme } = useTheme();
   const { isEventInRoute, addEventToRoute, removeEventFromRoute } = useRouteBuilder();
+  const { tenant } = useTenant();
 
   if (!event) return null;
 
   const isAdded = isEventInRoute(event.id);
 
   // Colore tematico basato sul tipo di evento
-  const typeColor = event.type === 'Competitivo' ? '#EF4444' : event.type === 'Cooperativo' ? '#10B981' : theme.accent;
+  const typeColor = event.event_type === 'community_challenge' ? '#10B981' : event.event_type === 'cultural_night' ? '#8B5CF6' : theme.accent;
+  
+  const ptiName = tenant?.localization?.points_name || 'PTI';
 
   const handleToggleEvent = () => {
     if (isAdded) {
@@ -42,9 +46,9 @@ export default function EventDetailSheet({ event, visible, onClose }: EventDetai
               <MaterialIcons name="close" size={24} color="#FFF" />
             </TouchableOpacity>
             <View style={styles.headerContent}>
-              <MaterialIcons name={event.icon as any} size={48} color="#FFF" />
+              <MaterialIcons name={event.icon_emoji ? "star" : "event"} size={48} color="#FFF" />
               <View style={styles.badgeWrapper}>
-                <Text style={styles.badgeText}>{event.type.toUpperCase()}</Text>
+                <Text style={styles.badgeText}>{String(event.event_type || 'EVENTO').toUpperCase().replace('_', ' ')}</Text>
               </View>
             </View>
           </View>
@@ -56,18 +60,20 @@ export default function EventDetailSheet({ event, visible, onClose }: EventDetai
                 <Text style={[styles.title, { color: theme.text }]}>{event.title}</Text>
                 <View style={styles.infoRow}>
                   <MaterialIcons name="event" size={16} color={theme.textMuted} />
-                  <Text style={[styles.infoText, { color: theme.textMuted }]}>{event.date}</Text>
+                  <Text style={[styles.infoText, { color: theme.textMuted }]}>
+                    {event.starts_at ? new Date(event.starts_at).toLocaleDateString() : 'Prossimamente'}
+                  </Text>
                 </View>
               </View>
               <View style={[styles.xpBadge, { backgroundColor: theme.primary + '1A' }]}>
-                <Text style={[styles.xpText, { color: theme.primary }]}>+{event.xp} XP</Text>
+                <Text style={[styles.xpText, { color: theme.primary }]}>+{event.reward_pti_bonus || 0} {ptiName}</Text>
               </View>
             </View>
 
             {/* Sfide e Obiettivi */}
             <View style={[styles.section, { borderTopColor: theme.border }]}>
               <Text style={[styles.sectionTitle, { color: theme.text }]}>🎯 OBIETTIVI</Text>
-              <Text style={[styles.descText, { color: theme.textMuted }]}>{event.desc}</Text>
+              <Text style={[styles.descText, { color: theme.textMuted }]}>{event.short_description || event.description}</Text>
               
               <View style={[styles.taskItem, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <MaterialIcons name="check-circle-outline" size={20} color={theme.textMuted} />
@@ -79,31 +85,7 @@ export default function EventDetailSheet({ event, visible, onClose }: EventDetai
               </View>
             </View>
 
-            {/* Leaderboard Mock (Solo per Competitivi o Cooperativi di gruppo) */}
-            {(event.type === 'Competitivo' || event.type === 'Cooperativo') && (
-              <View style={[styles.section, { borderTopColor: theme.border }]}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>🏆 CLASSIFICA LOCALE</Text>
-                
-                <View style={[styles.leaderboardRow, { backgroundColor: '#FFD7001A', borderColor: '#FFD700' }]}>
-                  <Text style={styles.rankText}>1</Text>
-                  <View style={styles.avatarMock}><MaterialIcons name="person" size={16} color="#FFF" /></View>
-                  <Text style={[styles.playerName, { color: theme.text }]}>Marco L.</Text>
-                  <Text style={[styles.playerScore, { color: '#B8860B' }]}>350 pt</Text>
-                </View>
-                <View style={[styles.leaderboardRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                  <Text style={styles.rankText}>2</Text>
-                  <View style={[styles.avatarMock, {backgroundColor: '#C0C0C0'}]}><MaterialIcons name="person" size={16} color="#FFF" /></View>
-                  <Text style={[styles.playerName, { color: theme.text }]}>Giulia S.</Text>
-                  <Text style={[styles.playerScore, { color: theme.textMuted }]}>310 pt</Text>
-                </View>
-                <View style={[styles.leaderboardRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                  <Text style={styles.rankText}>3</Text>
-                  <View style={[styles.avatarMock, {backgroundColor: '#CD7F32'}]}><MaterialIcons name="person" size={16} color="#FFF" /></View>
-                  <Text style={[styles.playerName, { color: theme.text }]}>Tu</Text>
-                  <Text style={[styles.playerScore, { color: theme.textMuted }]}>0 pt</Text>
-                </View>
-              </View>
-            )}
+            {/* Leaderboard rimossa per Gamification Zero-Coercition */}
 
             <View style={{ height: 100 }} />
           </ScrollView>

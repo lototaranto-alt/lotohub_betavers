@@ -6,6 +6,7 @@ import { supabase } from '@/utils/supabase';
 import { useTheme } from '@/context/ThemeContext';
 import PoiDetailSheet from '@/components/PoiDetailSheet';
 import PoiCard from '@/components/PoiCard';
+import XpToast from '@/components/XpToast';
 import { calculateDistance } from '@/utils/haversine';
 import { injectPoisMock } from '@/utils/mockInjector';
 
@@ -20,6 +21,9 @@ export default function ExploreScreen() {
   // SPRINT B States
   const [selectedPoi, setSelectedPoi] = useState<any | null>(null);
   const [isSheetVisible, setIsSheetVisible] = useState(false);
+
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastData, setToastData] = useState({ xpAmount: 0, message: '' });
   const [bookedSessions, setBookedSessions] = useState<Record<string, string>>({});
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<any>(null);
@@ -57,42 +61,39 @@ export default function ExploreScreen() {
 
   const filteredPois = pois.filter(p => p.category === activeTab);
 
-  const handleBookPoi = async (poi: any, partySize: number) => {
+  const handleCheckIn = async (poi: any) => {
     if (!userProfile) return Alert.alert("Errore", "Profilo non trovato");
-    const { data, error } = await supabase.rpc('book_poi_visit', { p_user_id: userProfile.id, p_poi_id: poi.id, p_party_size: partySize });
-    if (!error && data) {
-      setBookedSessions(prev => ({ ...prev, [poi.id]: data }));
-      Alert.alert("Prenotato!", "Hai riservato i tuoi posti. Raggiungi il luogo!");
-    }
-  };
-
-  const handleValidatePoi = async (poi: any) => {
-    const sessionId = bookedSessions[poi.id];
-    if (!sessionId) return;
-    const accuracy = userLocation?.coords.accuracy || 999;
     
-    if (accuracy < 15) {
-      await supabase.rpc('validate_checkin', { p_session_id: sessionId, p_validation_confidence: 'GPS_SILENT' });
-      Alert.alert("Check-in Convalidato", "Benvenuto a " + poi.name);
-      setBookedSessions(prev => { const n = {...prev}; delete n[poi.id]; return n; });
-      setIsSheetVisible(false);
+    // Simulazione del Modello Ibrido (Sensore Urbano)
+    const simulatedBleDevices = Math.floor(Math.random() * 15) + 1; // Proxy per la densità
+    
+    const isGolden = (userProfile?.total_tokens || 0) >= 100;
+    const xp = isGolden ? 30 : 15;
+
+    const payload = {
+      poi_id: poi.id,
+      session_id: 'anonymous-or-auth-session',
+      nfc_token: 'MOCK_NFC_123',
+      ble_devices_count: simulatedBleDevices,
+      lat: userLocation?.coords.latitude || 40.47,
+      lng: userLocation?.coords.longitude || 17.24,
+      xp_awarded: xp,
+      tenant_id: 'taranto'
+    };
+
+    const { error } = await supabase.from('scans').insert(payload);
+    
+    if (error) {
+      Alert.alert("Errore", "Impossibile registrare il check-in");
     } else {
-      Alert.alert(
-        "Segnale GPS Debole",
-        "Scansiona il QR all'ingresso per convalidare in modo sicuro.",
-        [
-          { text: "Annulla", style: "cancel" },
-          { 
-            text: "Scansiona QR", 
-            onPress: async () => {
-              await supabase.rpc('validate_checkin', { p_session_id: sessionId, p_validation_confidence: 'QR_FORCED' });
-              Alert.alert("QR Convalidato!", "Presenza verificata!");
-              setBookedSessions(prev => { const n = {...prev}; delete n[poi.id]; return n; });
-              setIsSheetVisible(false);
-            }
-          }
-        ]
-      );
+      const msg = isGolden 
+        ? `Hai sbloccato la storia segreta di ${poi.name}.\n(Indotto: ${simulatedBleDevices} pax)` 
+        : `Benvenuto a ${poi.name}.\n(Indotto: ${simulatedBleDevices} pax)`;
+      
+      setToastData({ xpAmount: xp, message: msg });
+      setToastVisible(true);
+      
+      setIsSheetVisible(false);
     }
   };
 
@@ -134,7 +135,7 @@ export default function ExploreScreen() {
             item={item}
             userLocation={userLocation}
             userProfile={userProfile}
-            onAction={() => {}} // L'azione primaria (Es. Prenota Visita) può rimanere vuota nell'esplora o fare da scorciatoia
+            onAction={handleCheckIn}
             onPress={(poi) => {
               setSelectedPoi(poi);
               setIsSheetVisible(true);
@@ -148,10 +149,14 @@ export default function ExploreScreen() {
         visible={isSheetVisible}
         poi={selectedPoi}
         onClose={() => setIsSheetVisible(false)}
-        onBook={handleBookPoi}
-        onValidate={handleValidatePoi}
-        isBooked={selectedPoi ? !!bookedSessions[selectedPoi.id] : false}
-        initialPartySize={userProfile?.party_size || 1}
+        onCheckIn={handleCheckIn}
+      />
+
+      <XpToast
+        visible={toastVisible}
+        xpAmount={toastData.xpAmount}
+        message={toastData.message}
+        onHide={() => setToastVisible(false)}
       />
     </SafeAreaView>
   );

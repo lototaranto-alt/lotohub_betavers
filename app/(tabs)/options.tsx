@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch, Alert, Animated, Image, Modal } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { useCity } from '../../context/CityContext';
 import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
 import CivicDashboard from '../../components/CivicDashboard';
+import { supabase } from '../../utils/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
+import { useTenant } from '../../context/TenantContext';
 
 const AccordionItem = ({ title, children, icon, theme, expanded, onPress }: { title: string, children: React.ReactNode, icon: any, theme: any, expanded?: boolean, onPress?: () => void }) => {
   const [localExpanded, setLocalExpanded] = useState(false);
@@ -76,6 +80,8 @@ const ModalMenuItem = ({ title, children, icon, theme }: { title: string, childr
 export default function OptionsScreen() {
   const { theme } = useTheme();
   const { currentCity, setCurrentCity } = useCity();
+  const { civicModule } = useFeatureFlags();
+  const { setTenantManually } = useTenant();
   const [isGeofenceActive, setIsGeofenceActive] = useState(false);
   const [lang, setLang] = useState<'IT' | 'UK'>('IT');
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
@@ -109,6 +115,25 @@ export default function OptionsScreen() {
     }
   };
 
+  const handleResetDemo = async () => {
+    Alert.alert(
+      "Reset Demo App",
+      "Sei sicuro di voler riavviare l'app da zero? L'identità locale verrà cancellata e ripartirai come un nuovo utente.",
+      [
+        { text: "Annulla", style: "cancel" },
+        { 
+          text: "Reset", 
+          style: "destructive",
+          onPress: async () => {
+            await supabase.auth.signOut();
+            await AsyncStorage.clear();
+            router.replace('/_sitemap');
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -133,47 +158,98 @@ export default function OptionsScreen() {
         <View style={styles.section}>
           
           {/* 1. OPZIONI (RIMANE ACCORDION) */}
-          <AccordionItem 
-            title="Impostazioni" 
-            icon="settings" 
-            theme={theme}
-            expanded={activeAccordion === 'settings'}
-            onPress={() => setActiveAccordion(activeAccordion === 'settings' ? null : 'settings')}
-          >
-            <View style={styles.settingCard}>
-              <View style={styles.settingRow}>
-                <View style={styles.settingTextGroup}>
-                  <Text style={[styles.settingLabel, { color: theme.text }]}>Sensori in Background</Text>
-                  <Text style={[styles.settingDesc, { color: theme.text }]}>Accumula LOTO PTI camminando ed esplorando.</Text>
-                </View>
-                <Switch 
-                  value={isGeofenceActive} 
-                  onValueChange={toggleSensors}
-                  trackColor={{ false: theme.border, true: theme.primary }}
-                  thumbColor={'#fff'}
-                />
+
+
+          {/* COMUNITÀ */}
+          <ModalMenuItem title="Comunità" icon="groups" theme={theme}>
+            <View style={{ padding: 10 }}>
+              <Text style={{ color: theme.text, fontSize: 16, marginBottom: 15 }}>
+                La mappa delle scoperte. Ogni passo lascia una traccia, non un punteggio.
+              </Text>
+              <View style={{ height: 200, backgroundColor: theme.surface, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.border }}>
+                <MaterialIcons name="public" size={48} color={theme.primary} style={{ opacity: 0.5 }} />
+                <Text style={{ color: theme.text, marginTop: 10, opacity: 0.6 }}>Comunità in crescita...</Text>
               </View>
             </View>
+          </ModalMenuItem>
 
-            <View style={styles.settingCard}>
-              <View style={styles.settingRow}>
-                <View style={styles.settingTextGroup}>
-                  <Text style={[styles.settingLabel, { color: theme.text }]}>Cambia Città (Demo)</Text>
-                  <Text style={[styles.settingDesc, { color: theme.text }]}>Attuale: {currentCity === 'taranto' ? 'Taranto' : 'Lecce'}</Text>
+          {/* 
+            [NOTA DI SVILUPPO - FASE 4: Whitelabel]
+            SEGNALAZIONI CIVICHE (Condizionale)
+            Questo blocco viene renderizzato SOLO se il Tenant (Comune) ha acquistato
+            il modulo civico (civicModule === true). In caso contrario (es. borgo-test),
+            l'intera funzionalità scompare, garantendo un'app "Lean" e focalizzata
+            solo sui servizi acquistati (es. turismo/gamification).
+          */}
+          {civicModule && (
+            <ModalMenuItem title="Segnalazioni Civiche" icon="campaign" theme={theme}>
+              <CivicDashboard />
+            </ModalMenuItem>
+          )}
+
+          {/* BOUTIQUE SKIN E TEMI */}
+          <ModalMenuItem title="Boutique Stili" icon="palette" theme={theme}>
+            <View style={{ padding: 20 }}>
+              <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                <MaterialIcons name="color-lens" size={60} color={theme.accent} />
+                <Text style={{ color: theme.text, fontSize: 22, fontWeight: 'bold', marginTop: 10 }}>Personalizza L.O.T.O.</Text>
+                <Text style={{ color: theme.textMuted, textAlign: 'center', marginTop: 10 }}>
+                  Usa i tuoi Token PTI per sbloccare skin esclusive e cambiare radicalmente l'aspetto della tua app.
+                </Text>
+              </View>
+
+              {/* SKIN: Minimalista Moderno */}
+              <View style={{ backgroundColor: theme.surface, padding: 15, borderRadius: 12, borderWidth: 1, borderColor: theme.border, marginBottom: 15 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {/* SWATCH COLORATO */}
+                    <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: '#E2E8F0', marginRight: 15, borderWidth: 1, borderColor: '#CBD5E1', overflow: 'hidden' }}>
+                      <View style={{ flex: 1, backgroundColor: '#FFFFFF' }} />
+                      <View style={{ flex: 1, backgroundColor: '#94A3B8' }} />
+                    </View>
+                    <View>
+                      <Text style={{ color: theme.text, fontWeight: 'bold', fontSize: 16 }}>Minimalista Moderno</Text>
+                      <Text style={{ color: theme.textMuted, fontSize: 12 }}>Proposta #2 - Pulito e glaciale</Text>
+                    </View>
+                  </View>
+                  <View style={{ backgroundColor: theme.primary + '20', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 }}>
+                    <Text style={{ color: theme.primary, fontWeight: 'bold' }}>150 PTI</Text>
+                  </View>
                 </View>
-                <TouchableOpacity 
-                  style={[styles.actionBtn, { backgroundColor: theme.primary }]}
-                  onPress={() => setCurrentCity(currentCity === 'taranto' ? 'lecce' : 'taranto')}
-                >
-                  <Text style={styles.actionBtnText}>Switch</Text>
-                </TouchableOpacity>
+              </View>
+
+              {/* SKIN: Brutalista Industriale */}
+              <View style={{ backgroundColor: theme.surface, padding: 15, borderRadius: 12, borderWidth: 1, borderColor: theme.border, marginBottom: 15 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {/* SWATCH COLORATO */}
+                    <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: '#1E293B', marginRight: 15, borderWidth: 1, borderColor: '#F97316', overflow: 'hidden' }}>
+                      <View style={{ flex: 1, backgroundColor: '#0F172A' }} />
+                      <View style={{ flex: 1, backgroundColor: '#F97316' }} />
+                    </View>
+                    <View>
+                      <Text style={{ color: theme.text, fontWeight: 'bold', fontSize: 16 }}>Brutalista Industriale</Text>
+                      <Text style={{ color: theme.textMuted, fontSize: 12 }}>Proposta #4 - Blocchi materici</Text>
+                    </View>
+                  </View>
+                  <View style={{ backgroundColor: theme.primary + '20', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 }}>
+                    <Text style={{ color: theme.primary, fontWeight: 'bold' }}>150 PTI</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={{ backgroundColor: theme.surface, padding: 15, borderRadius: 12, borderWidth: 1, borderColor: theme.border, marginBottom: 15 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View>
+                    <Text style={{ color: theme.text, fontWeight: 'bold', fontSize: 16 }}>Oro di Taranto</Text>
+                    <Text style={{ color: theme.textMuted, fontSize: 12 }}>Proposta #1 - Eleganza pura</Text>
+                  </View>
+                  <View style={{ backgroundColor: theme.primary + '20', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 }}>
+                    <Text style={{ color: theme.primary, fontWeight: 'bold' }}>Sbloccato</Text>
+                  </View>
+                </View>
               </View>
             </View>
-          </AccordionItem>
-
-          {/* 2. ALTRE SCHEDE (DIVENTANO MODAL FULL SCREEN) */}
-          <ModalMenuItem title="Segnalazioni Civiche" icon="campaign" theme={theme}>
-            <CivicDashboard />
           </ModalMenuItem>
 
         </View>
@@ -227,8 +303,64 @@ export default function OptionsScreen() {
               LOTO Ecosystem™ - LOTO Core Design System - Dati Geospaziali & Flow Management Algorithm: Proprietary
             </Text>
           </AccordionItem>
-        </View>
+          {/* DEBUG MENU MULTI-TENANT (Per la Fase 4) */}
+          {__DEV__ && (
+            <AccordionItem 
+              title="[DEBUG] Switch Tenant" 
+              icon="developer-mode" 
+              theme={theme}
+              expanded={activeAccordion === 'debug'}
+              onPress={() => setActiveAccordion(activeAccordion === 'debug' ? null : 'debug')}
+            >
+              <View style={{ padding: 15 }}>
+                <Text style={{ color: theme.text, marginBottom: 10 }}>Usa questi bottoni per simulare l'onboarding in un altro comune (Task 11):</Text>
+                
+                <TouchableOpacity 
+                  style={[styles.actionBtn, { backgroundColor: theme.primary, marginBottom: 10 }]}
+                  onPress={() => setTenantManually('taranto')}
+                >
+                  <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>🏙️ Carica "Taranto" (Civic ON)</Text>
+                </TouchableOpacity>
 
+                <TouchableOpacity 
+                  style={[styles.actionBtn, { backgroundColor: '#2E8B57', marginBottom: 20 }]} // Colore di borgo-test
+                  onPress={() => setTenantManually('borgo-test')}
+                >
+                  <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>🏡 Carica "Borgo Antico" (Civic OFF)</Text>
+                </TouchableOpacity>
+
+                <View style={{ height: 1, backgroundColor: theme.border, marginVertical: 15 }} />
+                
+                <Text style={{ color: theme.text, marginBottom: 10, fontWeight: 'bold' }}>Funzioni Interne:</Text>
+
+                <View style={styles.settingRow}>
+                  <View style={styles.settingTextGroup}>
+                    <Text style={[styles.settingLabel, { color: theme.text, fontSize: 14 }]}>Sensori in Background</Text>
+                  </View>
+                  <Switch 
+                    value={isGeofenceActive} 
+                    onValueChange={toggleSensors}
+                    trackColor={{ false: theme.border, true: theme.primary }}
+                    thumbColor={'#fff'}
+                  />
+                </View>
+
+                <TouchableOpacity 
+                  style={[styles.settingRow, { marginTop: 15 }]}
+                  onPress={handleResetDemo}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.settingTextGroup}>
+                    <Text style={[styles.settingLabel, { color: '#FF3B30', fontSize: 14 }]}>Reset Demo App</Text>
+                  </View>
+                  <MaterialIcons name="delete-forever" size={24} color="#FF3B30" />
+                </TouchableOpacity>
+
+              </View>
+            </AccordionItem>
+          )}
+
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

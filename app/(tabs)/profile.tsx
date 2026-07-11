@@ -55,21 +55,6 @@ export default function ProfileScreen() {
         
         <LotoPassCard />
 
-        <TouchableOpacity 
-          style={[styles.wizardBanner, { backgroundColor: theme.primary + '15', borderColor: theme.primary }]}
-          onPress={forceReopenWizard}
-          activeOpacity={0.8}
-        >
-          <View style={styles.wizardBannerIcon}>
-            <MaterialIcons name="card-giftcard" size={24} color={theme.primary} />
-          </View>
-          <View style={styles.wizardBannerTextCol}>
-            <Text style={[styles.wizardBannerTitle, { color: theme.primary }]}>Completa il Profilo</Text>
-            <Text style={[styles.wizardBannerDesc, { color: theme.text }]}>Ottieni subito +50 LOTO PTI e sblocca le missioni avanzate in città.</Text>
-          </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.primary} />
-        </TouchableOpacity>
-
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Protezione Status e Backup</Text>
           <Text style={styles.sectionDesc}>

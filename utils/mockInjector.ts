@@ -65,7 +65,11 @@ export const injectPoisMock = (poiData: any[]) => {
       base_tokens: 50,
       difficulty_score: 5,
       image_url: null,
-      events: []
+      recommended_parking_id: 'park_porto_antico',
+      description: 'Locale accogliente nel cuore di Taranto vecchia. Oggi ospita un incontro speciale con i ragazzi di Plasticaqquà e TGT per discutere i prossimi interventi sul territorio.',
+      events: [
+        { id: 'ev_mena1', title: 'Incontro Plasticaqquà & TGT', date: 'Oggi, 19:00', is_premium: false }
+      ]
     });
   }
 
@@ -82,7 +86,11 @@ export const injectPoisMock = (poiData: any[]) => {
       base_tokens: 60,
       difficulty_score: 5,
       image_url: null,
-      events: []
+      recommended_parking_id: 'park_porto_antico',
+      description: 'Punto di ritrovo del Nodo Civico per l\'accessibilità. Da qui partono le missioni collettive per tracciare percorsi accessibili in città.',
+      events: [
+        { id: 'ev_dis1', title: 'Passeggiata Scan: Inaccessibilità', date: 'Domani, 10:00', is_premium: false }
+      ]
     });
   }
 
@@ -98,13 +106,39 @@ export const injectPoisMock = (poiData: any[]) => {
       lng: 17.2280,
       base_tokens: 100,
       difficulty_score: 10,
-      crowd_level: 40,
+      crowd_level: 25,
       image_url: null,
+      recommended_parking_id: 'park_porto_antico',
       events: [],
       media: [
         { id: 'm1', title: 'Audioguida Storica', media_type: 'audio', loto_cost: 0 },
         { id: 'm2', title: 'Planimetria Antica HR', media_type: 'digital_file', loto_cost: 50 },
         { id: 'm3', title: 'Archivio Segreto Aragonese', media_type: 'digital_file', loto_cost: 0, is_premium: true }
+      ]
+    });
+  }
+
+  // Inject Museo MuDi as a Free/Cultural POI
+  const hasMudi = processedPois.some((p: any) => p.name === 'Museo MuDi');
+  if (!hasMudi) {
+    processedPois.push({
+      id: 'mudi',
+      name: 'Museo MuDi',
+      category: 'free',
+      type: 'storia',
+      description: 'Il Museo Diocesano di Taranto (MuDi) è ospitato in un antico palazzo nel cuore del borgo antico. Conserva preziosi manufatti, opere d\'arte sacra e reliquie che raccontano la storia millenaria della città, incrociando le rotte bizantine, normanne e aragonesi.',
+      lat: 40.4740, 
+      lng: 17.2300,
+      base_tokens: 80,
+      difficulty_score: 7,
+      crowd_level: 15,
+      image_url: null,
+      recommended_parking_id: 'park_porto_antico',
+      website_url: 'https://museodiocesanotaranto.it/',
+      events: [],
+      media: [
+        { id: 'm4', title: 'Audioguida Sala 1', media_type: 'audio', loto_cost: 0 },
+        { id: 'm5', title: 'Manoscritto Digitalizzato', media_type: 'digital_file', loto_cost: 10, is_premium: false }
       ]
     });
   }

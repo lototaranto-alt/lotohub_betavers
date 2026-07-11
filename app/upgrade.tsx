@@ -1,181 +1,171 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 export default function UpgradeScreen() {
   const router = useRouter();
   const { theme, setElite, isElite } = useTheme();
 
-  // Colori allineati alla nuova palette Boutique Premium
-  const bgColor = '#121417'; 
-  const textColor = '#F2ECE4';
-  const accentColor = '#C5A059'; // Oro Brunito Champagne
+  // STILE NEO-FUTURISTA (Proposta 3 Screen Match)
+  const bgColor = '#0A0F14'; 
+  const textColor = '#E0F2FE';
+  const neonCyan = '#00F0FF';
+  const neonGreen = '#10B981'; // Smeraldo Neon
+  const neonPurple = '#FF00FF';
 
   const handleUpgrade = () => {
-    // Mock dell'acquisto In-App
     setElite(true);
     router.back();
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        
+      
+      {/* HEADER COMPATTO */}
+      <View style={styles.header}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => router.back()}>
           <MaterialIcons name="close" size={28} color={textColor} />
         </TouchableOpacity>
+        <Text style={[styles.title, { color: textColor }]}>
+          L.O.T.O. <Text style={{ color: neonCyan, textShadowColor: neonCyan, textShadowRadius: 10 }}>ELITE</Text>
+        </Text>
+        <Text style={styles.subtitle}>Cyber-upgrade: Sblocca il potenziale del territorio.</Text>
+      </View>
 
-        <View style={styles.header}>
-          <MaterialIcons name="workspace-premium" size={80} color={accentColor} />
-          <Text style={[styles.title, { color: textColor }]}>Diventa Elite</Text>
-          <Text style={[styles.subtitle, { color: '#A0AAB5' }]}>
-            Sblocca il vero potenziale del territorio e unisciti agli esploratori Premium.
-          </Text>
+      {/* TOP CARD (Stile "ECO-NAVIGATORE" della proposta 3) */}
+      <View style={styles.topCard}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <MaterialIcons name="sailing" size={24} color={neonCyan} style={{ marginRight: 10 }} />
+          <Text style={{ color: neonCyan, fontWeight: 'bold', fontSize: 16, letterSpacing: 2 }}>STATUS ELITE</Text>
         </View>
-
-        <View style={styles.featuresList}>
-          <FeatureItem 
-            icon="nightlight-round" 
-            title="Status Dark/Neon Mode" 
-            desc="Un'interfaccia esclusiva e immersiva, riservata solo agli utenti Elite."
-            accent={accentColor}
-          />
-          <FeatureItem 
-            icon="headphones" 
-            title="Audio-Documentari Premium" 
-            desc="Scansiona gli adesivi NFC per ascoltare storie segrete di altissima qualità."
-            accent={accentColor}
-          />
-          <FeatureItem 
-            icon="vpn-key" 
-            title="Accesso a Luoghi Segreti" 
-            desc="Sblocca Punti di Interesse nascosti ai turisti normali."
-            accent={accentColor}
-          />
-          <FeatureItem 
-            icon="notifications-active" 
-            title="Notifiche Boost Partner" 
-            desc="Ricevi inviti esclusivi in tempo reale dai locali più ambiti."
-            accent={accentColor}
-          />
+        <View style={{ flexDirection: 'row', marginTop: 15 }}>
+          <View style={[styles.badge, { backgroundColor: neonCyan + '20' }]}>
+            <Text style={{ color: neonCyan, fontSize: 10, fontWeight: 'bold' }}>NEON MODE</Text>
+          </View>
+          <View style={[styles.badge, { backgroundColor: neonGreen + '20', marginLeft: 10 }]}>
+            <Text style={{ color: neonGreen, fontSize: 10, fontWeight: 'bold' }}>HQ AUDIO</Text>
+          </View>
         </View>
+      </View>
 
+      <Text style={styles.sectionTitle}>I TUOI PRIVILEGI PREMIUM</Text>
+
+      {/* 3 RECTANGULAR CARDS (Cyan, Green, Purple) */}
+      <View style={styles.cardsRow}>
+        <FeatureCard icon="nightlight-round" color={neonCyan} title="NEON" desc="Tema Dark" />
+        <FeatureCard icon="headphones" color={neonGreen} title="AUDIO" desc="Storie HQ" />
+        <FeatureCard icon="vpn-key" color={neonPurple} title="SECRET" desc="Aree VIP" />
+      </View>
+
+      {/* BOTTOM ACTION (ancorata in basso, senza scroll) */}
+      <View style={styles.bottomSection}>
         {!isElite ? (
-          <TouchableOpacity style={[styles.upgradeBtn, { backgroundColor: accentColor }]} onPress={handleUpgrade}>
-            <Text style={styles.upgradeBtnText}>Sblocca Ora - 4.99€/Mese</Text>
+          <TouchableOpacity onPress={handleUpgrade} activeOpacity={0.8} style={styles.upgradeWrapper}>
+            <LinearGradient
+              colors={['#00F0FF', '#FF00FF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.upgradeBtnGlow}
+            >
+              <View style={styles.upgradeBtnInner}>
+                <Text style={[styles.upgradeBtnText, { color: neonCyan }]}>SBLOCCA ORA - 4.99€</Text>
+              </View>
+            </LinearGradient>
           </TouchableOpacity>
         ) : (
-          <View>
-            <View style={[styles.upgradedBadge, { borderColor: accentColor }]}>
-              <MaterialIcons name="check-circle" size={24} color={accentColor} />
-              <Text style={[styles.upgradedText, { color: accentColor }]}>Sei già un utente Premium</Text>
+          <View style={{ alignItems: 'center', width: '100%' }}>
+            <View style={[styles.upgradedBadge, { borderColor: neonCyan }]}>
+              <MaterialIcons name="check-circle" size={24} color={neonCyan} />
+              <Text style={[styles.upgradedText, { color: neonCyan }]}>SEI PREMIUM</Text>
             </View>
-            <TouchableOpacity 
-              style={{ marginTop: 15, alignItems: 'center' }}
-              onPress={() => { setElite(false); router.back(); }}
-            >
-              <Text style={{ color: '#A0AAB5', textDecorationLine: 'underline', fontSize: 12 }}>[Dev] Torna a Freemium per Test</Text>
+            <TouchableOpacity onPress={() => { setElite(false); router.back(); }} style={{ marginTop: 20 }}>
+              <Text style={{ color: '#8BA6B9', textDecorationLine: 'underline', fontSize: 12 }}>[Dev] Torna a Freemium</Text>
             </TouchableOpacity>
           </View>
         )}
-
-        <Text style={styles.legal}>
-          Abbonamento con rinnovo automatico. Puoi disdire in qualsiasi momento dalle impostazioni del tuo store.
-        </Text>
-
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
-const FeatureItem = ({ icon, title, desc, accent }: { icon: any, title: string, desc: string, accent: string }) => (
-  <View style={styles.featureItem}>
-    <View style={styles.iconContainer}>
-      <MaterialIcons name={icon} size={28} color={accent} />
-    </View>
-    <View style={styles.featureTextContainer}>
-      <Text style={styles.featureTitle}>{title}</Text>
-      <Text style={styles.featureDesc}>{desc}</Text>
-    </View>
+const FeatureCard = ({ icon, color, title, desc }: { icon: any, color: string, title: string, desc: string }) => (
+  <View style={[styles.featureCard, { borderColor: color }]}>
+    <MaterialIcons name={icon} size={28} color={color} style={{ marginBottom: 10, textShadowColor: color, textShadowRadius: 8 }} />
+    <Text style={[styles.cardTitle, { color: '#FFF' }]}>{title}</Text>
+    <Text style={[styles.cardDesc, { color: '#8BA6B9' }]}>{desc}</Text>
   </View>
 );
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  header: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 10 },
+  closeBtn: { alignSelf: 'flex-end', padding: 5 },
+  title: { fontSize: 32, fontWeight: '900', fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: 2 },
+  subtitle: { color: '#8BA6B9', fontSize: 13, marginTop: 5 },
+  topCard: {
+    marginHorizontal: 24,
+    marginTop: 20,
+    backgroundColor: '#111827',
+    padding: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#1E293B'
   },
-  scroll: {
-    padding: 24,
-    paddingTop: 40,
-    paddingBottom: 60,
-  },
-  closeBtn: {
-    alignSelf: 'flex-end',
-    marginBottom: 20,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '900',
-    fontFamily: 'serif',
-    marginTop: 15,
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 10,
-  },
-  featuresList: {
-    marginBottom: 40,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    marginBottom: 25,
-    alignItems: 'flex-start',
-  },
-  iconContainer: {
-    width: 50,
-    alignItems: 'center',
-  },
-  featureTextContainer: {
-    flex: 1,
-  },
-  featureTitle: {
-    color: '#FFF',
-    fontSize: 16,
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  sectionTitle: {
+    color: '#E0F2FE',
+    fontSize: 12,
     fontWeight: 'bold',
-    marginBottom: 4,
+    textAlign: 'center',
+    marginTop: 40,
+    marginBottom: 20,
+    letterSpacing: 1,
+    opacity: 0.8
   },
-  featureDesc: {
-    color: '#A0AAB5',
-    fontSize: 13,
-    lineHeight: 18,
+  cardsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
   },
-  upgradeBtn: {
-    paddingVertical: 18,
-    borderRadius: 30,
+  featureCard: {
+    width: (width - 48 - 20) / 3, // 3 colonne con gap di 10
+    borderWidth: 1,
+    borderRadius: 15,
+    paddingVertical: 20,
+    paddingHorizontal: 5,
     alignItems: 'center',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+    backgroundColor: '#111827',
+  },
+  cardTitle: { fontSize: 12, fontWeight: 'bold', marginBottom: 4 },
+  cardDesc: { fontSize: 10, textAlign: 'center' },
+  bottomSection: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
+  upgradeWrapper: { width: '100%' },
+  upgradeBtnGlow: {
+    padding: 2,
+    borderRadius: 30,
+  },
+  upgradeBtnInner: {
+    backgroundColor: '#0A0F14',
+    paddingVertical: 18,
+    borderRadius: 28,
+    alignItems: 'center',
   },
   upgradeBtnText: {
-    color: '#1A1C1E',
     fontSize: 16,
     fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 2,
+    textShadowColor: '#00F0FF',
+    textShadowRadius: 8,
   },
   upgradedBadge: {
     flexDirection: 'row',
@@ -184,17 +174,13 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 30,
     borderWidth: 2,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    width: '100%',
+    backgroundColor: 'rgba(0, 240, 255, 0.1)',
   },
   upgradedText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '900',
     marginLeft: 10,
-  },
-  legal: {
-    color: '#64748B',
-    fontSize: 10,
-    textAlign: 'center',
-    marginTop: 20,
+    letterSpacing: 1,
   }
 });

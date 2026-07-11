@@ -14,7 +14,7 @@ interface CityProviderProps {
 }
 
 export function CityProvider({ children }: CityProviderProps) {
-  const { currentTenant, setTenantManual, loading } = useTenant();
+  const { currentTenant, setTenantManual, isLoading: loading } = useTenant();
 
   const setCurrentCity = async (city: string) => {
     // Mappa la chiamata a setCity su setTenantManual
@@ -24,7 +24,7 @@ export function CityProvider({ children }: CityProviderProps) {
   return (
     <CityContext.Provider 
       value={{ 
-        currentCity: currentTenant.id, 
+        currentCity: currentTenant?.id || '', 
         setCurrentCity, 
         loading 
       }}

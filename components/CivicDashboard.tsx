@@ -8,7 +8,7 @@ import { supabase } from '../utils/supabase';
 
 export default function CivicDashboard() {
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'form' | 'leaderboard'>('form');
+  const [activeTab, setActiveTab] = useState<'form' | 'impact'>('form');
   
   // Form State
   const [category, setCategory] = useState('');
@@ -19,10 +19,6 @@ export default function CivicDashboard() {
   const [showBadgeModal, setShowBadgeModal] = useState(false);
   const [unlockedBadgeData, setUnlockedBadgeData] = useState<{name: string, icon: any, color: string, isConfirmed: boolean, isBadge: boolean, message?: string} | null>(null);
 
-  // Leaderboard State
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
-
   const categories = [
     { id: 'barrier', label: 'Barriera Architett.', icon: 'accessible' },
     { id: 'degradation', label: 'Degrado Urbano', icon: 'delete-outline' },
@@ -30,29 +26,14 @@ export default function CivicDashboard() {
     { id: 'other', label: 'Altro', icon: 'more-horiz' }
   ];
 
-  // Carica Leaderboard quando si apre il tab
-  useEffect(() => {
-    if (activeTab === 'leaderboard') {
-      fetchLeaderboard();
-    }
-  }, [activeTab]);
-
-  const fetchLeaderboard = async () => {
-    setLoadingLeaderboard(true);
-    try {
-      const { data, error } = await supabase
-        .from('global_impact_leaderboard')
-        .select('*')
-        .order('impact_score', { ascending: false })
-        .limit(10);
-      
-      if (error) throw error;
-      setLeaderboard(data || []);
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-    } finally {
-      setLoadingLeaderboard(false);
-    }
+  // Mock Data per l'Obiettivo Civico (Demo 15 Luglio)
+  const civicGoalMock = {
+    title: "10 Alberi in Piazza Garibaldi",
+    description: "Aiutaci a riqualificare la piazza piantando 10 nuovi alberi. Ogni tua esplorazione contribuisce al fondo!",
+    target: 10000,
+    current: 6500,
+    sponsor: "Plasticaqquà & TGT",
+    participants: 142
   };
 
   const handleGetLocation = async () => {
@@ -153,10 +134,10 @@ export default function CivicDashboard() {
           <Text style={[styles.tabText, { color: activeTab === 'form' ? theme.primary : '#94A3B8' }]}>Nuova Segnalazione</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'leaderboard' && { borderBottomColor: theme.primary, borderBottomWidth: 3 }]}
-          onPress={() => setActiveTab('leaderboard')}
+          style={[styles.tab, activeTab === 'impact' && { borderBottomColor: theme.secondary, borderBottomWidth: 3 }]}
+          onPress={() => setActiveTab('impact')}
         >
-          <Text style={[styles.tabText, { color: activeTab === 'leaderboard' ? theme.primary : '#94A3B8' }]}>Classifica (7gg)</Text>
+          <Text style={[styles.tabText, { color: activeTab === 'impact' ? theme.secondary : '#94A3B8' }]}>Impatto Collettivo</Text>
         </TouchableOpacity>
       </View>
 
@@ -216,28 +197,52 @@ export default function CivicDashboard() {
             <Text style={styles.disclaimer}>La tua segnalazione sarà visibile solo agli enti di competenza.</Text>
           </View>
         ) : (
-          <View>
-            <View style={styles.leaderboardHeader}>
-              <Text style={styles.leaderboardTitle}>Impact Score</Text>
-              <Text style={styles.leaderboardSubtitle}>Classifica viva (ultimi 7 giorni)</Text>
+          <View style={{ padding: 10 }}>
+            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+              <MaterialIcons name="park" size={48} color={theme.secondary} style={{ marginBottom: 10 }} />
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.text, textAlign: 'center' }}>
+                {civicGoalMock.title}
+              </Text>
+              <Text style={{ fontSize: 14, color: theme.textMuted, textAlign: 'center', marginTop: 8 }}>
+                {civicGoalMock.description}
+              </Text>
             </View>
 
-            {loadingLeaderboard ? (
-              <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />
-            ) : leaderboard.length === 0 ? (
-              <Text style={{ textAlign: 'center', marginTop: 20, color: theme.text }}>Ancora nessun dato per la classifica.</Text>
-            ) : (
-              leaderboard.map((user, idx) => (
-                <View key={user.user_id || idx} style={[styles.leaderboardRow, { borderBottomColor: theme.border }]}>
-                  <View style={styles.rankCol}>
-                    <Text style={[styles.rankText, { color: idx === 0 ? '#F59E0B' : idx === 1 ? '#94A3B8' : idx === 2 ? '#B45309' : theme.text }]}>#{user.rank || idx + 1}</Text>
-                  </View>
-                  <Text style={[styles.nameText, { color: theme.text }]}>{user.nickname || 'Anonimo'}</Text>
-                  <Text style={[styles.scoreText, { color: theme.primary }]}>{user.impact_score ? Math.floor(user.impact_score) : 0} PTI</Text>
+            <View style={{ backgroundColor: theme.background, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: theme.border }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ fontWeight: 'bold', color: theme.secondary }}>Progresso</Text>
+                <Text style={{ fontWeight: 'bold', color: theme.text }}>{Math.floor((civicGoalMock.current / civicGoalMock.target) * 100)}%</Text>
+              </View>
+              
+              <View style={{ height: 12, backgroundColor: theme.border, borderRadius: 6, overflow: 'hidden' }}>
+                <View style={{ width: `${(civicGoalMock.current / civicGoalMock.target) * 100}%`, height: '100%', backgroundColor: theme.secondary }} />
+              </View>
+              
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 }}>
+                <View>
+                  <Text style={{ fontSize: 12, color: theme.textMuted }}>Raccolti</Text>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text }}>{civicGoalMock.current} PTI</Text>
                 </View>
-              ))
-            )}
-            <Text style={[styles.disclaimer, { marginTop: 20 }]}>*Il punteggio è la somma di camminate, scansioni e segnalazioni civiche verificate.</Text>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ fontSize: 12, color: theme.textMuted }}>Obiettivo</Text>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text }}>{civicGoalMock.target} PTI</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, paddingHorizontal: 10 }}>
+              <View style={{ alignItems: 'center', flex: 1 }}>
+                <MaterialIcons name="groups" size={24} color={theme.textMuted} />
+                <Text style={{ fontWeight: 'bold', color: theme.text, marginTop: 5 }}>{civicGoalMock.participants}</Text>
+                <Text style={{ fontSize: 12, color: theme.textMuted, textAlign: 'center' }}>Esploratori attivi</Text>
+              </View>
+              <View style={{ width: 1, backgroundColor: theme.border }} />
+              <View style={{ alignItems: 'center', flex: 1 }}>
+                <MaterialIcons name="handshake" size={24} color={theme.textMuted} />
+                <Text style={{ fontWeight: 'bold', color: theme.text, marginTop: 5 }}>{civicGoalMock.sponsor}</Text>
+                <Text style={{ fontSize: 12, color: theme.textMuted, textAlign: 'center' }}>Ente Promotore</Text>
+              </View>
+            </View>
           </View>
         )}
       </ScrollView>

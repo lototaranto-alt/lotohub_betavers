@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, ScrollView, Alert, Linking, Dimensions, ActivityIndicator } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../utils/supabase';
@@ -24,18 +25,12 @@ type PoiDetailSheetProps = {
   visible: boolean;
   poi: any | null;
   onClose: () => void;
-  onBook: (poi: any, partySize: number) => void;
-  onValidate: (poi: any) => void;
-  isBooked: boolean;
-  initialPartySize: number;
+  onCheckIn: (poi: any) => void;
 };
 
-export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValidate, isBooked, initialPartySize }: PoiDetailSheetProps) {
+export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: PoiDetailSheetProps) {
   const router = useRouter();
   const { theme, isElite } = useTheme();
-  
-  const [partySize, setPartySize] = useState(initialPartySize || 1);
-  const [mobilityMode, setMobilityMode] = useState<'mezzo_proprio' | 'loto_mobility' | null>(null);
   
   // Route Builder
   const { isPoiInRoute, addPoiToRoute, removePoiFromRoute } = useRouteBuilder();
@@ -45,6 +40,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
   const [vaultMedia, setVaultMedia] = useState<any[]>([]);
   const [mediaStatus, setMediaStatus] = useState<{[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'}>({});
   const [premiumMockVisible, setPremiumMockVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<'media' | 'info' | 'events'>('media');
 
   useEffect(() => {
     if (visible && poi) {
@@ -395,9 +391,35 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
                   </View>
                 )}
               </View>
+
+              {/* NFC SCAN BUTTON MOVED TO TOP */}
+              <TouchableOpacity 
+                style={[styles.mainBtn, { backgroundColor: theme.primary, marginTop: 15 }]} 
+                onPress={() => onCheckIn(poi)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialIcons name="nfc" size={20} color={theme.background} style={{ marginRight: 8 }} />
+                  <Text style={[styles.mainBtnText, { color: theme.background }]}>Rileva Passaggio (NFC/QR)</Text>
+                </View>
+              </TouchableOpacity>
             </View>
 
-            {/* SEZIONE VAULT MULTIMEDIALE (TEASE & REVEAL) */}
+            {/* SELETTORE TAB */}
+            <View style={styles.tabBar}>
+              <TouchableOpacity style={[styles.tabBtn, { borderBottomColor: activeTab === 'media' ? theme.primary : 'transparent' }]} onPress={() => setActiveTab('media')}>
+                <Text style={[styles.tabBtnText, { color: activeTab === 'media' ? theme.primary : theme.textMuted }]}>DIGITALE</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.tabBtn, { borderBottomColor: activeTab === 'info' ? theme.primary : 'transparent' }]} onPress={() => setActiveTab('info')}>
+                <Text style={[styles.tabBtnText, { color: activeTab === 'info' ? theme.primary : theme.textMuted }]}>INFO</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.tabBtn, { borderBottomColor: activeTab === 'events' ? theme.primary : 'transparent' }]} onPress={() => setActiveTab('events')}>
+                <Text style={[styles.tabBtnText, { color: activeTab === 'events' ? theme.primary : theme.textMuted }]}>EVENTI</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* CONTENUTO TAB: DIGITALE */}
+            {activeTab === 'media' && (
+              <View style={styles.tabContent}>
             {vaultMedia.length > 0 && (
               <View style={[styles.vaultSection, { borderBottomColor: theme.border }]}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>🎒 RISORSE ESCLUSIVE</Text>
@@ -466,135 +488,101 @@ export default function PoiDetailSheet({ visible, poi, onClose, onBook, onValida
                 })}
               </View>
             )}
-
-            {/* EVENTI PARTNER */}
-            {poi.events && poi.events.length > 0 && (
-              <View style={[styles.vaultSection, { borderBottomColor: theme.border, marginTop: 15 }]}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>📅 PROSSIMI EVENTI</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
-                  {poi.events.map((ev: any) => (
-                    <View key={ev.id} style={{ backgroundColor: theme.background, padding: 15, borderRadius: 15, marginRight: 15, width: 200, borderWidth: 1, borderColor: theme.border }}>
-                      <Text style={{ fontWeight: 'bold', fontSize: 14, color: theme.text }}>{ev.title}</Text>
-                      <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 5 }}>{new Date(ev.date).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
-                      <TouchableOpacity 
-                        style={{ marginTop: 10, backgroundColor: ev.is_premium ? theme.accent : theme.primary, paddingVertical: 8, borderRadius: 10, alignItems: 'center' }}
-                        onPress={() => ev.is_premium && !isElite ? router.push('/upgrade') : Alert.alert('Iscritto!', 'Sei in lista per questo evento.')}
-                      >
-                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Partecipa {ev.is_premium ? '🌟' : ''}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </ScrollView>
               </View>
             )}
 
-            {/* 3. IL BIVIO DECISIONALE & IL PATTO */}
-            <View style={styles.actionSection}>
-              
-              {isBooked ? (
-                // STATO: PRENOTATO
-                <View style={[styles.bookedContainer, { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }]}>
-                  <MaterialIcons name="check-circle" size={48} color={theme.primary} style={{ alignSelf: 'center', marginBottom: 10 }} />
-                  <Text style={[styles.bookedTitle, { color: theme.text }]}>Prenotazione Attiva</Text>
-                  <Text style={[styles.bookedSub, { color: theme.textMuted }]}>Hai riservato i tuoi posti. Raggiungi il luogo per sbloccare i punti.</Text>
-                  
-                  <TouchableOpacity style={[styles.mainBtn, { backgroundColor: theme.primary }]} onPress={() => onValidate(poi)}>
-                    <Text style={[styles.mainBtnText, { color: theme.background }]}>Convalida Arrivo</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                // STATO: DA PRENOTARE
-                <>
-                  <Text style={[styles.sectionTitle, { color: theme.text }]}>Conferma Ospiti</Text>
-                  <View style={[styles.partySelector, { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }]}>
-                    <TouchableOpacity style={[styles.partyBtn, { backgroundColor: theme.surface }]} onPress={() => setPartySize(Math.max(1, partySize - 1))}>
-                      <MaterialIcons name="remove" size={20} color={theme.text} />
-                    </TouchableOpacity>
-                    <Text style={[styles.partyText, { color: theme.text }]}>{partySize} {partySize > 1 ? 'Persone' : 'Persona'}</Text>
-                    <TouchableOpacity style={[styles.partyBtn, { backgroundColor: theme.surface }]} onPress={() => setPartySize(partySize + 1)}>
-                      <MaterialIcons name="add" size={20} color={theme.text} />
-                    </TouchableOpacity>
+            {/* CONTENUTO TAB: EVENTI */}
+            {activeTab === 'events' && (
+              <View style={styles.tabContent}>
+                {poi.events && poi.events.length > 0 ? (
+                  <View style={[styles.vaultSection, { borderBottomColor: theme.border, marginTop: 15 }]}>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>📅 PROSSIMI EVENTI</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+                      {poi.events.map((ev: any) => (
+                        <View key={ev.id} style={{ backgroundColor: theme.background, padding: 15, borderRadius: 15, marginRight: 15, width: 200, borderWidth: 1, borderColor: theme.border }}>
+                          <Text style={{ fontWeight: 'bold', fontSize: 14, color: theme.text }}>{ev.title}</Text>
+                          <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 5 }}>{new Date(ev.date).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
+                          <TouchableOpacity 
+                            style={{ marginTop: 10, backgroundColor: ev.is_premium ? theme.accent : theme.primary, paddingVertical: 8, borderRadius: 10, alignItems: 'center' }}
+                            onPress={() => ev.is_premium && !isElite ? router.push('/upgrade') : Alert.alert('Iscritto!', 'Sei in lista per questo evento.')}
+                          >
+                            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Partecipa {ev.is_premium ? '🌟' : ''}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </ScrollView>
                   </View>
-
-                  <Text style={[styles.sectionTitle, { color: theme.text }]}>Come raggiungerai la destinazione?</Text>
-                  <View style={styles.bivioContainer}>
-                    <TouchableOpacity 
-                      style={[styles.bivioBtn, { backgroundColor: mobilityMode === 'mezzo_proprio' ? theme.primary : theme.background, borderColor: theme.border, borderWidth: 1 }]}
-                      onPress={() => setMobilityMode('mezzo_proprio')}
-                    >
-                      <MaterialIcons name="directions-car" size={24} color={mobilityMode === 'mezzo_proprio' ? theme.background : theme.textMuted} />
-                      <Text style={[styles.bivioText, { color: mobilityMode === 'mezzo_proprio' ? theme.background : theme.textMuted }]}>Mezzo Proprio</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                      style={[styles.bivioBtn, { backgroundColor: mobilityMode === 'loto_mobility' ? theme.primary : theme.background, borderColor: theme.border, borderWidth: 1 }]}
-                      onPress={() => setMobilityMode('loto_mobility')}
-                    >
-                      <MaterialIcons name="directions-walk" size={24} color={mobilityMode === 'loto_mobility' ? theme.background : theme.textMuted} />
-                      <Text style={[styles.bivioText, { color: mobilityMode === 'loto_mobility' ? theme.background : theme.textMuted }]}>Proposte L.O.T.O.</Text>
-                    </TouchableOpacity>
+                ) : (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <MaterialIcons name="event-busy" size={48} color={theme.border} />
+                    <Text style={{ color: theme.textMuted, marginTop: 10, textAlign: 'center' }}>Nessun evento in programma al momento.</Text>
                   </View>
+                )}
+              </View>
+            )}
 
-                  {/* ESPANSIONE BIVIO */}
-                  {mobilityMode === 'mezzo_proprio' && hasParkingSuggestion && (
-                    <View style={[styles.governanceCard, { backgroundColor: 'rgba(217, 160, 91, 0.1)', borderColor: theme.accent }]}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                        <MaterialIcons name="local-parking" size={20} color={theme.accent} />
-                        <Text style={[styles.governanceTitle, { color: theme.accent }]}>Suggerimento Sosta Strategica</Text>
-                      </View>
-                      <Text style={[styles.governanceText, { color: theme.textMuted }]}>
-                        La zona intorno a {poi.name} è a traffico limitato o congestionata. Parcheggia comodamente a &quot;Park Porto Antico&quot; e guadagna <Text style={{fontWeight: 'bold', color: theme.accent}}>+10 PTI</Text>.
-                      </Text>
-                      <TouchableOpacity style={[styles.navParkingBtn, { backgroundColor: theme.accent }]} onPress={() => handleNavigate('driving', true)}>
-                        <MaterialIcons name="navigation" size={16} color={theme.background} style={{ marginRight: 5 }} />
-                        <Text style={{ color: theme.background, fontWeight: 'bold' }}>Naviga al Parcheggio</Text>
-                      </TouchableOpacity>
+            {/* CONTENUTO TAB: INFO */}
+            {activeTab === 'info' && (
+              <View style={[styles.actionSection, styles.tabContent]}>
+                
+                {/* Bio / Description */}
+                {poi.description && (
+                  <View style={{ marginBottom: 20 }}>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>STORIA E BIO</Text>
+                    <Text style={{ color: theme.textMuted, fontSize: 14, lineHeight: 22, marginTop: 5 }}>
+                      {poi.description}
+                    </Text>
+                  </View>
+                )}
+
+                {/* MEZZO PROPRIO & SOSTA (Solo se ha suggerimento parcheggio) */}
+                {hasParkingSuggestion && (
+                  <View style={[styles.governanceCard, { backgroundColor: 'rgba(217, 160, 91, 0.1)', borderColor: theme.accent, marginTop: 10 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                      <MaterialIcons name="local-parking" size={20} color={theme.accent} />
+                      <Text style={[styles.governanceTitle, { color: theme.accent }]}>Suggerimento Sosta Strategica</Text>
                     </View>
-                  )}
-
-                  {mobilityMode === 'loto_mobility' && (
-                    <View style={[styles.mobilityRow, { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }]}>
-                      <TouchableOpacity style={styles.mobilityItem} onPress={() => handleNavigate('walking')}>
-                        <MaterialIcons name="directions-walk" size={24} color={theme.primary} />
-                        <Text style={[styles.mobilityLabel, { color: theme.textMuted }]}>15 min</Text>
-                        <Text style={[styles.mobilityBonus, { color: theme.primary }]}>+5 XP</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.mobilityItem} onPress={() => handleNavigate('bicycling')}>
-                        <MaterialIcons name="directions-bike" size={24} color={theme.primary} />
-                        <Text style={[styles.mobilityLabel, { color: theme.textMuted }]}>6 min</Text>
-                        <Text style={[styles.mobilityBonus, { color: theme.primary }]}>+10 XP</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.mobilityItem} onPress={() => handleNavigate('transit')}>
-                        <MaterialIcons name="directions-bus" size={24} color={theme.primary} />
-                        <Text style={[styles.mobilityLabel, { color: theme.textMuted }]}>Bus 1/2</Text>
-                        <Text style={[styles.mobilityBonus, { color: theme.primary }]}>-1.2kg CO₂</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  <TouchableOpacity 
-                    style={[styles.mainBtn, { backgroundColor: theme.primary }, (!mobilityMode) && { opacity: 0.5 }]} 
-                    disabled={!mobilityMode}
-                    onPress={() => onBook(poi, partySize)}
-                  >
-                    <Text style={[styles.mainBtnText, { color: theme.background }]}>Prenota Visita</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-
-              {/* PITCH UPGRADE PREMIUM */}
-              {!isElite && poi.category !== 'partner' && (
-                <TouchableOpacity onPress={() => { onClose(); router.push('/upgrade'); }} activeOpacity={0.9} style={{ backgroundColor: theme.text, padding: 15, borderRadius: 15, marginTop: 20 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                    <MaterialIcons name="workspace-premium" size={24} color={theme.accent} />
-                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16, marginLeft: 10 }}>Turista Premium</Text>
+                    <Text style={[styles.governanceText, { color: theme.textMuted }]}>
+                      La zona intorno a {poi.name} è a traffico limitato o congestionata. Parcheggia comodamente a "Park Porto Antico" e guadagna <Text style={{fontWeight: 'bold', color: theme.accent}}>+10 PTI</Text>.
+                    </Text>
+                    <TouchableOpacity style={[styles.navParkingBtn, { backgroundColor: theme.accent }]} onPress={() => handleNavigate('driving', true)}>
+                      <MaterialIcons name="navigation" size={16} color={theme.background} style={{ marginRight: 5 }} />
+                      <Text style={{ color: theme.background, fontWeight: 'bold' }}>Naviga al Parcheggio</Text>
+                    </TouchableOpacity>
                   </View>
-                  <Text style={{ color: '#E2E8F0', fontSize: 12, lineHeight: 18 }}>
-                    Diventa Premium per sbloccare gratuitamente i file digitali scansionando il tag NFC del luogo e guadagnare bonus discreti!
-                  </Text>
+                )}
+
+                <TouchableOpacity 
+                  style={[styles.mainBtn, { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0', marginTop: 15 }]} 
+                  onPress={async () => {
+                    try {
+                      const url = poi.website_url || `https://www.google.com/search?q=${encodeURIComponent(poi.name + ' Taranto')}`;
+                      await WebBrowser.openBrowserAsync(url);
+                    } catch (e) {
+                      Alert.alert('Errore', 'Impossibile aprire il browser');
+                    }
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <MaterialIcons name="language" size={20} color="#475569" style={{ marginRight: 8 }} />
+                    <Text style={[styles.mainBtnText, { color: '#475569' }]}>Sito Ufficiale in App</Text>
+                  </View>
                 </TouchableOpacity>
-              )}
-            </View>
+
+                {/* PITCH UPGRADE PREMIUM */}
+                {!isElite && poi.category !== 'partner' && (
+                  <TouchableOpacity onPress={() => { onClose(); router.push('/upgrade'); }} activeOpacity={0.9} style={{ backgroundColor: theme.text, padding: 15, borderRadius: 15, marginTop: 20 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                      <MaterialIcons name="workspace-premium" size={24} color={theme.accent} />
+                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16, marginLeft: 10 }}>Turista Premium</Text>
+                    </View>
+                    <Text style={{ color: '#E2E8F0', fontSize: 12, lineHeight: 18 }}>
+                      Diventa Premium per sbloccare gratuitamente i file digitali scansionando il tag NFC del luogo e guadagnare bonus discreti!
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </ScrollView>
         </View>
 
@@ -678,16 +666,16 @@ const styles = StyleSheet.create({
   bivioBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 15, backgroundColor: '#F8FAFC', borderRadius: 15, marginHorizontal: 5 },
   bivioBtnActive: { backgroundColor: LOTO_PALETTE.EBANO },
   bivioText: { marginTop: 8, fontSize: 12, fontWeight: 'bold', color: '#64748B' },
-  governanceCard: { backgroundColor: 'rgba(217, 160, 91, 0.1)', padding: 15, borderRadius: 15, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(217, 160, 91, 0.3)' },
-  governanceTitle: { fontSize: 14, fontWeight: 'bold', color: LOTO_PALETTE.SABBIA_DORATA, marginLeft: 5 },
-  governanceText: { fontSize: 13, color: '#475569', lineHeight: 20, marginBottom: 15 },
-  navParkingBtn: { backgroundColor: LOTO_PALETTE.SABBIA_DORATA, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, borderRadius: 10 },
+  governanceCard: { padding: 15, borderRadius: 15, borderWidth: 1, marginBottom: 15 },
+  governanceTitle: { fontWeight: 'bold', fontSize: 14, marginLeft: 8 },
+  governanceText: { fontSize: 12, lineHeight: 18, marginTop: 5 },
+  navParkingBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 10, borderRadius: 10, marginTop: 10 },
   mobilityRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 20, backgroundColor: '#F8FAFC', padding: 15, borderRadius: 15 },
   mobilityItem: { alignItems: 'center' },
   mobilityLabel: { fontSize: 12, fontWeight: 'bold', color: '#475569', marginTop: 5 },
   mobilityBonus: { fontSize: 11, color: LOTO_PALETTE.VERDE_OLIVA, fontWeight: 'bold' },
-  mainBtn: { backgroundColor: LOTO_PALETTE.VERDE_OLIVA, padding: 18, borderRadius: 15, alignItems: 'center', marginTop: 10 },
-  mainBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  mainBtn: { padding: 15, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  mainBtnText: { fontWeight: 'bold', fontSize: 16 },
   bookedContainer: { backgroundColor: '#F8FAFC', padding: 20, borderRadius: 20, alignItems: 'center', marginVertical: 20 },
   bookedTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1C1E' },
   bookedSub: { textAlign: 'center', fontSize: 13, color: '#64748B', marginTop: 5, marginBottom: 15 },
@@ -700,5 +688,24 @@ const styles = StyleSheet.create({
   vaultBtn: { backgroundColor: '#C36B4D', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, elevation: 1 },
   vaultBtnText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
   vaultBtnDisabled: { backgroundColor: '#F1F5F9', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0' },
-  vaultBtnTextDisabled: { color: '#64748B', fontSize: 12, fontWeight: 'bold' }
+  vaultBtnTextDisabled: { color: '#64748B', fontSize: 12, fontWeight: 'bold' },
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    marginTop: 10,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+  },
+  tabBtnText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  tabContent: {
+    paddingTop: 10,
+  }
 });

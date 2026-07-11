@@ -17,9 +17,10 @@ interface ProfileModalProps {
   theme: any;
   t: any;
   setUserProfile: (profile: any) => void;
+  onDeleteItinerary?: (id: string) => void;
 }
 
-export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userItineraries, userTransactions, theme, t, setUserProfile }: ProfileModalProps) {
+export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userItineraries, userTransactions, theme, t, setUserProfile, onDeleteItinerary }: ProfileModalProps) {
   const router = useRouter();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [activeProfileSection, setActiveProfileSection] = useState<'badges' | 'itineraries'>('badges');
@@ -99,9 +100,23 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
               onPress={() => setExpandedCard(expandedCard === 'profile' ? null : 'profile')}
               style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'profile' ? 'flex-start' : 'center', paddingVertical: expandedCard === 'profile' ? 20 : 35, height: expandedCard === 'profile' ? 450 : 310 }]}
             >
+              {/* MOSTRA SEMPRE LA MATITA, MA GESTISCI IL CLICK */}
               {!userProfile?.nickname && expandedCard !== 'profile' && (
                 <View style={{ position: 'absolute', top: 20, right: 20 }}>
-                  <TouchableOpacity onPress={() => { setTempNickname(userProfile?.nickname || ''); setEditingNickname(!editingNickname); }} style={{ padding: 5 }}>
+                  <TouchableOpacity 
+                    onPress={() => { 
+                      if (!userProfile?.email) {
+                        Alert.alert(
+                          "Accesso Limitato", 
+                          "Per scegliere un nome personalizzato e accedere alle classifiche, metti al sicuro il tuo account creando un Backup Cloud."
+                        );
+                        return;
+                      }
+                      setTempNickname(userProfile?.nickname || ''); 
+                      setEditingNickname(!editingNickname); 
+                    }} 
+                    style={{ padding: 5 }}
+                  >
                     <MaterialIcons name={editingNickname ? "check" : "edit"} size={20} color={theme.accent} />
                   </TouchableOpacity>
                 </View>
@@ -127,7 +142,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                     />
                   </View>
                 ) : (
-                  <Text style={[styles.expNameBoutique, expandedCard === 'profile' && { fontSize: 20 }]}>{userProfile?.nickname || t.guest}</Text>
+                  <Text style={[styles.expNameBoutique, expandedCard === 'profile' && { fontSize: 20 }]}>{userProfile?.nickname || (userProfile?.email ? 'Inserisci Nome' : 'Utente Anonimo')}</Text>
                 )}
                 <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0, fontSize: expandedCard === 'profile' ? 14 : 16 }]}>{levelInfo.title} ({userXp} XP)</Text>
               </View>
@@ -177,7 +192,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                                 }
                               }}
                             >
-                              <MaterialIcons name={badge.icon} size={24} color={hasBadge ? badge.color : theme.textMuted} />
+                              <MaterialIcons name={badge.icon as any} size={24} color={hasBadge ? badge.color : theme.textMuted} />
                             </TouchableOpacity>
                           );
                         })}
@@ -195,25 +210,43 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                           data={userItineraries}
                           keyExtractor={item => item.id}
                           showsVerticalScrollIndicator={false}
-                          renderItem={({item}) => (
-                            <View style={{borderBottomWidth:1, borderBottomColor: theme.border, paddingVertical:12}}>
-                              <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
-                                <View style={{ flex: 1 }}>
-                                  <Text style={{fontSize:14, fontWeight:'bold', color: theme.text}} numberOfLines={1}>{item.title}</Text>
-                                  <View style={{flexDirection:'row', marginTop: 4}}>
-                                    <Text style={{fontSize:11, color: theme.accent, fontWeight: 'bold'}}>{item.potential_xp} PTI</Text>
-                                    <Text style={{fontSize:11, color: theme.textMuted, marginLeft: 10}}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                          renderItem={({item}) => {
+                            const title = item.title || item.name || 'Itinerario Senza Nome';
+                            const dateStr = item.created_at || item.date;
+                            const pts = item.potential_xp || (item.pois ? item.pois.length * 15 : 0);
+                            return (
+                              <View style={{borderBottomWidth:1, borderBottomColor: theme.border, paddingVertical:12}}>
+                                <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={{fontSize:14, fontWeight:'bold', color: theme.text}} numberOfLines={1}>{title}</Text>
+                                    <View style={{flexDirection:'row', marginTop: 4}}>
+                                      <Text style={{fontSize:11, color: theme.accent, fontWeight: 'bold'}}>{pts} PTI</Text>
+                                      {dateStr && <Text style={{fontSize:11, color: theme.textMuted, marginLeft: 10}}>{new Date(dateStr).toLocaleDateString()}</Text>}
+                                    </View>
+                                  </View>
+                                  <View style={{ flexDirection: 'row' }}>
+                                    <TouchableOpacity 
+                                      style={{ backgroundColor: '#EF44441A', padding: 8, borderRadius: 12, marginLeft: 5 }}
+                                      onPress={() => {
+                                        Alert.alert('Elimina Itinerario', `Vuoi eliminare "${title}"?`, [
+                                          { text: 'Annulla', style: 'cancel' },
+                                          { text: 'Elimina', style: 'destructive', onPress: () => onDeleteItinerary && onDeleteItinerary(item.id) }
+                                        ]);
+                                      }}
+                                    >
+                                      <MaterialIcons name="delete-outline" size={16} color="#EF4444" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                      style={{ backgroundColor: theme.text, padding: 8, borderRadius: 12, marginLeft: 5 }}
+                                      onPress={() => Alert.alert('Condividi Itinerario', `Condivisione di "${title}" in arrivo!`)}
+                                    >
+                                      <MaterialIcons name="share" size={16} color={theme.background} />
+                                    </TouchableOpacity>
                                   </View>
                                 </View>
-                                <TouchableOpacity 
-                                  style={{ backgroundColor: theme.text, padding: 8, borderRadius: 12, marginLeft: 10 }}
-                                  onPress={() => Alert.alert('Condividi Itinerario', `Condivisione di "${item.title}" in arrivo!`)}
-                                >
-                                  <MaterialIcons name="share" size={16} color={theme.background} />
-                                </TouchableOpacity>
                               </View>
-                            </View>
-                          )}
+                            );
+                          }}
                         />
                       )}
                     </View>

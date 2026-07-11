@@ -16,14 +16,14 @@ export const FREEMIUM_THEME = {
 
 export const ELITE_THEME = {
   isElite: true,
-  background: '#121417', // Obsidian (Molto elegante, scuro ma morbido)
-  surface: '#1A1D21',    // Slate scuro per le card
-  text: '#F2ECE4',       // Bianco Perla
-  textMuted: '#9B968B',  // Cenere dorata
-  primary: '#C5A059',    // Oro Brunito / Champagne
-  secondary: '#6E3A35',  // Rosso Velluto / Mogano
-  accent: '#E5D3B3',     // Oro chiaro per tocchi luminosi
-  border: '#2C3036',     // Bordo sottile
+  background: '#0A0F14', // Very dark blue/black (Neo-Futurista)
+  surface: '#111827',    // Slate scuro per le card
+  text: '#E0F2FE',       // Azzurrino ghiaccio (Neon Text)
+  textMuted: '#8BA6B9',  // Grigio-Azzurro spento
+  primary: '#00F0FF',    // Neon Cyan
+  secondary: '#FF00FF',  // Neon Magenta
+  accent: '#00F0FF',     // Neon Cyan
+  border: '#1E293B',     // Bordo scuro
 };
 
 type ThemeType = typeof FREEMIUM_THEME;
@@ -52,13 +52,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     ? baseTheme // Modalità Elite sempre scura/universale
     : {
         ...baseTheme,
-        primary: currentTenant.colors.primary || baseTheme.primary,
-        secondary: currentTenant.colors.secondary || baseTheme.secondary,
-        background: currentTenant.colors.background || baseTheme.background,
-        surface: currentTenant.colors.card || baseTheme.surface,
-        card: currentTenant.colors.card || baseTheme.surface, // Alias
-        text: currentTenant.colors.text || baseTheme.text,
-        tint: currentTenant.colors.tint || baseTheme.primary,
+        primary: currentTenant?.colors?.primary || baseTheme.primary,
+        secondary: currentTenant?.colors?.secondary || baseTheme.secondary,
+        background: (currentTenant?.colors as any)?.background || baseTheme.background,
+        surface: (currentTenant?.colors as any)?.card || baseTheme.surface,
+        card: (currentTenant?.colors as any)?.card || baseTheme.surface, // Alias
+        text: (currentTenant?.colors as any)?.text || baseTheme.text,
+        tint: (currentTenant?.colors as any)?.tint || baseTheme.primary,
       };
 
   const setElite = (status: boolean) => {

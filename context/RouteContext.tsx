@@ -14,6 +14,8 @@ interface RouteContextType {
   removeEventFromRoute: (eventId: string) => void;
   isEventInRoute: (eventId: string) => boolean;
   clearRoute: () => void;
+  isRouteActive: boolean;
+  setIsRouteActive: (active: boolean) => void;
 }
 
 const RouteContext = createContext<RouteContextType | undefined>(undefined);
@@ -22,6 +24,7 @@ export function RouteProvider({ children }: { children: ReactNode }) {
   const [routePois, setRoutePois] = useState<Poi[]>([]);
   const [routeEvents, setRouteEvents] = useState<Poi[]>([]);
   const [routeName, setRouteName] = useState<string>('Il Tuo Itinerario');
+  const [isRouteActive, setIsRouteActive] = useState<boolean>(false);
 
   const addPoiToRoute = (poi: Poi) => {
     setRoutePois((prev) => {
@@ -72,6 +75,8 @@ export function RouteProvider({ children }: { children: ReactNode }) {
         removeEventFromRoute,
         isEventInRoute,
         clearRoute,
+        isRouteActive,
+        setIsRouteActive,
       }}
     >
       {children}

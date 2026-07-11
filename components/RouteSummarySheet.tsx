@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Dimensions, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Dimensions, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../context/ThemeContext';
 import { useRouteBuilder } from '../context/RouteContext';
@@ -15,7 +16,7 @@ type RouteSummarySheetProps = {
 
 export default function RouteSummarySheet({ visible, onClose }: RouteSummarySheetProps) {
   const { theme } = useTheme();
-  const { routePois, removePoiFromRoute, isPoiInRoute, routeName, setRouteName, routeEvents, addEventToRoute, removeEventFromRoute, isEventInRoute } = useRouteBuilder();
+  const { routePois, removePoiFromRoute, isPoiInRoute, routeName, setRouteName, routeEvents, addEventToRoute, removeEventFromRoute, isEventInRoute, clearRoute, setIsRouteActive } = useRouteBuilder();
   const { mobilityType } = useMobility();
 
   const getMobilityName = (type: string | null) => {
@@ -166,11 +167,8 @@ export default function RouteSummarySheet({ visible, onClose }: RouteSummaryShee
               style={[styles.primaryBtn, { backgroundColor: routePois.length > 0 ? theme.primary : '#E2E8F0' }]}
               disabled={routePois.length === 0}
               onPress={() => {
-                Alert.alert(
-                  "Itinerario Confermato!",
-                  "Pronto a partire? I percorsi saranno tracciati su mappa 3D tramite MapBox e potrai accumulare XP.",
-                  [{ text: "Andiamo!", onPress: onClose }]
-                );
+                setIsRouteActive(true);
+                onClose();
               }}
             >
               <Text style={[styles.primaryBtnText, { color: routePois.length > 0 ? '#FFF' : '#94A3B8' }]}>
@@ -180,12 +178,21 @@ export default function RouteSummarySheet({ visible, onClose }: RouteSummaryShee
             
             <TouchableOpacity 
               style={{ marginTop: 15, alignItems: 'center' }}
-              onPress={() => {
-                Alert.alert(
-                  "Salvato nel Diario",
-                  "Questo itinerario è stato salvato nel tuo Archivio Personale. Potrai ricaricarlo quando vuoi.",
-                  [{ text: "Ottimo" }]
-                );
+              onPress={async () => {
+                try {
+                  const newRoute = { id: Date.now().toString(), name: routeName, pois: routePois, events: routeEvents, date: new Date().toISOString() };
+                  const existingStr = await AsyncStorage.getItem('loto_diary');
+                  const existing = existingStr ? JSON.parse(existingStr) : [];
+                  await AsyncStorage.setItem('loto_diary', JSON.stringify([...existing, newRoute]));
+                  
+                  Alert.alert(
+                    "Salvato nel Diario",
+                    "Questo itinerario è stato salvato nel tuo Archivio Personale. Potrai ricaricarlo quando vuoi.",
+                    [{ text: "Ottimo" }]
+                  );
+                } catch (e) {
+                  Alert.alert("Errore", "Impossibile salvare il diario");
+                }
               }}
             >
               <Text style={[styles.secondaryBtnText, { color: theme.textMuted }]}>
@@ -209,8 +216,8 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    maxHeight: height * 0.85,
-    minHeight: height * 0.4,
+    maxHeight: '95%',
+    minHeight: '40%',
   },
   header: {
     flexDirection: 'row',

@@ -2,7 +2,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Animated, Easing } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Animated, Easing, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../utils/supabase';
 import { injectPoisMock } from '../../utils/mockInjector';
@@ -12,6 +12,8 @@ import { useCity } from '../../context/CityContext';
 import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
+import TouristBaptismModal from '../../components/TouristBaptismModal';
+import XpToast from '../../components/XpToast';
 import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
 import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
@@ -145,8 +147,12 @@ export default function VetrinaScreen() {
   const [isSheetVisible, setIsSheetVisible] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>('recommended');
 
+  const [isBaptismVisible, setIsBaptismVisible] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastData, setToastData] = useState({ xpAmount: 0, message: '' });
+
   const t = DICTIONARY[lang];
-  const tickerText = currentTenant?.ticker_text || t.ticker;
+  const tickerText = currentTenant?.localization?.onboarding_subtitle || t.ticker;
 
   const getLevelInfo = (tokens: number) => {
     if (tokens >= 500) return { title: t.levelGold, badge: require('../../assets/images/badge_gold_1775676641737.png'), color: theme.accent, stemma: 'workspace-premium' as any };
@@ -180,6 +186,13 @@ export default function VetrinaScreen() {
         setPois(processedPois);
       }
 
+      let combinedItineraries: any[] = [];
+
+      const localItinStr = await AsyncStorage.getItem('loto_diary');
+      if (localItinStr) {
+        combinedItineraries = JSON.parse(localItinStr);
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -190,9 +203,13 @@ export default function VetrinaScreen() {
           
           // Fetch itinerari
           const { data: itinData } = await supabase.rpc('get_user_itineraries');
-          if(itinData) setUserItineraries(itinData);
+          if(itinData) {
+            combinedItineraries = [...combinedItineraries, ...itinData];
+          }
         }
       }
+
+      setUserItineraries(combinedItineraries);
 
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
@@ -215,6 +232,13 @@ export default function VetrinaScreen() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Apri il modale di battesimo se il caricamento  finito, c' un profilo ma non ha un nickname
+    if (!loading && userProfile && !userProfile.nickname) {
+      setIsBaptismVisible(true);
+    }
+  }, [loading, userProfile]);
 
 
 
@@ -339,58 +363,39 @@ export default function VetrinaScreen() {
     setIsSheetVisible(true);
   };
 
-  const handleBookPoi = async (poi: any, partySize: number) => {
-    const { data, error } = await supabase.rpc('book_poi_visit', {
-      p_user_id: userProfile.id,
-      p_poi_id: poi.id,
-      p_party_size: partySize
-    });
-    if (!error && data) {
-      setBookedSessions(prev => ({ ...prev, [poi.id]: data }));
-      Alert.alert("Prenotato!", "Hai riservato i tuoi posti. Raggiungi il luogo!");
-      caricaDati();
-    } else {
-      Alert.alert("Errore", "Impossibile prenotare in questo momento.");
-    }
-  };
+  const handleCheckIn = async (poi: any) => {
+    if (!userProfile) return Alert.alert("Errore", "Profilo non trovato");
 
-  const handleValidatePoi = async (poi: any) => {
-    const sessionId = bookedSessions[poi.id];
-    if (!sessionId) return;
+    // Simulazione del Modello Ibrido (Sensore Urbano)
+    const simulatedBleDevices = Math.floor(Math.random() * 15) + 1; // Proxy per la densità
+    const isGolden = (userProfile?.total_tokens || 0) >= 100;
+    const xp = isGolden ? 30 : 15;
 
-    const accuracy = userLocation?.coords.accuracy || 999;
+    const payload = {
+      poi_id: poi.id,
+      session_id: 'anonymous-or-auth-session',
+      nfc_token: 'MOCK_NFC_123',
+      ble_devices_count: simulatedBleDevices,
+      lat: userLocation?.coords.latitude || 40.47,
+      lng: userLocation?.coords.longitude || 17.24,
+      xp_awarded: xp,
+      tenant_id: 'taranto'
+    };
+
+    const { error } = await supabase.from('scans').insert(payload);
     
-    if (accuracy < 15) {
-      await supabase.rpc('validate_checkin', { p_session_id: sessionId, p_validation_confidence: 'GPS_SILENT' });
-      const isGolden = (userProfile?.total_tokens || 0) >= 100;
-      Alert.alert("Check-in Convalidato", isGolden ? `Hai sbloccato la storia segreta. +30 XP!` : `Benvenuto a ${poi.name}. +15 XP!`);
+    if (error) {
+      Alert.alert("Errore", "Impossibile registrare il check-in");
+    } else {
+      const msg = isGolden 
+        ? `Hai sbloccato la storia segreta di ${poi.name}.\n(Indotto: ${simulatedBleDevices} pax)` 
+        : `Benvenuto a ${poi.name}.\n(Indotto: ${simulatedBleDevices} pax)`;
       
-      const newBooked = { ...bookedSessions };
-      delete newBooked[poi.id];
-      setBookedSessions(newBooked);
+      setToastData({ xpAmount: xp, message: msg });
+      setToastVisible(true);
+      
       setIsSheetVisible(false);
       caricaDati();
-    } else {
-      Alert.alert(
-        "Segnale GPS Debole",
-        "La precisione del GPS nel borgo antico non è sufficiente. Scansiona il QR all'ingresso per convalidare in modo sicuro.",
-        [
-          { text: "Annulla", style: "cancel" },
-          { 
-            text: "Scansiona QR", 
-            onPress: async () => {
-              await supabase.rpc('validate_checkin', { p_session_id: sessionId, p_validation_confidence: 'QR_FORCED' });
-              Alert.alert("QR Convalidato!", "Presenza verificata in modo sicuro. +15 XP!");
-              
-              const newBooked = { ...bookedSessions };
-              delete newBooked[poi.id];
-              setBookedSessions(newBooked);
-              setIsSheetVisible(false);
-              caricaDati();
-            }
-          }
-        ]
-      );
     }
   };
 
@@ -414,7 +419,7 @@ export default function VetrinaScreen() {
         {/* 1. HEADER 'SYMMETRY' */}
         <View style={styles.topBar}>
           <View style={{ alignItems: 'flex-start' }}>
-            <Text style={styles.hubTitleSymmetry}>{isPartner ? 'L.O.T.O. B2B' : 'L.O.T.O. HUB'}</Text>
+            <Text style={styles.hubTitleSymmetry}>{isPartner ? 'RETE ACCOGLIENZA' : 'L.O.T.O. HUB'}</Text>
             <Text style={{ color: theme.primary, fontSize: 15, fontFamily: 'serif', fontStyle: 'italic', letterSpacing: 1, marginTop: 2, opacity: 0.9 }}>
               {currentCity === 'taranto' ? 'Taranto' : 'Lecce'}
             </Text>
@@ -436,37 +441,69 @@ export default function VetrinaScreen() {
             <View style={[styles.prestigePill, { backgroundColor: theme.text }]}>
               <MaterialIcons name="storefront" size={48} color={theme.accent} />
               <View style={styles.prestigeCenterCol}>
-                <Text style={[styles.prestigeTierTitle, { color: '#FFF' }]} numberOfLines={1} adjustsFontSizeToFit>{userProfile?.nickname || 'Merchant'}</Text>
+                <Text style={[styles.prestigeTierTitle, { color: '#FFF' }]} numberOfLines={1} adjustsFontSizeToFit>{userProfile?.nickname || 'Host'}</Text>
                 <View style={styles.prestigeBadgeRow}>
                   <View style={[styles.prestigePillBadge, { backgroundColor: theme.primary }]}>
-                    <Text style={[styles.prestigePillBadgeText, { color: '#FFF' }]}>LOTO Partner</Text>
+                    <Text style={[styles.prestigePillBadgeText, { color: '#FFF' }]}>Custode Locale</Text>
                   </View>
                 </View>
               </View>
             </View>
 
-            <View style={styles.archesSection}>
-              <Text style={styles.archesMainTitle}>MERCHANT ANALYTICS (Q1)</Text>
-              <View style={styles.archesContainer}>
-                <View style={[styles.impactArch, { backgroundColor: theme.text }]}>
-                  <MaterialIcons name="qr-code-scanner" size={24} color={theme.accent} style={{ marginBottom: 10 }} />
-                  <Text style={[styles.archVal, { color: '#FFF' }]}>{userProfile?.total_tokens ?? 0}</Text>
-                  <Text style={styles.archLabel}>Scansioni Clienti</Text>
-                </View>
-                <View style={[styles.impactArch, { backgroundColor: theme.primary }]}>
-                  <MaterialIcons name="eco" size={24} color="#FFF" style={{ marginBottom: 10 }} />
-                  <Text style={[styles.archVal, { color: '#FFF' }]}>{userProfile?.total_co2?.toFixed(1) ?? '0.0'}</Text>
-                  <Text style={styles.archLabel}>CO₂ Risparmiata (kg)</Text>
-                </View>
-              </View>
-            </View>
+            <TouchableOpacity 
+              style={{
+                backgroundColor: '#25D366', 
+                padding: 20, 
+                borderRadius: 16, 
+                alignItems: 'center', 
+                flexDirection: 'row', 
+                justifyContent: 'center',
+                marginHorizontal: 10,
+                marginTop: 20,
+                elevation: 4,
+                shadowColor: '#000',
+                shadowOffset: {width: 0, height: 2},
+                shadowOpacity: 0.2,
+                shadowRadius: 4
+              }}
+              onPress={() => Linking.openURL('whatsapp://send?phone=393330000000&text=Ciao%20L.O.T.O.%20Concierge,%20ho%20bisogno%20di%20assistenza')}
+            >
+              <MaterialIcons name="chat" size={28} color="#FFF" style={{ marginRight: 10 }} />
+              <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>WhatsApp Concierge</Text>
+            </TouchableOpacity>
+
+            {/* DEMO MOCK: DOUBLE GPS HANDSHAKE */}
+            <TouchableOpacity 
+              style={{
+                backgroundColor: theme.surface, 
+                padding: 15, 
+                borderRadius: 12, 
+                alignItems: 'center', 
+                flexDirection: 'row', 
+                justifyContent: 'center',
+                marginHorizontal: 10,
+                marginTop: 15,
+                borderWidth: 1,
+                borderColor: theme.border
+              }}
+              onPress={() => {
+                Alert.alert(
+                  "Double GPS Handshake (Simulazione)",
+                  "📍 Coordinate Attuali: 40.471, 17.243\n\nSto incrociando le tue coordinate con quelle registrate dall'Operatore L.O.T.O. al momento dell'installazione del Tag NFC...\n\n✅ MATCH COMPLETATO!\nDeviazione: 4.2 metri.\nIl Nodo Civico è stato attivato in sicurezza. Zero-Spoofing garantito.",
+                  [{ text: "OK", style: "default" }]
+                );
+              }}
+            >
+              <MaterialIcons name="security" size={20} color={theme.accent} style={{ marginRight: 8 }} />
+              <Text style={{ color: theme.text, fontWeight: 'bold', fontSize: 14 }}>Simula Attivazione Nodo (Demo)</Text>
+            </TouchableOpacity>
           </>
         ) : (
           // ==============================
           // DASHBOARD TURISTA (GAMIFICATION)
           // ==============================
           <>
-            <View style={styles.prestigePill}>
+            <View style={[styles.prestigePill, isElite && { backgroundColor: 'transparent', borderColor: '#00F0FF', borderWidth: 1 }]}>
               {/* SX: Stemma Tier */}
               <MaterialIcons name={levelInfo.stemma || 'emoji-events'} size={48} color={theme.accent} />
 
@@ -483,16 +520,7 @@ export default function VetrinaScreen() {
                   {showCompleteProfileWarning ? (
                     <TouchableOpacity 
                       style={[styles.prestigePillBadge, { backgroundColor: theme.accent, flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }]}
-                      onPress={() => {
-                        Alert.alert(
-                          "Migliora l'Esperienza",
-                          "Completa il tuo profilo anonimo per sbloccare i LOTO PTI. Dicci in quanti viaggiate e il tuo stile di mobilità per ricevere bonus moltiplicatori e aiutarci a preservare l'ecosistema cittadino su misura per te",
-                          [
-                            { text: "Non ora", style: "cancel" },
-                            { text: "Completa", onPress: () => forceReopenWizard() }
-                          ]
-                        );
-                      }}
+                      onPress={() => router.push('/profile')}
                     >
                       <MaterialIcons name="warning" size={12} color="#FFF" style={{ marginRight: 4 }} />
                       <Text style={[styles.prestigePillBadgeText, { color: '#FFF' }]}>PROFILO ANONIMO</Text>
@@ -537,28 +565,28 @@ export default function VetrinaScreen() {
             <View style={styles.archesSection}>
               <Text style={styles.archesMainTitle}>{t.impactTitle}</Text>
               <View style={styles.archesContainer}>
-                <View style={[styles.impactArch, { backgroundColor: theme.primary }]}>
-                  <MaterialIcons name="eco" size={24} color="#FFF" style={{ marginBottom: 10 }} />
-                  <Text style={styles.archVal}>{userProfile?.total_co2?.toFixed(1) ?? '0.0'}</Text>
-                  <Text style={styles.archLabel}>{t.co2Lab}</Text>
+                <View style={[styles.impactArch, isElite ? { backgroundColor: 'transparent', borderColor: theme.primary, borderWidth: 1 } : { backgroundColor: theme.primary }]}>
+                  <MaterialIcons name="eco" size={24} color={isElite ? theme.primary : "#FFF"} style={{ marginBottom: 10 }} />
+                  <Text style={[styles.archVal, isElite && { color: theme.primary }]}>{userProfile?.total_co2?.toFixed(1) ?? '0.0'}</Text>
+                  <Text style={[styles.archLabel, isElite && { color: theme.textMuted }]}>{t.co2Lab}</Text>
                 </View>
-                <View style={[styles.impactArch, { backgroundColor: theme.secondary }]}>
-                  <MaterialIcons name="nfc" size={24} color="#FFF" style={{ marginBottom: 10 }} />
-                  <Text style={styles.archVal}>{userProfile?.nfc_scans_count ?? 0}</Text>
-                  <Text style={styles.archLabel}>Scansioni NFC</Text>
+                <View style={[styles.impactArch, isElite ? { backgroundColor: 'transparent', borderColor: '#00F0FF', borderWidth: 1 } : { backgroundColor: theme.secondary }]}>
+                  <MaterialIcons name="nfc" size={24} color={isElite ? '#00F0FF' : "#FFF"} style={{ marginBottom: 10 }} />
+                  <Text style={[styles.archVal, isElite && { color: '#00F0FF' }]}>{userProfile?.nfc_scans_count ?? 0}</Text>
+                  <Text style={[styles.archLabel, isElite && { color: theme.textMuted }]}>Indizi Trovati</Text>
                 </View>
-                <View style={[styles.impactArch, { backgroundColor: theme.accent }]}>
-                  <MaterialIcons name="toll" size={24} color="#FFF" style={{ marginBottom: 10 }} />
-                  <Text style={styles.archVal}>{userProfile?.total_tokens ?? 0}</Text>
-                  <Text style={styles.archLabel}>{t.ptsLab}</Text>
+                <View style={[styles.impactArch, isElite ? { backgroundColor: 'transparent', borderColor: '#FF00FF', borderWidth: 1 } : { backgroundColor: theme.accent }]}>
+                  <MaterialIcons name="toll" size={24} color={isElite ? '#FF00FF' : "#FFF"} style={{ marginBottom: 10 }} />
+                  <Text style={[styles.archVal, isElite && { color: '#FF00FF' }]}>{userProfile?.total_tokens ?? 0}</Text>
+                  <Text style={[styles.archLabel, isElite && { color: theme.textMuted }]}>{t.ptsLab}</Text>
                 </View>
               </View>
             </View>
 
           </>
         )}
-      <View style={styles.tickerBar}>
-        <Text style={styles.tickerText}>
+      <View style={[styles.tickerBar, isElite && { backgroundColor: 'transparent', borderColor: '#FF00FF', borderWidth: 1 }]}>
+        <Text style={[styles.tickerText, isElite && { color: '#00F0FF' }]}>
           {tickerText}
         </Text>
       </View>
@@ -566,18 +594,24 @@ export default function VetrinaScreen() {
       {/* 5. SWITCHBOARD HUB (Le 3 Sfere) */}
       <View style={styles.switchboard}>
         <TouchableOpacity style={styles.hubBtn} onPress={() => router.push('/explore')}>
-          <View style={styles.hubIconCircle}><MaterialIcons name="search" size={24} color="#FFF" /></View>
-          <Text style={styles.hubBtnText}>ESPLORA</Text>
+          <View style={[styles.hubIconCircle, isElite ? { backgroundColor: '#111827', borderColor: '#00F0FF', borderWidth: 2 } : { backgroundColor: theme.primary }]}>
+            <MaterialIcons name="search" size={isElite ? 28 : 24} color={isElite ? '#00F0FF' : "#FFF"} />
+          </View>
+          <Text style={[styles.hubBtnText, isElite && { color: '#00F0FF' }]}>ESPLORA</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.hubBtn, styles.hubBtnCenter]} onPress={() => router.push('/map')}>
-          <View style={[styles.hubIconCircle, { backgroundColor: theme.secondary }]}><MaterialIcons name="map" size={24} color="#FFF" /></View>
-          <Text style={[styles.hubBtnText, { color: theme.secondary }]}>MAPPA</Text>
+          <View style={[styles.hubIconCircle, isElite ? { backgroundColor: '#111827', borderColor: '#10B981', borderWidth: 2 } : { backgroundColor: theme.secondary }]}>
+            <MaterialIcons name="map" size={isElite ? 28 : 24} color={isElite ? '#10B981' : "#FFF"} />
+          </View>
+          <Text style={[styles.hubBtnText, { color: isElite ? '#10B981' : theme.secondary }]}>MAPPA</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.hubBtn} onPress={() => router.push('/events')}>
-          <View style={styles.hubIconCircle}><MaterialIcons name="event" size={24} color="#FFF" /></View>
-          <Text style={styles.hubBtnText}>EVENTI</Text>
+          <View style={[styles.hubIconCircle, isElite ? { backgroundColor: '#111827', borderColor: '#FF00FF', borderWidth: 2 } : { backgroundColor: theme.primary }]}>
+            <MaterialIcons name="event" size={isElite ? 28 : 24} color={isElite ? '#FF00FF' : "#FFF"} />
+          </View>
+          <Text style={[styles.hubBtnText, isElite && { color: '#FF00FF' }]}>EVENTI</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -617,13 +651,12 @@ export default function VetrinaScreen() {
                   item={poi} 
                   userLocation={userLocation} 
                   userProfile={userProfile} 
-                  onAction={handleAction} 
+                  onAction={handleCheckIn} 
                   onAlternative={trovaAlternativa} 
                   onPress={(p) => {
                     setSelectedPoi(p);
                     setIsSheetVisible(true);
                   }}
-                  isBooked={!!bookedSessions[poi.id]} 
                   t={t} 
                 />
               </View>
@@ -634,10 +667,15 @@ export default function VetrinaScreen() {
     );
   };
 
+  const ContentWrapper: any = isElite ? View : ImageBackground;
+  const wrapperProps = isElite 
+    ? { style: { flex: 1, backgroundColor: theme.background } } 
+    : { source: require('../../assets/images/eco_bg.png'), style: { flex: 1 }, resizeMode: 'cover' as any };
+
   return (
-    <ImageBackground source={require('../../assets/images/eco_bg.png')} style={{ flex: 1 }} resizeMode="cover">
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+    <ContentWrapper {...wrapperProps}>
+      <SafeAreaView style={[styles.container, isElite && { backgroundColor: theme.background }]}>
+        <StatusBar barStyle={isElite ? "light-content" : "dark-content"} />
         <FlatList
           data={accordionSections}
           ListHeaderComponent={renderHeader}
@@ -665,6 +703,30 @@ export default function VetrinaScreen() {
           theme={theme}
           t={t}
           setUserProfile={setUserProfile}
+          onDeleteItinerary={async (id) => {
+            const localItinStr = await AsyncStorage.getItem('loto_diary');
+            if (localItinStr) {
+              const localItin = JSON.parse(localItinStr).filter((i: any) => i.id !== id);
+              await AsyncStorage.setItem('loto_diary', JSON.stringify(localItin));
+            }
+            setUserItineraries(prev => prev.filter(i => i.id !== id));
+          }}
+        />
+
+        <TouristBaptismModal
+          visible={isBaptismVisible}
+          onClose={() => setIsBaptismVisible(false)}
+          userProfile={userProfile}
+          onNicknameSaved={(nickname) => {
+            setUserProfile((prev: any) => ({ ...prev, nickname }));
+          }}
+        />
+
+        <XpToast
+          visible={toastVisible}
+          xpAmount={toastData.xpAmount}
+          message={toastData.message}
+          onHide={() => setToastVisible(false)}
         />
 
         {/* BOTTOM SHEET SPRINT B */}
@@ -672,10 +734,7 @@ export default function VetrinaScreen() {
           visible={isSheetVisible}
           poi={selectedPoi}
           onClose={() => setIsSheetVisible(false)}
-          onBook={handleBookPoi}
-          onValidate={handleValidatePoi}
-          isBooked={selectedPoi ? !!bookedSessions[selectedPoi.id] : false}
-          initialPartySize={userProfile?.party_size || 1}
+          onCheckIn={handleCheckIn}
         />
 
       {/* BOTTONE TIPS BOUTIQUE ANIMATO */}
@@ -692,7 +751,7 @@ export default function VetrinaScreen() {
       <TipsBoutiqueSheet visible={isTipsVisible} onClose={() => setIsTipsVisible(false)} />
 
       </SafeAreaView>
-    </ImageBackground>
+    </ContentWrapper>
   );
 }
 

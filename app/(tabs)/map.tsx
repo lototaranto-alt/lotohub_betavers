@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Dimensions, TouchableOpacity, ScrollView, ImageBackground, Animated } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Dimensions, TouchableOpacity, ScrollView, ImageBackground, Animated, ActivityIndicator } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Constants from 'expo-constants';
 import { useMobility } from '../../context/MobilityContext';
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useRouteBuilder } from '../../context/RouteContext';
-import { mockEvents } from '../../utils/mockEvents';
 import { supabase } from '../../utils/supabase';
-import { injectPoisMock } from '../../utils/mockInjector';
 import * as Linking from 'expo-linking';
+import { injectPoisMock } from '../../utils/mockInjector';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import EventDetailSheet from '../../components/EventDetailSheet';
 import RouteSummarySheet from '../../components/RouteSummarySheet';
+import { mockEvents } from '../../utils/mockEvents';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,8 +30,11 @@ export default function MapScreen() {
   const { theme } = useTheme();
 
   const [pois, setPois] = useState<any[]>([]);
-  const [activeLayer, setActiveLayer] = useState('all'); // Filtro categoria
+  const [activeEvents, setActiveEvents] = useState<any[]>([]);
+  const [activeLayer, setActiveLayer] = useState('free'); // Filtro categoria default a Culturali
   const [selectedPoi, setSelectedPoi] = useState<any>(null);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Local toggles that were in the original map sidebar
   const [accessibilityOn, setAccessibilityOn] = useState(false);
@@ -44,9 +47,8 @@ export default function MapScreen() {
 
   
   // Route Builder
-  const { routePois, routeEvents, addPoiToRoute, removePoiFromRoute, isPoiInRoute, isEventInRoute, addEventToRoute, removeEventFromRoute } = useRouteBuilder();
+  const { routePois, routeEvents, routeName, addPoiToRoute, removePoiFromRoute, isPoiInRoute, isEventInRoute, addEventToRoute, removeEventFromRoute, isRouteActive, setIsRouteActive, clearRoute } = useRouteBuilder();
   const [isRouteSheetVisible, setIsRouteSheetVisible] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
   // Animazione menu mobilità
   const [isMobilityExpanded, setIsMobilityExpanded] = useState(false);
@@ -78,18 +80,41 @@ export default function MapScreen() {
   ];
 
   useEffect(() => {
-    const fetchMapPois = async () => {
-      const { data, error } = await supabase.rpc('get_pois');
-
-      if (!error && data) {
-        const injected = injectPoisMock(data);
-        console.log('[Map Mockup] POIs fetchati:', injected.length);
-        setPois(injected);
-      } else {
-        console.log('[Map Mockup] Errore Supabase:', error);
+    const fetchData = async () => {
+      if (!currentTenant?.id) return;
+      
+      console.log(`[Map] Fetching data for tenant: ${currentTenant.id}`);
+      
+      // Fetch POIs using the Frontend View to get decoded lat/lng from PostGIS coords
+      const { data: poisData, error: poisError } = await supabase
+        .from('vw_pois_frontend')
+        .select('*')
+        .eq('tenant_id', currentTenant.slug)
+        .eq('is_active', true);
+        
+      if (!poisError && poisData) {
+        // Applichiamo il simulatore per iniettare Diseducation e Mena Mena Mè
+        const finalPois = injectPoisMock(poisData);
+        setPois(finalPois);
+      } else if (poisError) {
+        console.error("[Map] Errore fetch POI:", poisError);
       }
+
+      // Fetch Events
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('active_tenant_events')
+        .select('*')
+        .eq('tenant_id', currentTenant.id);
+        
+      if (!eventsError && eventsData && eventsData.length > 0) {
+        setActiveEvents(eventsData);
+      } else {
+        // Fallback MOCK per demo
+        setActiveEvents(mockEvents);
+      }
+      setIsLoading(false);
     };
-    fetchMapPois();
+    fetchData();
   }, [currentTenant]);
 
   // Listener per Deferred Deep Linking
@@ -157,8 +182,22 @@ export default function MapScreen() {
   const filteredPois = getFilteredPois();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-         {/* FLOATING PILL BAR (Layer Filter) */}
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      
+      {/* Route Active Banner OVERLAY */}
+      {isRouteActive && (
+        <View style={[styles.activeRouteBanner, { backgroundColor: theme.primary }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <MaterialIcons name="navigation" size={24} color="#FFF" />
+            <Text style={styles.activeRouteText}>{routeName}</Text>
+          </View>
+          <TouchableOpacity onPress={() => { setIsRouteActive(false); clearRoute(); }} style={styles.stopRouteBtn}>
+            <Text style={styles.stopRouteBtnText}>Termina</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* FLOATING PILL BAR (Layer Filter) */}
       <View style={[styles.floatingBarWrapper, { backgroundColor: theme.background, zIndex: 20 }]}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           
@@ -195,7 +234,7 @@ export default function MapScreen() {
               setEventsEverToggled(true);
             }}
           >
-            <MaterialIcons name="event-star" size={14} color={eventsOn ? '#10B981' : theme.primary} />
+            <MaterialIcons name="event" size={14} color={eventsOn ? '#10B981' : theme.primary} />
             <Text style={[styles.pillText, { color: eventsOn ? '#10B981' : theme.text, fontWeight: 'bold' }]}>Community</Text>
           </TouchableOpacity>
 
@@ -225,85 +264,100 @@ export default function MapScreen() {
       {/* MAP MOCKUP INTERATTIVO */}
       <View style={styles.mapContainer}>
         <ScrollView ref={scrollVerticalRef} maximumZoomScale={3} minimumZoomScale={1} centerContent showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-          <ScrollView ref={scrollHorizontalRef} horizontal maximumZoomScale={3} minimumZoomScale={1} showsHorizontalScrollIndicator={false}>
+          <ScrollView 
+            ref={scrollHorizontalRef}
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            bounces={false}
+            contentContainerStyle={{ flexGrow: 1 }}
+          >
             <ImageBackground 
               source={require('../../assets/images/map_bg.png')} 
               style={styles.mapImage} 
               resizeMode="cover"
             >
-              {/* RENDER EVENTI COMMUNITY */}
-              {eventsOn && mockEvents.map(ev => {
-                const pos = getPosition(ev.lat, ev.lng);
-                const inRoute = isEventInRoute(ev.id);
-                return (
-                  <TouchableOpacity
-                    key={ev.id}
-                    style={[styles.pin, pos, { zIndex: 95 }]}
-                    onPress={() => setSelectedEvent(ev)}
-                  >
-                    <View style={{ alignItems: 'center' }}>
-                      <View style={[styles.pinDot, { 
-                        backgroundColor: inRoute ? theme.accent : '#10B981',
-                        borderColor: '#FFF',
-                        width: 28, height: 28, borderRadius: 14,
-                        transform: [{ scale: inRoute ? 1.2 : 1 }]
-                      }]}>
-                        <MaterialIcons name="star" size={16} color="#FFF" />
+              {/* LOADING OVERLAY NON DISTRUTTIVO */}
+              {isLoading && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="small" color={theme.primary} />
+                  <Text style={[styles.loadingText, { color: theme.primary }]}>Sincronizzazione P.O.I...</Text>
+                </View>
+              )}
+                {/* RENDER EVENTI COMMUNITY */}
+                {eventsOn && activeEvents.map(ev => {
+                  const lat = ev.lat || ev.geojson_boundary?.coordinates?.[1] || 40.4735;
+                  const lng = ev.lng || ev.geojson_boundary?.coordinates?.[0] || 17.2340;
+                  const pos = getPosition(lat, lng);
+                  const inRoute = isEventInRoute(ev.id);
+                  return (
+                    <TouchableOpacity
+                      key={ev.id}
+                      style={[styles.pin, pos, { zIndex: 95 }]}
+                      onPress={() => setSelectedEvent(ev)}
+                    >
+                      <View style={{ alignItems: 'center' }}>
+                        <View style={[styles.pinDot, { 
+                          backgroundColor: inRoute ? theme.accent : '#10B981',
+                          borderColor: '#FFF',
+                          width: 28, height: 28, borderRadius: 14,
+                          transform: [{ scale: inRoute ? 1.2 : 1 }]
+                        }]}>
+                          <MaterialIcons name="star" size={16} color="#FFF" />
+                        </View>
+                        <View style={[styles.pinLabel, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                          <Text style={[styles.pinLabelText, { color: theme.text }]} numberOfLines={1}>{ev.title}</Text>
+                        </View>
                       </View>
-                      <View style={[styles.pinLabel, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                        <Text style={[styles.pinLabelText, { color: theme.text }]} numberOfLines={1}>{ev.title}</Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+                    </TouchableOpacity>
+                  );
+                })}
 
-              {/* RENDER HEATMAP */}
-              {heatmapOn && filteredPois.map(poi => {
-                const coords = getPinCoordinates(poi.lat, poi.lng);
-                const crowd = poi.crowd_level || 20;
-                const isHighDensity = crowd > 70;
-                const isMediumDensity = crowd > 35 && crowd <= 70;
-                const heatColor = isHighDensity ? 'rgba(230, 57, 70, 0.45)' : isMediumDensity ? 'rgba(244, 162, 97, 0.4)' : 'rgba(42, 157, 143, 0.35)';
-                const heatSize = isHighDensity ? 140 : isMediumDensity ? 90 : 60;
-                return (
-                  <View 
-                    key={`heat-${poi.id}`} 
-                    style={[
-                      { position: 'absolute', width: heatSize, height: heatSize, borderRadius: heatSize/2, backgroundColor: heatColor, marginLeft: -(heatSize/2)+8, marginTop: -(heatSize/2)+8 },
-                      coords
-                    ]} 
-                  />
-                );
-              })}
+                {/* RENDER HEATMAP */}
+                {heatmapOn && filteredPois.map(poi => {
+                  const coords = getPinCoordinates(poi.lat, poi.lng);
+                  const crowd = poi.crowd_level || 20;
+                  const isHighDensity = crowd > 70;
+                  const isMediumDensity = crowd > 35 && crowd <= 70;
+                  const heatColor = isHighDensity ? 'rgba(230, 57, 70, 0.45)' : isMediumDensity ? 'rgba(244, 162, 97, 0.4)' : 'rgba(42, 157, 143, 0.35)';
+                  const heatSize = isHighDensity ? 140 : isMediumDensity ? 90 : 60;
+                  return (
+                    <View 
+                      key={`heat-${poi.id}`} 
+                      style={[
+                        { position: 'absolute', width: heatSize, height: heatSize, borderRadius: heatSize/2, backgroundColor: heatColor, marginLeft: -(heatSize/2)+8, marginTop: -(heatSize/2)+8 },
+                        coords
+                      ]} 
+                    />
+                  );
+                })}
 
-              {/* RENDER PINS */}
-              {filteredPois.map(poi => {
-                const pos = getPinCoordinates(poi.lat, poi.lng);
-                const isSelected = selectedPoi?.id === poi.id;
-                const inRoute = isPoiInRoute(poi.id);
-                return (
-                  <TouchableOpacity
-                    key={poi.id}
-                    style={[styles.pin, pos, { zIndex: isSelected ? 100 : inRoute ? 90 : 10 }]}
-                    onPress={() => setSelectedPoi(poi)}
-                  >
-                    <View style={{ alignItems: 'center' }}>
-                      <View style={[styles.pinDot, { 
-                        backgroundColor: inRoute ? theme.accent : isSelected ? theme.primary : '#FFF',
-                        borderColor: inRoute ? '#FFF' : theme.primary,
-                        transform: [{ scale: isSelected ? 1.3 : inRoute ? 1.2 : 1 }]
-                      }]}>
-                        {inRoute && <MaterialIcons name="check" size={12} color="#FFF" />}
-                        {isSelected && !inRoute && <MaterialIcons name="place" size={14} color="#FFF" />}
+                {/* RENDER PINS */}
+                {filteredPois.map(poi => {
+                  const pos = getPinCoordinates(poi.lat, poi.lng);
+                  const isSelected = selectedPoi?.id === poi.id;
+                  const inRoute = isPoiInRoute(poi.id);
+                  return (
+                    <TouchableOpacity
+                      key={poi.id}
+                      style={[styles.pin, pos, { zIndex: isSelected ? 100 : inRoute ? 90 : 10 }]}
+                      onPress={() => setSelectedPoi(poi)}
+                    >
+                      <View style={{ alignItems: 'center' }}>
+                        <View style={[styles.pinDot, { 
+                          backgroundColor: inRoute ? theme.accent : isSelected ? theme.primary : '#FFF',
+                          borderColor: inRoute ? '#FFF' : theme.primary,
+                          transform: [{ scale: isSelected ? 1.3 : inRoute ? 1.2 : 1 }]
+                        }]}>
+                          {inRoute && <MaterialIcons name="check" size={12} color="#FFF" />}
+                          {isSelected && !inRoute && <MaterialIcons name="place" size={14} color="#FFF" />}
+                        </View>
+                        <View style={[styles.pinLabel, { backgroundColor: isSelected ? theme.surface : 'rgba(0,0,0,0.6)', borderColor: isSelected ? theme.border : 'transparent' }]}>
+                          <Text style={[styles.pinLabelText, { color: isSelected ? theme.text : '#FFF' }]} numberOfLines={1}>{poi.name}</Text>
+                        </View>
                       </View>
-                      <View style={[styles.pinLabel, { backgroundColor: isSelected ? theme.surface : 'rgba(0,0,0,0.6)', borderColor: isSelected ? theme.border : 'transparent' }]}>
-                        <Text style={[styles.pinLabelText, { color: isSelected ? theme.text : '#FFF' }]} numberOfLines={1}>{poi.name}</Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+                    </TouchableOpacity>
+                  );
+                })}
             </ImageBackground>
           </ScrollView>
         </ScrollView>
@@ -370,10 +424,7 @@ export default function MapScreen() {
         poi={selectedPoi} 
         visible={!!selectedPoi} 
         onClose={() => setSelectedPoi(null)} 
-        onBook={() => {}}
-        onValidate={() => {}}
-        isBooked={false}
-        initialPartySize={1}
+        onCheckIn={(poi) => console.log('Check-in in', poi)}
       />
 
       <EventDetailSheet
@@ -388,11 +439,70 @@ export default function MapScreen() {
         onClose={() => setIsRouteSheetVisible(false)} 
       />
 
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  activeRouteBanner: {
+    position: 'absolute',
+    top: Constants.statusBarHeight + 10,
+    left: 15,
+    right: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    zIndex: 40,
+    elevation: 8,
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  activeRouteText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  stopRouteBtn: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  stopRouteBtnText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3
+  },
+  loadingText: {
+    marginLeft: 8,
+    fontSize: 12,
+    fontWeight: 'bold'
+  },
   container: { flex: 1 },
   floatingBarWrapper: { paddingTop: Constants.statusBarHeight + 10, paddingBottom: 10, paddingHorizontal: 10, zIndex: 10, elevation: 5 },
   floatingBarScroll: { paddingRight: 20 },
