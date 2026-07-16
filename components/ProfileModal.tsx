@@ -35,6 +35,10 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
         if (data) setUserBadges(data.map(b => b.badge_type));
       };
       fetchBadges();
+      // Resetta gli stati del diario all'apertura per un'esperienza ordinata
+      setExpandedCard(null);
+      setActiveProfileSection('badges');
+      setEditingNickname(false);
     }
   }, [visible, userProfile?.id]);
 
@@ -105,13 +109,6 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                 <View style={{ position: 'absolute', top: 20, right: 20 }}>
                   <TouchableOpacity 
                     onPress={() => { 
-                      if (!userProfile?.email) {
-                        Alert.alert(
-                          "Accesso Limitato", 
-                          "Per scegliere un nome personalizzato e accedere alle classifiche, metti al sicuro il tuo account creando un Backup Cloud."
-                        );
-                        return;
-                      }
                       setTempNickname(userProfile?.nickname || ''); 
                       setEditingNickname(!editingNickname); 
                     }} 
