@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, FlatList, I
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../utils/supabase';
+import LotoPassBackupModal from './LotoPassBackupModal';
+import LotoPassRecoveryScanner from './LotoPassRecoveryScanner';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +29,8 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
   const [editingNickname, setEditingNickname] = useState(false);
   const [tempNickname, setTempNickname] = useState(userProfile?.nickname || '');
   const [userBadges, setUserBadges] = useState<string[]>([]);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
 
   React.useEffect(() => {
     if (visible && userProfile?.id) {
@@ -138,10 +142,28 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                       onSubmitEditing={salvaNickname}
                     />
                   </View>
-                ) : (
-                  <Text style={[styles.expNameBoutique, expandedCard === 'profile' && { fontSize: 20 }]}>{userProfile?.nickname || (userProfile?.email ? 'Inserisci Nome' : 'Utente Anonimo')}</Text>
                 )}
                 <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0, fontSize: expandedCard === 'profile' ? 14 : 16 }]}>{levelInfo.title} ({userXp} XP)</Text>
+                
+                {expandedCard === 'profile' && !userProfile?.email && (
+                  <View style={{ flexDirection: 'row', marginTop: 10 }}>
+                    <TouchableOpacity 
+                      onPress={() => setShowBackupModal(true)}
+                      style={{ backgroundColor: theme.primary + '20', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, marginRight: 10, flexDirection: 'row', alignItems: 'center' }}
+                    >
+                      <MaterialIcons name="security" size={16} color={theme.primary} style={{ marginRight: 5 }} />
+                      <Text style={{ color: theme.primary, fontSize: 12, fontWeight: 'bold' }}>Salva Profilo</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      onPress={() => setShowRecoveryModal(true)}
+                      style={{ backgroundColor: theme.textMuted + '20', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
+                    >
+                      <MaterialIcons name="qr-code-scanner" size={16} color={theme.text} style={{ marginRight: 5 }} />
+                      <Text style={{ color: theme.text, fontSize: 12, fontWeight: 'bold' }}>Recupera</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
               
               {expandedCard !== 'profile' && (
@@ -359,6 +381,21 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* MODALE DI BACKUP LOTO PASS */}
+      <LotoPassBackupModal 
+        visible={showBackupModal} 
+        onClose={() => setShowBackupModal(false)} 
+        theme={theme} 
+        userUuid={userProfile?.id || 'TEST-UUID'} 
+      />
+
+      {/* MODALE DI RECUPERO LOTO PASS */}
+      <LotoPassRecoveryScanner 
+        visible={showRecoveryModal} 
+        onClose={() => setShowRecoveryModal(false)} 
+        theme={theme} 
+      />
     </Modal>
   );
 }
