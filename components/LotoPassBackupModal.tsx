@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
 
@@ -18,8 +18,6 @@ export default function LotoPassBackupModal({ visible, onClose, theme, userUuid 
   const [secureCode, setSecureCode] = useState<string | null>(null);
 
   const generateLotoPass = async () => {
-    // Simulazione di una generazione sicura: in produzione questo chiamerebbe una RPC su Supabase
-    // per registrare un secret_hash legato a questo UUID.
     setSecureCode(`LOTO-${userUuid.substring(0, 8).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`);
   };
 
@@ -30,8 +28,6 @@ export default function LotoPassBackupModal({ visible, onClose, theme, userUuid 
     }
     setLoading(true);
     try {
-      // Aggancia l'email e la password all'account anonimo ESISTENTE!
-      // Questo è il cuore dell'Unificazione del Dato.
       const { error } = await supabase.auth.updateUser({
         email: email,
         password: password,
@@ -50,8 +46,12 @@ export default function LotoPassBackupModal({ visible, onClose, theme, userUuid 
 
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' }}>
-        <View style={{ backgroundColor: theme.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, minHeight: 500 }}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' }}
+      >
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }} keyboardShouldPersistTaps="handled">
+          <View style={{ backgroundColor: theme.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, minHeight: 500 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <Text style={{ fontSize: 24, fontWeight: 'bold', color: theme.text }}>Messa in Sicurezza</Text>
             <TouchableOpacity onPress={onClose}><MaterialIcons name="close" size={28} color={theme.text} /></TouchableOpacity>
@@ -137,7 +137,8 @@ export default function LotoPassBackupModal({ visible, onClose, theme, userUuid 
             </View>
           )}
         </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

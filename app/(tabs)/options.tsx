@@ -127,7 +127,38 @@ export default function OptionsScreen() {
           onPress: async () => {
             await supabase.auth.signOut();
             await AsyncStorage.clear();
-            router.replace('/_sitemap');
+            Alert.alert("Reset Completato", "Riavvia l'app per ottenere un nuovo LOTO Pass.");
+          }
+        }
+      ]
+    );
+  };
+
+  const handleNukeDbData = async () => {
+    Alert.alert(
+      'ATTENZIONE DEVASTANTE',
+      'Vuoi eliminare fisicamente dal database tutti i log, itinerari e transazioni generati da TE? (Le tabelle e gli altri utenti rimarranno intatti). L\'operazione è irreversibile.',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        { 
+          text: 'Distruggi Dati', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) throw new Error("Nessun utente autenticato");
+
+              // Elimina dati generati dall'utente (Rispettando RLS)
+              await supabase.from('itineraries').delete().eq('user_id', user.id);
+              await supabase.from('user_transactions').delete().eq('user_id', user.id);
+              await supabase.from('user_badges').delete().eq('user_id', user.id);
+              // resetta il profilo
+              await supabase.from('profiles').update({ total_xp: 0, total_tokens: 0, total_co2: 0 }).eq('id', user.id);
+
+              Alert.alert('Database Ripulito', 'Tutti i dati utente generati sono stati azzerati con successo.');
+            } catch (e: any) {
+              Alert.alert('Errore DB', e.message);
+            }
           }
         }
       ]
@@ -351,7 +382,18 @@ export default function OptionsScreen() {
                   activeOpacity={0.8}
                 >
                   <View style={styles.settingTextGroup}>
-                    <Text style={[styles.settingLabel, { color: '#FF3B30', fontSize: 14 }]}>Reset Demo App</Text>
+                    <Text style={[styles.settingLabel, { color: '#FF9500', fontSize: 14 }]}>1. Distruggi Sessione Locale (Logout)</Text>
+                  </View>
+                  <MaterialIcons name="logout" size={24} color="#FF9500" />
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.settingRow, { marginTop: 15 }]}
+                  onPress={handleNukeDbData}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.settingTextGroup}>
+                    <Text style={[styles.settingLabel, { color: '#FF3B30', fontSize: 14 }]}>2. Azzera Progresso su Database</Text>
                   </View>
                   <MaterialIcons name="delete-forever" size={24} color="#FF3B30" />
                 </TouchableOpacity>

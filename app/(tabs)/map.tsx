@@ -203,23 +203,23 @@ export default function MapScreen() {
           
           {/* Heatmap Toggle */}
           <TouchableOpacity 
-            style={[styles.pillBtn, { borderColor: heatmapOn ? '#E63946' : theme.border, backgroundColor: heatmapOn ? 'rgba(230, 57, 70, 0.1)' : 'transparent', flex: 1, paddingHorizontal: 5, justifyContent: 'center' }]}
+            style={[styles.pillBtn, { borderColor: heatmapOn ? '#E63946' : theme.border, backgroundColor: heatmapOn ? 'rgba(230, 57, 70, 0.1)' : 'transparent', flex: 1, paddingHorizontal: 2, justifyContent: 'center' }]}
             onPress={() => setHeatmapOn(!heatmapOn)}
           >
             <MaterialIcons name="local-fire-department" size={16} color={heatmapOn ? '#E63946' : theme.primary} />
-            <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text, fontWeight: 'bold' }]}>Densità Folla</Text>
+            <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text, fontWeight: 'bold', fontSize: 11 }]} numberOfLines={1}>Densità Folla</Text>
           </TouchableOpacity>
           
           <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 2 }} />
 
           {/* Filtro POI (Dropdown Trigger) */}
           <TouchableOpacity 
-            style={[styles.pillBtn, { borderColor: theme.border, flex: 1.2, paddingHorizontal: 5, justifyContent: 'center' }]}
+            style={[styles.pillBtn, { borderColor: theme.border, flex: 1, paddingHorizontal: 2, justifyContent: 'center' }]}
             onPress={() => setIsLayerDropdownOpen(!isLayerDropdownOpen)}
           >
             <MaterialIcons name="place" size={14} color={theme.primary} />
             <Text style={[styles.pillText, { color: theme.text, fontWeight: 'bold' }]} numberOfLines={1}>
-              {layers.find(l => l.id === activeLayer)?.title || 'Punti di Interesse'}
+              {layers.find(l => l.id === activeLayer)?.title || 'Punti'}
             </Text>
             <MaterialIcons name={isLayerDropdownOpen ? "arrow-drop-up" : "arrow-drop-down"} size={16} color={theme.textMuted} />
           </TouchableOpacity>
@@ -228,14 +228,14 @@ export default function MapScreen() {
 
           {/* Toggle Eventi Community */}
           <TouchableOpacity 
-            style={[styles.pillBtn, { borderColor: eventsOn ? '#10B981' : theme.border, backgroundColor: eventsOn ? 'rgba(16, 185, 129, 0.1)' : 'transparent', flex: 0.8, paddingHorizontal: 5, justifyContent: 'center', marginRight: 0 }]}
+            style={[styles.pillBtn, { borderColor: eventsOn ? '#10B981' : theme.border, backgroundColor: eventsOn ? 'rgba(16, 185, 129, 0.1)' : 'transparent', flex: 1, paddingHorizontal: 2, justifyContent: 'center', marginRight: 0 }]}
             onPress={() => {
               setEventsOn(!eventsOn);
               setEventsEverToggled(true);
             }}
           >
             <MaterialIcons name="event" size={14} color={eventsOn ? '#10B981' : theme.primary} />
-            <Text style={[styles.pillText, { color: eventsOn ? '#10B981' : theme.text, fontWeight: 'bold' }]}>Community</Text>
+            <Text style={[styles.pillText, { color: eventsOn ? '#10B981' : theme.text, fontWeight: 'bold' }]} numberOfLines={1}>Eventi</Text>
           </TouchableOpacity>
 
         </View>
