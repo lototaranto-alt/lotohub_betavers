@@ -52,20 +52,26 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
     try {
       console.log('[PoiDetailSheet] Caricamento media vault per POI:', poi.name);
       
-      // Query su Supabase per estrarre i media del POI
-      const { data, error } = await supabase
-        .from('media_vault')
-        .select('*')
-        .eq('poi_id', poi.id);
+      // Se l'id non è un UUID valido (è un mock come 'mena' o 'diseducation'), saltiamo la query a Supabase
+      const isMockId = !poi.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      
+      let dbData: any[] = [];
+      if (!isMockId) {
+        const { data, error } = await supabase
+          .from('media_vault')
+          .select('*')
+          .eq('poi_id', poi.id);
 
-      if (error) {
-        console.log('[PoiDetailSheet] Errore lettura media_vault:', error.message);
-        return;
+        if (error) {
+          console.log('[PoiDetailSheet] Errore lettura media_vault:', error.message);
+        } else if (data) {
+          dbData = data;
+        }
       }
 
-      if (data) {
+      if (true) { // Manteniamo il blocco per l'indentazione e compatibilità
         // --- MOCK INJECTION BINDING ---
-        let finalData = [...data];
+        let finalData = [...dbData];
         if (poi.media && poi.media.length > 0) {
           const mockMediaIds = poi.media.map((m: any) => m.id);
           finalData = finalData.filter((d: any) => !mockMediaIds.includes(d.id));

@@ -6,7 +6,7 @@ import { Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaVie
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../utils/supabase';
 import { injectPoisMock } from '../../utils/mockInjector';
-import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
+import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates, isBackgroundLocationActive } from '../../utils/BackgroundLocationTask';
 import { ThemeProvider as AppThemeProvider } from '../../context/ThemeContext';
 import { useCity } from '../../context/CityContext';
 import MobilityWizard from '../../components/MobilityWizard';
@@ -149,7 +149,7 @@ export default function VetrinaScreen() {
 
   const [isBaptismVisible, setIsBaptismVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
-  const [toastData, setToastData] = useState({ xpAmount: 0, message: '' });
+  const [toastData, setToastData] = useState<{ xpAmount: number; ptiAmount?: number; message: string }>({ xpAmount: 0, ptiAmount: 0, message: '' });
 
   const t = DICTIONARY[lang];
   const tickerText = currentTenant?.localization?.onboarding_subtitle || t.ticker;
@@ -213,14 +213,22 @@ export default function VetrinaScreen() {
 
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
-        Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
-          setUserLocation(loc);
-        });
+        try {
+          await Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
+            setUserLocation(loc);
+          });
+        } catch (err) {
+          console.warn("GPS Background disabilitato o non disponibile:", err);
+        }
       }
+
+      // Sincronizza lo stato reale del sensore
+      const bgActive = await isBackgroundLocationActive();
+      setIsGeofenceActive(bgActive);
 
       // Check per prompt GPS automatico e gentile
       const hasSeenPrompt = await AsyncStorage.getItem('loto_gps_prompt_seen');
-      if (!hasSeenPrompt && userProfile?.flow_role !== 'LOTO Partner') {
+      if (!hasSeenPrompt && userProfile?.flow_role !== 'LOTO Partner' && !bgActive) {
         setTimeout(() => {
           promptGentleGps();
         }, 1500); // Ritardo leggero per non sovrapporsi al wizard
@@ -243,20 +251,31 @@ export default function VetrinaScreen() {
 
 
   const avviaFiltroCinematico = async () => {
-    const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-    if (lastSample.current) {
-      const distance = getDistance(
-        lastSample.current.coords.latitude,
-        lastSample.current.coords.longitude,
-        current.coords.latitude,
-        current.coords.longitude
-      );
-      const timeDiff = (current.timestamp - lastSample.current.timestamp) / 1000;
-      const velocity = distance / timeDiff;
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled) return;
 
-      setIsMotorized(velocity > SPEED_LIMIT_KMS);
+      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      if (lastSample.current) {
+        const distance = getDistance(
+          lastSample.current.coords.latitude,
+          lastSample.current.coords.longitude,
+          current.coords.latitude,
+          current.coords.longitude
+        );
+        const timeDiff = (current.timestamp - lastSample.current.timestamp) / 1000;
+        const velocity = distance / timeDiff;
+
+        setIsMotorized(velocity > SPEED_LIMIT_KMS);
+      }
+      lastSample.current = { coords: current.coords, timestamp: current.timestamp };
+    } catch (e) {
+      // Ignoriamo silenziosamente l'errore (promise id 0) causato dal GPS spento
+      console.warn("Filtro Cinematico disabilitato: GPS spento o permessi mancanti.");
     }
-    lastSample.current = { coords: current.coords, timestamp: current.timestamp };
   };
 
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -304,67 +323,22 @@ export default function VetrinaScreen() {
     }
   };
 
-  const executeScan = async (poi: any) => {
-    if (isMotorized) {
-      Alert.alert("Velocità Elevata", "L'uso di mezzi motorizzati sospende l'erogazione di XP mobilità.");
-      return;
-    }
-
-    const dist = userLocation ? getDistance(userLocation.coords.latitude, userLocation.coords.longitude, poi.latitude, poi.longitude) : 999;
-
-    if (dist > (poi.checkin_radius || 50)) {
-      const { data: pings } = await supabase
-        .from('location_pings')
-        .select('*')
-        .eq('poi_id', poi.id)
-        .gte('created_at', new Date(Date.now() - 12 * 3600 * 1000).toISOString())
-        .limit(1);
-
-      if (!pings || pings.length === 0) {
-        Alert.alert("Troppo Lontano", "Spostati verso il partner o attendi segnale GPS stabile.");
-        return;
-      }
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-    const receiptHash = `${today}_${poi.p_iva}_15.00`;
-
-    const { data: existing } = await supabase.from('impact_transactions').select('id').eq('receipt_hash', receiptHash).single();
-    if (existing) {
-      Alert.alert("Errore", "Scontrino già registrato.");
-      return;
-    }
-
-    const multiplier = userProfile?.party_size || 1;
-    const { error } = await supabase.rpc('process_esg_impact', {
-      user_id: userProfile.id,
-      p_co2: 0.5 * multiplier,
-      p_liters: 5 * multiplier,
-      p_tokens: 50,
-      p_xp: 50,
-      p_takeaway: false,
-      p_party_size: multiplier
-    });
-
-    if (error) {
-      Alert.alert("Errore", "Impossibile completare la scansione.");
-    } else {
-      Alert.alert("Successo!", "Impatto registrato.");
-      caricaDati();
-    }
-  };
-
   const handleAction = async (poi: any) => {
-    if (poi.category === 'partner') {
-      executeScan(poi);
-      return;
-    }
     setSelectedPoi(poi);
     setIsSheetVisible(true);
   };
 
   const handleCheckIn = async (poi: any) => {
-    if (!userProfile) return Alert.alert("Errore", "Profilo non trovato");
+    // Se il profilo non è carico in memoria, proviamo a recuperare un ID valido al volo
+    let validUserId = userProfile?.id;
+    if (!validUserId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        validUserId = user.id;
+      } else {
+        return Alert.alert("Errore Autenticazione", "Nessuna sessione trovata. Fai prima il login o entra come Anonimo dalla Home.");
+      }
+    }
 
     // Simulazione del Modello Ibrido (Sensore Urbano)
     const simulatedBleDevices = Math.floor(Math.random() * 15) + 1; // Proxy per la densità
@@ -382,16 +356,32 @@ export default function VetrinaScreen() {
       tenant_id: 'taranto'
     };
 
-    const { error } = await supabase.from('scans').insert(payload);
+    const { error: scanError } = await supabase.from('scans').insert(payload);
     
-    if (error) {
-      Alert.alert("Errore", "Impossibile registrare il check-in");
+    // SIMULazione Gamification unificata per tutti i POI
+    const final_co2 = 0.5;
+    const final_liters = 5;
+    const final_tokens = poi.category === 'partner' ? 50 : 15; // Punti base
+    
+    // Assegna l'impatto ecologico
+    const { error: rpcError } = await supabase.rpc('process_esg_impact', {
+      user_id: validUserId,
+      p_co2: final_co2,
+      p_liters: final_liters,
+      p_tokens: final_tokens,
+      p_xp: xp,
+      p_takeaway: false,
+      p_party_size: 1
+    });
+
+    if (scanError || rpcError) {
+      Alert.alert("Errore", "Impossibile registrare il check-in (Verifica la connessione o lo stato del profilo DB)");
     } else {
       const msg = isGolden 
-        ? `Hai sbloccato la storia segreta di ${poi.name}.\n(Indotto: ${simulatedBleDevices} pax)` 
-        : `Benvenuto a ${poi.name}.\n(Indotto: ${simulatedBleDevices} pax)`;
+        ? `Hai sbloccato la storia segreta di ${poi.name}!\n(Indotto: ${simulatedBleDevices} pax)` 
+        : `Check-in completato a ${poi.name}!\n(Indotto: ${simulatedBleDevices} pax)`;
       
-      setToastData({ xpAmount: xp, message: msg });
+      setToastData({ xpAmount: xp, ptiAmount: final_tokens, message: msg });
       setToastVisible(true);
       
       setIsSheetVisible(false);
@@ -517,7 +507,7 @@ export default function VetrinaScreen() {
                       <Text style={[styles.prestigePillBadgeText, { color: theme.accent }]}>ELITE</Text>
                     </View>
                   )}
-                  {showCompleteProfileWarning ? (
+                  {(!userProfile || showCompleteProfileWarning) ? (
                     <TouchableOpacity 
                       style={[styles.prestigePillBadge, { backgroundColor: theme.accent, flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }]}
                       onPress={() => router.push('/profile')}
@@ -725,6 +715,7 @@ export default function VetrinaScreen() {
         <XpToast
           visible={toastVisible}
           xpAmount={toastData.xpAmount}
+          ptiAmount={toastData.ptiAmount}
           message={toastData.message}
           onHide={() => setToastVisible(false)}
         />

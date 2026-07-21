@@ -33,16 +33,19 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
 
   React.useEffect(() => {
-    if (visible && userProfile?.id) {
-      const fetchBadges = async () => {
-        const { data } = await supabase.from('user_badges').select('badge_type').eq('user_id', userProfile.id);
-        if (data) setUserBadges(data.map(b => b.badge_type));
-      };
-      fetchBadges();
-      // Resetta gli stati del diario all'apertura per un'esperienza ordinata
+    if (visible) {
+      // Resetta gli stati del diario all'apertura indipendentemente dallo stato di autenticazione
       setExpandedCard(null);
       setActiveProfileSection('badges');
       setEditingNickname(false);
+
+      if (userProfile?.id) {
+        const fetchBadges = async () => {
+          const { data } = await supabase.from('user_badges').select('badge_type').eq('user_id', userProfile.id);
+          if (data) setUserBadges(data.map(b => b.badge_type));
+        };
+        fetchBadges();
+      }
     }
   }, [visible, userProfile?.id]);
 
@@ -146,26 +149,6 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                   <Text style={[styles.expNameBoutique, expandedCard === 'profile' && { fontSize: 20 }]}>{userProfile?.nickname || (userProfile?.email ? 'Inserisci Nome' : 'Utente Anonimo')}</Text>
                 )}
                 <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0, fontSize: expandedCard === 'profile' ? 14 : 16 }]}>{levelInfo.title} ({userXp} XP)</Text>
-                
-                {expandedCard === 'profile' && !userProfile?.email && (
-                  <View style={{ flexDirection: 'row', marginTop: 10 }}>
-                    <TouchableOpacity 
-                      onPress={() => setShowBackupModal(true)}
-                      style={{ backgroundColor: theme.primary + '20', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, marginRight: 10, flexDirection: 'row', alignItems: 'center' }}
-                    >
-                      <MaterialIcons name="security" size={16} color={theme.primary} style={{ marginRight: 5 }} />
-                      <Text style={{ color: theme.primary, fontSize: 12, fontWeight: 'bold' }}>Salva Profilo</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                      onPress={() => setShowRecoveryModal(true)}
-                      style={{ backgroundColor: theme.textMuted + '20', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
-                    >
-                      <MaterialIcons name="qr-code-scanner" size={16} color={theme.text} style={{ marginRight: 5 }} />
-                      <Text style={{ color: theme.text, fontSize: 12, fontWeight: 'bold' }}>Recupera</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
               </View>
               
               {expandedCard !== 'profile' && (

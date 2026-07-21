@@ -69,6 +69,10 @@ export const injectPoisMock = (poiData: any[]) => {
       description: 'Locale accogliente nel cuore di Taranto vecchia. Oggi ospita un incontro speciale con i ragazzi di Plasticaqquà e TGT per discutere i prossimi interventi sul territorio.',
       events: [
         { id: 'ev_mena1', title: 'Incontro Plasticaqquà & TGT', date: 'Oggi, 19:00', is_premium: false }
+      ],
+      media: [
+        { id: 'm_mena1', title: 'Intervista a Mena Mena Mè', media_type: 'audio', loto_cost: 0 },
+        { id: 'm_mena2', title: 'Menu Segreto e Sostenibile', media_type: 'digital_file', loto_cost: 15, is_premium: false }
       ]
     });
   }
@@ -90,6 +94,10 @@ export const injectPoisMock = (poiData: any[]) => {
       description: 'Punto di ritrovo del Nodo Civico per l\'accessibilità. Da qui partono le missioni collettive per tracciare percorsi accessibili in città.',
       events: [
         { id: 'ev_dis1', title: 'Passeggiata Scan: Inaccessibilità', date: 'Domani, 10:00', is_premium: false }
+      ],
+      media: [
+        { id: 'm_dis1', title: 'Guida all\'Accessibilità Tarentina', media_type: 'digital_file', loto_cost: 0 },
+        { id: 'm_dis2', title: 'Mappa dei Percorsi senza Barriere', media_type: 'digital_file', loto_cost: 20, is_premium: true }
       ]
     });
   }

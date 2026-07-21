@@ -4,7 +4,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useFocusEffect, router } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { useCity } from '../../context/CityContext';
-import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
+import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates, isBackgroundLocationActive } from '../../utils/BackgroundLocationTask';
 import CivicDashboard from '../../components/CivicDashboard';
 import { supabase } from '../../utils/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -100,6 +100,12 @@ export default function OptionsScreen() {
     useCallback(() => {
       // Quando lo schermo torna visibile, chiudi tutte le tendine
       setActiveAccordion(null);
+      // Sincronizza lo stato reale del sensore
+      const checkSensorStatus = async () => {
+        const active = await isBackgroundLocationActive();
+        setIsGeofenceActive(active);
+      };
+      checkSensorStatus();
     }, [])
   );
 
@@ -318,6 +324,20 @@ export default function OptionsScreen() {
               La tua privacy è sacra. I percorsi generati dai sensori vengono inviati ai server in formato 100% anonimo e aggregato (GDPR Compliant). 
               Le Heatmap generate aiutano le città a prevenire il sovraffollamento turistico e migliorare la vivibilità.
             </Text>
+
+            <View style={{ height: 1, backgroundColor: theme.border, marginVertical: 15 }} />
+            
+            <View style={styles.settingRow}>
+              <View style={styles.settingTextGroup}>
+                <Text style={[styles.settingLabel, { color: theme.text, fontSize: 14 }]}>Sensori in Background (LOTO PTI)</Text>
+              </View>
+              <Switch 
+                value={isGeofenceActive} 
+                onValueChange={toggleSensors}
+                trackColor={{ false: theme.border, true: theme.primary }}
+                thumbColor={'#fff'}
+              />
+            </View>
           </AccordionItem>
 
           <AccordionItem 
@@ -366,14 +386,8 @@ export default function OptionsScreen() {
 
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextGroup}>
-                    <Text style={[styles.settingLabel, { color: theme.text, fontSize: 14 }]}>Sensori in Background</Text>
+                    <Text style={[styles.settingLabel, { color: theme.text, fontSize: 14 }]}>[Spostato in Privacy e Dati]</Text>
                   </View>
-                  <Switch 
-                    value={isGeofenceActive} 
-                    onValueChange={toggleSensors}
-                    trackColor={{ false: theme.border, true: theme.primary }}
-                    thumbColor={'#fff'}
-                  />
                 </View>
 
                 <TouchableOpacity 

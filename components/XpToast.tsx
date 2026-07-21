@@ -6,12 +6,12 @@ import { useTheme } from '../context/ThemeContext';
 interface XpToastProps {
   visible: boolean;
   xpAmount: number;
+  ptiAmount?: number;
   message?: string;
-  type?: 'XP' | 'PTI';
   onHide: () => void;
 }
 
-export default function XpToast({ visible, xpAmount, message = 'Check-in Completato!', type = 'XP', onHide }: XpToastProps) {
+export default function XpToast({ visible, xpAmount, ptiAmount = 0, message = 'Check-in Completato!', onHide }: XpToastProps) {
   const { theme } = useTheme();
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -82,14 +82,19 @@ export default function XpToast({ visible, xpAmount, message = 'Check-in Complet
       ]}
       pointerEvents="none"
     >
-      <View style={[styles.iconContainer, { backgroundColor: type === 'PTI' ? theme.secondary : theme.primary }]}>
-        <MaterialIcons name={type === 'PTI' ? "eco" : "stars"} size={28} color="#FFF" />
+      <View style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
+        <MaterialIcons name="stars" size={28} color="#FFF" />
       </View>
       <View style={styles.textContainer}>
         <Text style={[styles.title, { color: theme.text }]}>{message}</Text>
-        <Text style={[styles.xpText, { color: type === 'PTI' ? theme.secondary : theme.primary }]}>
-          +{xpAmount} {type === 'PTI' ? 'Contributo (PTI)' : 'Esperienza (XP)'}
+        <Text style={[styles.xpText, { color: theme.primary }]}>
+          +{xpAmount} Esperienza (XP)
         </Text>
+        {ptiAmount > 0 && (
+          <Text style={[styles.xpText, { color: theme.secondary, marginTop: 2 }]}>
+            +{ptiAmount} Contributo Civico (PTI)
+          </Text>
+        )}
       </View>
     </Animated.View>
   );

@@ -58,3 +58,7 @@ export const stopBackgroundLocationUpdates = async () => {
     console.log('[BackgroundLocationTask] Servizio interrotto.');
   }
 };
+
+export const isBackgroundLocationActive = async () => {
+  return await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
+};

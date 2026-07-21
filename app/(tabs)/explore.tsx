@@ -23,7 +23,7 @@ export default function ExploreScreen() {
   const [isSheetVisible, setIsSheetVisible] = useState(false);
 
   const [toastVisible, setToastVisible] = useState(false);
-  const [toastData, setToastData] = useState({ xpAmount: 0, message: '' });
+  const [toastData, setToastData] = useState<{ xpAmount: number; ptiAmount?: number; message: string }>({ xpAmount: 0, ptiAmount: 0, message: '' });
   const [bookedSessions, setBookedSessions] = useState<Record<string, string>>({});
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<any>(null);
@@ -41,9 +41,13 @@ export default function ExploreScreen() {
     }
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status === 'granted') {
-      Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
-        setUserLocation(loc);
-      });
+      try {
+        await Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
+          setUserLocation(loc);
+        });
+      } catch (err) {
+        console.warn("GPS disabilitato in Explore:", err);
+      }
     }
   };
 
@@ -62,7 +66,16 @@ export default function ExploreScreen() {
   const filteredPois = pois.filter(p => p.category === activeTab);
 
   const handleCheckIn = async (poi: any) => {
-    if (!userProfile) return Alert.alert("Errore", "Profilo non trovato");
+    // Se il profilo non è carico in memoria, proviamo a recuperare un ID valido al volo
+    let validUserId = userProfile?.id;
+    if (!validUserId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        validUserId = user.id;
+      } else {
+        return Alert.alert("Errore Autenticazione", "Nessuna sessione trovata. Fai prima il login o entra come Anonimo dalla Home.");
+      }
+    }
     
     // Simulazione del Modello Ibrido (Sensore Urbano)
     const simulatedBleDevices = Math.floor(Math.random() * 15) + 1; // Proxy per la densità
@@ -81,16 +94,31 @@ export default function ExploreScreen() {
       tenant_id: 'taranto'
     };
 
-    const { error } = await supabase.from('scans').insert(payload);
+    const { error: scanError } = await supabase.from('scans').insert(payload);
     
-    if (error) {
-      Alert.alert("Errore", "Impossibile registrare il check-in");
+    // SIMULazione Gamification unificata per tutti i POI
+    const final_co2 = 0.5;
+    const final_liters = 5;
+    const final_tokens = poi.category === 'partner' ? 50 : 15;
+    
+    const { error: rpcError } = await supabase.rpc('process_esg_impact', {
+      user_id: validUserId,
+      p_co2: final_co2,
+      p_liters: final_liters,
+      p_tokens: final_tokens,
+      p_xp: xp,
+      p_takeaway: false,
+      p_party_size: 1
+    });
+    
+    if (scanError || rpcError) {
+      Alert.alert("Errore", "Impossibile registrare il check-in (Verifica la connessione o lo stato del profilo DB)");
     } else {
       const msg = isGolden 
-        ? `Hai sbloccato la storia segreta di ${poi.name}.\n(Indotto: ${simulatedBleDevices} pax)` 
-        : `Benvenuto a ${poi.name}.\n(Indotto: ${simulatedBleDevices} pax)`;
+        ? `Hai sbloccato la storia segreta di ${poi.name}!\n(Indotto: ${simulatedBleDevices} pax)` 
+        : `Check-in completato a ${poi.name}!\n(Indotto: ${simulatedBleDevices} pax)`;
       
-      setToastData({ xpAmount: xp, message: msg });
+      setToastData({ xpAmount: xp, ptiAmount: final_tokens, message: msg });
       setToastVisible(true);
       
       setIsSheetVisible(false);
@@ -155,6 +183,7 @@ export default function ExploreScreen() {
       <XpToast
         visible={toastVisible}
         xpAmount={toastData.xpAmount}
+        ptiAmount={toastData.ptiAmount}
         message={toastData.message}
         onHide={() => setToastVisible(false)}
       />

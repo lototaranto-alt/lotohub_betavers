@@ -182,7 +182,8 @@ export const TenantProvider: React.FC<{
         }
       }
 
-      // 2. GPS fallback
+      // 2. GPS fallback (DISABILITATO PER LA DEMO TARANTO)
+      /*
       if (!targetId) {
         try {
           const { status } = await Location.requestForegroundPermissionsAsync();
@@ -210,8 +211,13 @@ export const TenantProvider: React.FC<{
           }
         } catch (gpsError) {
           console.warn('GPS fallback fallito o disabilitato, ignoro...', gpsError);
-          // Ignoriamo l'errore per far scattare il fallback di default
         }
+      }
+      */
+      
+      // FORZA TARANTO PER DEFAULT SE NON C'È DEEP LINK
+      if (!targetId) {
+        targetId = 'taranto';
       }
 
       if (targetId) {

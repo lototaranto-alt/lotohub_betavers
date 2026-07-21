@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Image } from
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
-import * as Sharing from 'expo-sharing';
 import { supabase } from '../utils/supabase';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -54,28 +53,6 @@ export default function LotoPassCard() {
     }
   };
 
-  const handleShare = async () => {
-    try {
-      if (passRef.current) {
-        const uri = await captureRef(passRef, {
-          format: 'png',
-          quality: 1,
-        });
-
-        if (!(await Sharing.isAvailableAsync())) {
-          Alert.alert('Condivisione non disponibile', 'La condivisione non è supportata su questo dispositivo.');
-          return;
-        }
-
-        await Sharing.shareAsync(uri);
-        setIsSaved(true);
-      }
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Errore', 'Impossibile condividere il pass.');
-    }
-  };
-
   if (!uuid) return null;
 
   return (
@@ -107,11 +84,6 @@ export default function LotoPassCard() {
         <TouchableOpacity style={styles.btnSave} onPress={handleSaveToGallery}>
           <MaterialIcons name="save-alt" size={20} color="#FFF" />
           <Text style={styles.btnText}>SALVA IN GALLERIA</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.btnShare} onPress={handleShare}>
-          <MaterialIcons name="share" size={20} color={LOTO_PALETTE.EBANO} />
-          <Text style={[styles.btnText, { color: LOTO_PALETTE.EBANO }]}>CONDIVIDI</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -214,18 +186,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
-  },
-  btnShare: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: LOTO_PALETTE.EBANO,
-    paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginRight: 0,
   },
   btnText: {
     marginLeft: 8,

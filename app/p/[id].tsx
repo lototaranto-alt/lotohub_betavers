@@ -35,6 +35,26 @@ export default function DeepLinkPoiScreen() {
         tags: ['Cultura', 'Esplorazione', 'Tour']
       };
     }
+    if (idStr === 'mena') {
+      return {
+        title: 'Mena Mena Mè',
+        subtitle: 'Food & Beverage Partner',
+        description: 'Locale accogliente nel cuore di Taranto vecchia. Oggi ospita un incontro speciale con i ragazzi di Plasticaqquà e TGT per discutere i prossimi interventi sul territorio.\n\n📍 EVENTO ATTIVO: Incontro Plasticaqquà & TGT. Ottieni i tuoi punti bonus!',
+        reward: 50,
+        type: 'PTI' as 'XP'|'PTI',
+        tags: ['Cibo', 'Socialità', 'Incontro']
+      };
+    }
+    if (idStr === 'castello') {
+      return {
+        title: 'Castello Aragonese',
+        subtitle: 'Fortezza Storica',
+        description: 'Immergiti nella storia della città dei due mari. Costruito a protezione del borgo antico, il Castello Aragonese nasconde secoli di segreti navali e militari.\n\n📍 EVENTO ATTIVO: Visita interattiva. Guadagna punti scansionando l\'area e sblocca l\'audioguida esclusiva!',
+        reward: 100,
+        type: 'XP' as 'XP'|'PTI',
+        tags: ['Storia', 'Cultura', 'Esplorazione']
+      };
+    }
     // Default (Plasticaqquà)
     return {
       title: 'Plasticaqquà',
@@ -74,31 +94,24 @@ export default function DeepLinkPoiScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Toast Animato */}
       <XpToast 
         visible={toastVisible} 
-        xpAmount={toastXp} 
+        xpAmount={poiData.type === 'XP' ? toastXp : 0} 
+        ptiAmount={poiData.type === 'PTI' ? toastXp : 0}
         message={toastMessage}
-        type={poiData.type}
         onHide={handleToastHide} 
       />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 150 }}>
         {/* Header Icon / Image */}
         <View style={[styles.headerIconContainer, { backgroundColor: theme.primary, overflow: 'hidden' }]}>
-          {idStr === 'mena' || idStr === 'plasticaqqua' || idStr === 'tgt' ? (
-            <Image 
-              source={require('../../assets/images/mena_logo.jpg')} 
-              style={{ width: '100%', height: '100%' }} 
-              resizeMode="contain" 
-            />
+          {idStr === 'mena' ? (
+            <Image source={require('../../assets/images/mena_logo.jpg')} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
           ) : idStr === 'dis' || idStr === 'diseducation' ? (
-            <Image 
-              source={require('../../assets/images/diseducation_logo.jpg')} 
-              style={{ width: '100%', height: '100%' }} 
-              resizeMode="contain" 
-            />
+            <Image source={require('../../assets/images/diseducation_logo.jpg')} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+          ) : idStr === 'castello' ? (
+            <Image source={require('../../assets/images/castello-evento.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
           ) : (
-            <MaterialIcons name="accessible-forward" size={80} color={theme.background} />
+            <MaterialIcons name="local-activity" size={80} color={theme.background} />
           )}
         </View>
 
@@ -109,8 +122,8 @@ export default function DeepLinkPoiScreen() {
              <Text style={[styles.badgeText, { color: theme.primary }]}>Partner L.O.T.O. Verificato</Text>
           </View>
 
-          <Text style={[styles.title, { color: theme.text }]}>{(idStr === 'mena' || idStr === 'plasticaqqua' || idStr === 'tgt' || idStr === 'dis' || idStr === 'diseducation') ? poiData.title : 'Punto di Interesse'}</Text>
-          <Text style={[styles.subtitle, { color: theme.textMuted }]}>{(idStr === 'mena' || idStr === 'plasticaqqua' || idStr === 'tgt' || idStr === 'dis' || idStr === 'diseducation') ? poiData.subtitle : 'Dettagli non trovati'}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{poiData.title}</Text>
+          <Text style={[styles.subtitle, { color: theme.textMuted }]}>{poiData.subtitle}</Text>
 
           <View style={styles.tagsRow}>
             {poiData.tags.map(tag => (
@@ -121,9 +134,7 @@ export default function DeepLinkPoiScreen() {
           </View>
 
           <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.description, { color: theme.text }]}>
-              {(idStr === 'mena' || idStr === 'plasticaqqua' || idStr === 'tgt' || idStr === 'dis' || idStr === 'diseducation') ? poiData.description : 'Contenuto sbloccato tramite Deep Link NDEF.'}
-            </Text>
+            <Text style={[styles.description, { color: theme.text }]}>{poiData.description}</Text>
           </View>
         </View>
       </ScrollView>
