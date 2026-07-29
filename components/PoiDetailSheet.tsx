@@ -8,7 +8,8 @@ import { LruCacheManager } from '../utils/LruCacheManager';
 import { OfflineQueueManager } from '../utils/OfflineQueueManager';
 import NetInfo from '@react-native-community/netinfo';
 import { useTheme } from '../context/ThemeContext';
-import NfcManager, { NfcTech } from 'react-native-nfc-manager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import { useRouteBuilder } from '../context/RouteContext';
 
 const LOTO_PALETTE = {
@@ -60,21 +61,20 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
 
       if (error) {
         console.log('[PoiDetailSheet] Errore lettura media_vault:', error.message);
-        return;
+        // Non bloccare se abbiamo dei mock
       }
 
-      if (data) {
-        // --- MOCK INJECTION BINDING ---
-        let finalData = [...data];
-        if (poi.media && poi.media.length > 0) {
-          const mockMediaIds = poi.media.map((m: any) => m.id);
-          finalData = finalData.filter((d: any) => !mockMediaIds.includes(d.id));
-          finalData = [...finalData, ...poi.media];
-        }
-        
-        setVaultMedia(finalData);
-        
-        const statusMap: {[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'} = {};
+      let finalData = data ? [...data] : [];
+      // --- MOCK INJECTION BINDING ---
+      if (poi.media && poi.media.length > 0) {
+        const mockMediaIds = poi.media.map((m: any) => m.id);
+        finalData = finalData.filter((d: any) => !mockMediaIds.includes(d.id));
+        finalData = [...finalData, ...poi.media];
+      }
+      
+      setVaultMedia(finalData);
+      
+      const statusMap: {[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'} = {};
         const { data: { user } } = await supabase.auth.getUser();
 
         // Storico degli sblocchi dell'utente
@@ -110,7 +110,6 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
           }
         }
         setMediaStatus(statusMap);
-      }
     } catch (e) {
       console.error('[PoiDetailSheet] Errore in caricaMediaVault:', e);
     }
@@ -146,18 +145,36 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
   };
 
   const handleUnlockMedia = async (media: any) => {
+    let currentLevel = 0;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('total_xp').eq('id', user.id).single();
+        if (profile) currentLevel = Math.floor((profile.total_xp || 0) / 100);
+      } else {
+        const fallbackStr = await AsyncStorage.getItem('loto_fallback_xp');
+        if (fallbackStr) currentLevel = Math.floor(parseInt(fallbackStr) / 100);
+      }
+    } catch(e) {}
+    
+    
+    if (media.required_level && currentLevel < media.required_level) {
+      Alert.alert("Livello Insufficiente", `Devi raggiungere il Livello ${media.required_level} per sbloccare questo contenuto segreto. Attualmente sei al Livello ${currentLevel}. Continua ad esplorare!`);
+      return;
+    }
+
     const netState = await NetInfo.fetch();
 
     if (!netState.isConnected) {
       Alert.alert(
         "Modalità Offline",
-        `Non hai connessione internet. Vuoi prenotare lo sblocco di "${media.title}" per ${media.loto_cost} LOTO PTI? I contenuti si scaricheranno appena ritrovi la rete.`,
+        `Non hai connessione internet. Vuoi prenotare lo sblocco di "${media.title}"? I contenuti si scaricheranno appena ritrovi la rete.`,
         [
           { text: "Annulla", style: "cancel" },
           { 
             text: "Prenota", 
             onPress: async () => {
-              await OfflineQueueManager.enqueueUnlock(media.id, media.loto_cost, poi.name);
+              await OfflineQueueManager.enqueueUnlock(media.id, 0, poi.name);
               setMediaStatus(prev => ({ ...prev, [media.id]: 'queued' }));
               Alert.alert("Sblocco Prenotato", "Sblocco registrato in locale. Il file si scaricherà in background quando tornerai online.");
             }
@@ -186,32 +203,36 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
           const avviaSbloccoNativo = async () => {
             try {
               setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
-              // Richiesta permessi e avvio lettura
+              /*
               await NfcManager.requestTechnology(NfcTech.Ndef);
               const tag = await NfcManager.getTag();
+              */
+              const tag = null; // Forza mock per Expo Go
               if (tag) {
                 setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
                 Alert.alert("Successo TSaaSI!", `L'hardware ha verificato l'NFC NTAG424. Contenuto sbloccato.`);
+              } else {
+                throw new Error("NFC Mock forzato in Expo Go");
               }
-            } catch (ex) {
-              console.warn('Errore lettura NFC:', ex);
+            } catch (e) {
               setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
               Alert.alert("Errore NFC", "Non è stato possibile leggere il tag.");
             } finally {
-              NfcManager.cancelTechnologyRequest();
+              // NfcManager.cancelTechnologyRequest();
             }
           };
 
           // Approccio Lean: se il device supporta NFC ed è abilitato, proviamo quello vero. Altrimenti Mock.
           let isSupported = false;
           try {
-            isSupported = await NfcManager.isSupported();
+            // isSupported = await NfcManager.isSupported();
           } catch (nfcErr) {
             console.log('[NFC] Modulo nativo non trovato (ambiente Expo Go). Uso fallback.');
           }
           
           if (isSupported) {
-            const isEnabled = await NfcManager.isEnabled();
+            // const isEnabled = await NfcManager.isEnabled();
+            const isEnabled = false;
             if (isEnabled) {
                await avviaSbloccoNativo();
             } else {
@@ -346,6 +367,20 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                   style={styles.coverImage} 
                   resizeMode="cover" 
                 />
+              ) : poi.id === 'casaviola' ? (
+                <View style={{ overflow: 'hidden', borderTopLeftRadius: 30, borderTopRightRadius: 30 }}>
+                  <Image 
+                    source={typeof poi.image === 'string' ? { uri: poi.image } : poi.image} 
+                    style={[styles.coverImage, { transform: [{ scale: 1.8 }, { translateX: -30 }, { translateY: -20 }] }]} 
+                    resizeMode="cover" 
+                  />
+                </View>
+              ) : poi.image ? (
+                <Image 
+                  source={typeof poi.image === 'string' ? { uri: poi.image } : poi.image} 
+                  style={styles.coverImage} 
+                  resizeMode="cover" 
+                />
               ) : poi.image_url ? (
                 <Image 
                   source={{ uri: poi.image_url }} 
@@ -426,8 +461,8 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                 {vaultMedia.map(media => {
                   const status = mediaStatus[media.id] || 'locked';
                   return (
-                    <View key={media.id} style={[styles.mediaRow, { backgroundColor: theme.background, borderColor: theme.border }]}>
-                      <View style={styles.mediaInfo}>
+                    <View key={media.id} style={[styles.mediaRow, { backgroundColor: theme.background, borderColor: theme.border, flexDirection: 'column', alignItems: 'stretch' }]}>
+                      <View style={[styles.mediaInfo, { marginBottom: 10 }]}>
                         <MaterialIcons 
                           name={media.media_type === 'audio' ? "audiotrack" : (media.media_type === 'digital_file' ? "description" : "videocam")} 
                           size={24} 
@@ -436,7 +471,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                         <View style={{ marginLeft: 12, flex: 1 }}>
                           <Text style={[styles.mediaTitle, { color: theme.text }]}>{media.title}</Text>
                           <Text style={[styles.mediaTypeLabel, { color: theme.textMuted }]}>
-                            {media.media_type.toUpperCase()} • {media.loto_cost} LOTO PTI
+                            {media.media_type.toUpperCase()} • Sblocco: Livello {media.required_level || 1}
                           </Text>
                         </View>
                       </View>
@@ -446,8 +481,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                             style={[styles.vaultBtn, { backgroundColor: theme.text }]}
                             onPress={() => { onClose(); router.push('/upgrade'); }}
                           >
-                            <MaterialIcons name="workspace-premium" size={16} color={theme.accent} style={{ marginRight: 4 }} />
-                            <Text style={[styles.vaultBtnText, { color: theme.accent }]}>Esclusiva Premium</Text>
+                            <MaterialIcons name="workspace-premium" size={20} color={theme.accent} />
                           </TouchableOpacity>
                         ) : status === 'ready' ? (
                           <TouchableOpacity 
@@ -476,11 +510,11 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                           </TouchableOpacity>
                         ) : (
                           <TouchableOpacity 
-                            style={[styles.vaultBtn, { backgroundColor: theme.primary }]}
+                            style={[styles.vaultBtn, { backgroundColor: theme.primary, width: '100%', paddingVertical: 12 }]}
                             onPress={() => handleUnlockMedia(media)}
                           >
-                            <MaterialIcons name="lock-open" size={16} color={theme.background} style={{ marginRight: 4 }} />
-                            <Text style={[styles.vaultBtnText, { color: theme.background }]}>Sblocca ({media.loto_cost} PTI)</Text>
+                            <MaterialIcons name="lock-open" size={18} color={theme.background} style={{ marginRight: 6 }} />
+                            <Text style={[styles.vaultBtnText, { color: theme.background, fontSize: 14 }]}>Sblocca (Liv. {media.required_level || 1})</Text>
                           </TouchableOpacity>
                         )}
                     </View>

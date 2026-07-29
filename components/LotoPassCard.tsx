@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Image } from
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
-import * as Sharing from 'expo-sharing';
 import { supabase } from '../utils/supabase';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -54,28 +53,6 @@ export default function LotoPassCard() {
     }
   };
 
-  const handleShare = async () => {
-    try {
-      if (passRef.current) {
-        const uri = await captureRef(passRef, {
-          format: 'png',
-          quality: 1,
-        });
-
-        if (!(await Sharing.isAvailableAsync())) {
-          Alert.alert('Condivisione non disponibile', 'La condivisione non è supportata su questo dispositivo.');
-          return;
-        }
-
-        await Sharing.shareAsync(uri);
-        setIsSaved(true);
-      }
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Errore', 'Impossibile condividere il pass.');
-    }
-  };
-
   if (!uuid) return null;
 
   return (
@@ -91,7 +68,7 @@ export default function LotoPassCard() {
             <View style={styles.qrContainer}>
               <QRCode
               value={uuid}
-              size={180}
+              size={130}
               color={LOTO_PALETTE.EBANO}
               backgroundColor="#FFF"
             />
@@ -105,13 +82,8 @@ export default function LotoPassCard() {
 
       <View style={styles.actionsRow}>
         <TouchableOpacity style={styles.btnSave} onPress={handleSaveToGallery}>
-          <MaterialIcons name="save-alt" size={20} color="#FFF" />
-          <Text style={styles.btnText}>SALVA IN GALLERIA</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.btnShare} onPress={handleShare}>
-          <MaterialIcons name="share" size={20} color={LOTO_PALETTE.EBANO} />
-          <Text style={[styles.btnText, { color: LOTO_PALETTE.EBANO }]}>CONDIVIDI</Text>
+          <MaterialIcons name="save-alt" size={18} color="#FFF" />
+          <Text style={styles.btnText}>SALVA IN GALLERIA (BACKUP)</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -143,7 +115,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   passWrapper: {
-    width: '85%',
+    width: '100%',
     backgroundColor: 'transparent',
   },
   passCard: {
@@ -151,32 +123,32 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: LOTO_PALETTE.VERDE_OLIVA,
-    elevation: 10,
+    elevation: 4,
     shadowColor: LOTO_PALETTE.EBANO,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
     overflow: 'hidden',
   },
   cardIllustration: {
     width: '100%',
-    height: 140,
+    height: 100,
   },
   cardContent: {
-    padding: 30,
+    padding: 20,
     alignItems: 'center',
   },
   passTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '900',
     color: LOTO_PALETTE.VERDE_OLIVA,
     letterSpacing: 2,
-    marginBottom: 5,
+    marginBottom: 2,
   },
   passSubtitle: {
-    fontSize: 12,
+    fontSize: 10,
     color: LOTO_PALETTE.EBANO,
-    marginBottom: 25,
+    marginBottom: 15,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -195,41 +167,29 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   uuidText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: LOTO_PALETTE.EBANO,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   actionsRow: {
     flexDirection: 'row',
-    width: '85%',
-    justifyContent: 'space-between',
-    marginTop: 30,
+    width: '100%',
+    justifyContent: 'center',
+    marginTop: 15,
   },
   btnSave: {
     flex: 1,
     flexDirection: 'row',
     backgroundColor: LOTO_PALETTE.TERRACOTTA,
-    paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  btnShare: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: LOTO_PALETTE.EBANO,
-    paddingVertical: 15,
+    paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   btnText: {
     marginLeft: 8,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#FFF',
   }

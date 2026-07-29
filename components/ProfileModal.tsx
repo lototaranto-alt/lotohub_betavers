@@ -16,13 +16,14 @@ interface ProfileModalProps {
   levelInfo: any;
   userItineraries: any[];
   userTransactions: any[];
+  userTokens: number;
   theme: any;
   t: any;
   setUserProfile: (profile: any) => void;
   onDeleteItinerary?: (id: string) => void;
 }
 
-export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userItineraries, userTransactions, theme, t, setUserProfile, onDeleteItinerary }: ProfileModalProps) {
+export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userItineraries, userTransactions, userTokens, theme, t, setUserProfile, onDeleteItinerary }: ProfileModalProps) {
   const router = useRouter();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [activeProfileSection, setActiveProfileSection] = useState<'badges' | 'itineraries'>('badges');
@@ -102,186 +103,37 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
         <View style={{ height: expandedCard ? 500 : 400, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={width * 0.8} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: width * 0.1, alignItems: 'center' }}>
             
-            {/* CARD 1: Badge Profilo & I Miei Itinerari */}
+            {/* CARD 1: ID Card (Solo Identità e Livello) */}
             <TouchableOpacity 
               activeOpacity={1}
               onPress={() => setExpandedCard(expandedCard === 'profile' ? null : 'profile')}
-              style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'profile' ? 'flex-start' : 'center', paddingVertical: expandedCard === 'profile' ? 20 : 35, height: expandedCard === 'profile' ? 450 : 310 }]}
+              style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'profile' ? 'flex-start' : 'center', paddingVertical: expandedCard === 'profile' ? 20 : 35, height: expandedCard === 'profile' ? 320 : 310 }]}
             >
-              {/* MOSTRA SEMPRE LA MATITA, MA GESTISCI IL CLICK */}
               {!userProfile?.nickname && expandedCard !== 'profile' && (
                 <View style={{ position: 'absolute', top: 20, right: 20 }}>
-                  <TouchableOpacity 
-                    onPress={() => { 
-                      setTempNickname(userProfile?.nickname || ''); 
-                      setEditingNickname(!editingNickname); 
-                    }} 
-                    style={{ padding: 5 }}
-                  >
+                  <TouchableOpacity onPress={() => { setTempNickname(userProfile?.nickname || ''); setEditingNickname(!editingNickname); }} style={{ padding: 5 }}>
                     <MaterialIcons name={editingNickname ? "check" : "edit"} size={20} color={theme.accent} />
                   </TouchableOpacity>
                 </View>
               )}
-              <View style={[styles.badgeMedalContainer, { 
-                width: expandedCard === 'profile' ? 90 : 70,
-                height: expandedCard === 'profile' ? 90 : 70,
-                borderRadius: expandedCard === 'profile' ? 45 : 35,
-                borderColor: levelInfo.color, 
-                marginBottom: expandedCard === 'profile' ? 10 : 0 
-              }]}>
+              
+              <View style={[styles.badgeMedalContainer, { width: expandedCard === 'profile' ? 90 : 70, height: expandedCard === 'profile' ? 90 : 70, borderRadius: expandedCard === 'profile' ? 45 : 35, borderColor: levelInfo.color, marginBottom: expandedCard === 'profile' ? 10 : 0 }]}>
                 <MaterialIcons name={levelInfo.stemma} size={expandedCard === 'profile' ? 40 : 34} color={levelInfo.color} />
               </View>
+              
               <View style={{ alignItems: 'center', width: '100%' }}>
                 {editingNickname ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <TextInput
-                      style={{ borderBottomWidth: 1, borderBottomColor: theme.accent, fontSize: 24, fontWeight: 'bold', color: theme.text, textAlign: 'center', minWidth: 150 }}
-                      value={tempNickname}
-                      onChangeText={setTempNickname}
-                      autoFocus
-                      onSubmitEditing={salvaNickname}
-                    />
+                    <TextInput style={{ borderBottomWidth: 1, borderBottomColor: theme.accent, fontSize: 24, fontWeight: 'bold', color: theme.text, textAlign: 'center', minWidth: 150 }} value={tempNickname} onChangeText={setTempNickname} autoFocus onSubmitEditing={salvaNickname} />
                   </View>
                 ) : (
                   <Text style={[styles.expNameBoutique, expandedCard === 'profile' && { fontSize: 20 }]}>{userProfile?.nickname || (userProfile?.email ? 'Inserisci Nome' : 'Utente Anonimo')}</Text>
                 )}
                 <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0, fontSize: expandedCard === 'profile' ? 14 : 16 }]}>{levelInfo.title} ({userXp} XP)</Text>
-                
-                {expandedCard === 'profile' && !userProfile?.email && (
-                  <View style={{ flexDirection: 'row', marginTop: 10 }}>
-                    <TouchableOpacity 
-                      onPress={() => setShowBackupModal(true)}
-                      style={{ backgroundColor: theme.primary + '20', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, marginRight: 10, flexDirection: 'row', alignItems: 'center' }}
-                    >
-                      <MaterialIcons name="security" size={16} color={theme.primary} style={{ marginRight: 5 }} />
-                      <Text style={{ color: theme.primary, fontSize: 12, fontWeight: 'bold' }}>Salva Profilo</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                      onPress={() => setShowRecoveryModal(true)}
-                      style={{ backgroundColor: theme.textMuted + '20', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
-                    >
-                      <MaterialIcons name="qr-code-scanner" size={16} color={theme.text} style={{ marginRight: 5 }} />
-                      <Text style={{ color: theme.text, fontSize: 12, fontWeight: 'bold' }}>Recupera</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
               </View>
               
               {expandedCard !== 'profile' && (
                 <Text style={{ fontSize: 11, color: theme.textMuted, textAlign: 'center', lineHeight: 16, paddingHorizontal: 5, marginTop: 15 }}>Continua a esplorare per salire di livello.</Text>
-              )}
-
-              {expandedCard === 'profile' && (
-                <View style={{ flex: 1, width: '100%', marginTop: 15, borderTopWidth: 1, borderTopColor: theme.border }}>
-                  
-                  {/* TAB HEADER */}
-                  <View style={styles.tabHeaderContainer}>
-                    <TouchableOpacity 
-                      style={[styles.tabHeaderBtn, { borderBottomWidth: activeProfileSection === 'badges' ? 2 : 0, borderBottomColor: theme.text }]}
-                      onPress={() => setActiveProfileSection('badges')}
-                    >
-                      <Text style={{fontSize:11, fontWeight:'bold', color: activeProfileSection === 'badges' ? theme.text : theme.textMuted}}>MEDAGLIERE</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.tabHeaderBtn, { borderBottomWidth: activeProfileSection === 'itineraries' ? 2 : 0, borderBottomColor: theme.text }]}
-                      onPress={() => setActiveProfileSection('itineraries')}
-                    >
-                      <Text style={{fontSize:11, fontWeight:'bold', color: activeProfileSection === 'itineraries' ? theme.text : theme.textMuted}}>ITINERARI</Text>
-                    </TouchableOpacity>
-                  </View>
-                  
-                  {/* TAB CONTENT: BADGES */}
-                  {activeProfileSection === 'badges' && (
-                    <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-                      <View style={styles.badgeGrid}>
-                        {badgeDefinitions.map(badge => {
-                          const hasBadge = userBadges.includes(badge.id);
-                          return (
-                            <TouchableOpacity 
-                              key={badge.id}
-                              style={[styles.badgeSticker, { 
-                                borderColor: hasBadge ? badge.color : theme.border,
-                                opacity: hasBadge ? 1 : 0.3,
-                                backgroundColor: hasBadge ? badge.color + '1A' : theme.background
-                              }]}
-                              onPress={() => {
-                                if (hasBadge) {
-                                  Alert.alert(badge.title, `Traccia: ${badge.track}\nSbloccato con successo! Puoi condividerlo.`, [{ text: 'Condividi', onPress: () => {} }, { text: 'Chiudi' }]);
-                                } else {
-                                  Alert.alert(badge.title, `Traccia: ${badge.track}\nContinua a inviare segnalazioni e aiutare la città per sbloccare questa medaglia.`);
-                                }
-                              }}
-                            >
-                              <MaterialIcons name={badge.icon as any} size={24} color={hasBadge ? badge.color : theme.textMuted} />
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </ScrollView>
-                  )}
-
-                  {/* TAB CONTENT: ITINERARI */}
-                  {activeProfileSection === 'itineraries' && (
-                    <View style={{ flex: 1 }}>
-                      {userItineraries.length === 0 ? (
-                        <Text style={{fontSize:12, color: theme.textMuted, textAlign:'center', marginTop:10}}>Nessun itinerario salvato.</Text>
-                      ) : (
-                        <FlatList
-                          data={userItineraries}
-                          keyExtractor={item => item.id}
-                          showsVerticalScrollIndicator={false}
-                          renderItem={({item}) => {
-                            const title = item.title || item.name || 'Itinerario Senza Nome';
-                            const dateStr = item.created_at || item.date;
-                            const pts = item.potential_xp || (item.pois ? item.pois.length * 15 : 0);
-                            return (
-                              <View style={{borderBottomWidth:1, borderBottomColor: theme.border, paddingVertical:12}}>
-                                <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'}}>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={{fontSize:14, fontWeight:'bold', color: theme.text}} numberOfLines={1}>{title}</Text>
-                                    <View style={{flexDirection:'row', marginTop: 4}}>
-                                      <Text style={{fontSize:11, color: theme.accent, fontWeight: 'bold'}}>{pts} PTI</Text>
-                                      {dateStr && <Text style={{fontSize:11, color: theme.textMuted, marginLeft: 10}}>{new Date(dateStr).toLocaleDateString()}</Text>}
-                                    </View>
-                                  </View>
-                                  <View style={{ flexDirection: 'row' }}>
-                                    <TouchableOpacity 
-                                      style={{ backgroundColor: '#EF44441A', padding: 8, borderRadius: 12, marginLeft: 5 }}
-                                      onPress={() => {
-                                        Alert.alert('Elimina Itinerario', `Vuoi eliminare "${title}"?`, [
-                                          { text: 'Annulla', style: 'cancel' },
-                                          { text: 'Elimina', style: 'destructive', onPress: () => onDeleteItinerary && onDeleteItinerary(item.id) }
-                                        ]);
-                                      }}
-                                    >
-                                      <MaterialIcons name="delete-outline" size={16} color="#EF4444" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity 
-                                      style={{ backgroundColor: theme.text, padding: 8, borderRadius: 12, marginLeft: 5 }}
-                                      onPress={() => Alert.alert('Condividi Itinerario', `Condivisione di "${title}" in arrivo!`)}
-                                    >
-                                      <MaterialIcons name="share" size={16} color={theme.background} />
-                                    </TouchableOpacity>
-                                  </View>
-                                </View>
-                              </View>
-                            );
-                          }}
-                        />
-                      )}
-                    </View>
-                  )}
-                  
-                  {/* BOTTOM ACTION */}
-                  <TouchableOpacity
-                    style={{ backgroundColor: theme.text, padding: 12, borderRadius: 12, marginTop: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
-                    onPress={() => { onClose(); router.push('/upgrade'); }}
-                  >
-                    <MaterialIcons name="workspace-premium" size={20} color={theme.accent} style={{ marginRight: 8 }} />
-                    <Text style={{ color: theme.background, fontWeight: 'bold' }}>Gestisci Piano LOTO</Text>
-                  </TouchableOpacity>
-                </View>
               )}
             </TouchableOpacity>
 
@@ -327,7 +179,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
               style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'pts' ? 'flex-start' : 'center', height: expandedCard === 'pts' ? 450 : 310 }]}
             >
                <MaterialIcons name="toll" size={expandedCard === 'pts' ? 40 : 60} color={theme.accent} style={{marginBottom: expandedCard === 'pts' ? 10 : 20}} />
-               <Text style={[styles.mStatValBoutique, { fontSize: expandedCard === 'pts' ? 24 : 32, color: theme.accent }]}>{userProfile?.total_tokens ?? 0} PTI</Text>
+               <Text style={[styles.mStatValBoutique, { fontSize: expandedCard === 'pts' ? 24 : 32, color: theme.accent }]}>{userTokens} PTI</Text>
                <Text style={[styles.mStatLab, { fontSize: 14 }]}>LOTO Tokens</Text>
 
                {expandedCard === 'pts' && (
@@ -355,26 +207,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                )}
             </TouchableOpacity>
 
-            {/* CARD 4: Crea Percorso */}
-            <View style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden', height: 310 }]}>
-              <Image source={require('../assets/images/route_creation_flat.png')} style={{ width: '100%', height: 140 }} resizeMode="cover" />
-              <View style={{ flex: 1, padding: 20, justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <View style={{ alignItems: 'center' }}>
-                  <Text style={[styles.mStatValBoutique, { fontSize: 22, color: theme.text, textAlign: 'center', marginBottom: 6 }]}>Crea Percorso</Text>
-                  <Text style={{ fontSize: 11, color: theme.textMuted, textAlign: 'center', lineHeight: 16, paddingHorizontal: 5 }}>Disegna itinerari personali, scegli mobilità ecologiche e condividili sui social per guadagnare punti.</Text>
-                </View>
-                <TouchableOpacity 
-                  style={{ backgroundColor: theme.secondary, paddingVertical: 10, paddingHorizontal: 22, borderRadius: 25, flexDirection: 'row', alignItems: 'center', marginTop: 10, elevation: 2 }}
-                  onPress={() => {
-                    onClose();
-                    router.push('/route-creation-mockup');
-                  }}
-                >
-                  <MaterialIcons name="add-circle-outline" size={16} color="#FFF" style={{ marginRight: 6 }} />
-                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>INIZIA ORA</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+
 
           </ScrollView>
           
@@ -383,21 +216,6 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* MODALE DI BACKUP LOTO PASS */}
-      <LotoPassBackupModal 
-        visible={showBackupModal} 
-        onClose={() => setShowBackupModal(false)} 
-        theme={theme} 
-        userUuid={userProfile?.id || 'TEST-UUID'} 
-      />
-
-      {/* MODALE DI RECUPERO LOTO PASS */}
-      <LotoPassRecoveryScanner 
-        visible={showRecoveryModal} 
-        onClose={() => setShowRecoveryModal(false)} 
-        theme={theme} 
-      />
     </Modal>
   );
 }

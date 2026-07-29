@@ -37,5 +37,18 @@ export const mockEvents = [
     desc: "Sconto Zero-Friction in piazza.",
     lat: 40.4760,
     lng: 17.2300
+  },
+  { 
+    id: 'ev_4', 
+    title: "Sfida Mappatura Civica", 
+    name: "Sfida Mappatura Civica",
+    category: 'event',
+    type: "Community", 
+    icon: "groups", 
+    date: "Sabato, 10:00", 
+    xp: 200, 
+    desc: "Segnala barriere architettoniche assieme alla Community.",
+    lat: 40.4710,
+    lng: 17.2350
   }
 ];

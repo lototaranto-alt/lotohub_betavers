@@ -14,10 +14,11 @@ import { MobilityProvider } from '../context/MobilityContext';
 import { ThemeProvider as AppThemeProvider } from '../context/ThemeContext';
 import { RouteProvider } from '../context/RouteContext';
 import MobilityWizard from '../components/MobilityWizard';
-import NfcManager from 'react-native-nfc-manager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import OnboardingCarousel from '../components/OnboardingCarousel';
 
-// Inizializzazione Globale Hardware NFC
-NfcManager.start().catch(e => console.warn('NFC non supportato in questo ambiente (es. Web/Simulatore)'));
+// Inizializzazione Globale Hardware NFC (Commentato per Expo Go Demo)
+// NfcManager.start().catch(e => console.warn('NFC non supportato in questo ambiente (es. Web/Simulatore)'));
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -28,24 +29,50 @@ export default function RootLayout() {
 
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isFirstLaunch, setIsFirstLaunch] = useState(false);
 
   const initAuth = async () => {
     try {
       setAuthError(null);
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
+      let userLevel = 0;
+      let currentUserId = null;
+      if (session) {
+        console.log('[Auth Success] Sessione esistente ripristinata');
+        currentUserId = session.user.id;
+      } else {
         // Tentativo di login anonimo rigoroso
         const { data, error } = await supabase.auth.signInAnonymously();
         if (error) throw error;
         console.log('[Auth Success] Entrato come ospite anonimo');
-      } else {
-        console.log('[Auth Success] Sessione esistente ripristinata');
+        currentUserId = data.user?.id;
       }
       
+      // AUTO-HEALING TRAMITE REINCARNAZIONE
+      if (currentUserId) {
+        const { error: profileError } = await supabase.from('profiles').select('id').eq('id', currentUserId).single();
+        if (profileError && profileError.code === 'PGRST116') {
+           console.log('[Auto-Healing] Riga profile mancante e protetta da RLS. Forzo il reset dell\'identità...');
+           await supabase.auth.signOut();
+           await AsyncStorage.clear();
+           
+           // Ricrea utente
+           const { data: newData, error: newError } = await supabase.auth.signInAnonymously();
+           if (newError) throw newError;
+           currentUserId = newData.user?.id;
+           console.log('[Auto-Healing] Nuova identità creata con successo.');
+        }
+      }
+      
+      const hasForcedOnboarding = await AsyncStorage.getItem('loto_onboarding_seen');
+      
+      // FORZATO: l'utente ha richiesto che il carosello sia sempre visibile all'avvio come caricamento
+      let willShowOnboarding = true;
+
+      setIsFirstLaunch(!hasForcedOnboarding);
+      setShowOnboarding(willShowOnboarding);
       setIsAuthReady(true);
-      // Piccolo ritardo per permettere al router di montarsi prima del redirect
-      setTimeout(() => router.replace('/(tabs)/map'), 100);
     } catch (err: any) {
       console.error('[Auth Error] Fallimento critico:', err.message);
       setAuthError(err.message);
@@ -60,6 +87,13 @@ export default function RootLayout() {
     // Pulisce eventuali sessioni corrotte prima di riprovare
     await supabase.auth.signOut();
     initAuth();
+  };
+
+  const handleOnboardingComplete = async () => {
+    await AsyncStorage.setItem('loto_onboarding_seen', 'true');
+    setShowOnboarding(false);
+    // Naviga alla mappa una volta terminato l'onboarding
+    setTimeout(() => router.replace('/(tabs)/map'), 100);
   };
 
   if (authError) {
@@ -106,6 +140,7 @@ export default function RootLayout() {
                 </Stack>
                 <StatusBar style="auto" />
                 <MobilityWizard />
+                {showOnboarding && <OnboardingCarousel onComplete={handleOnboardingComplete} isFirstLaunch={isFirstLaunch} />}
               </ThemeProvider>
             </RouteProvider>
           </MobilityProvider>

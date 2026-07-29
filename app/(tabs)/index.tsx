@@ -1,7 +1,8 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Animated, Easing, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../utils/supabase';
@@ -17,10 +18,11 @@ import XpToast from '../../components/XpToast';
 import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
 import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
-import { calculateDistance } from '../../utils/haversine';
+import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useScanner } from './_layout';
 const { width, height } = Dimensions.get('window');
 
 
@@ -119,13 +121,15 @@ export default function VetrinaScreen() {
   const { theme, isElite } = useTheme();
   const { currentCity, setCurrentCity } = useCity();
   const styles = getStyles(theme);
-  const { mobilityType, forceReopenWizard } = useMobility();
+  const { mobilityType, forceReopenWizard, saveMobilityChoice } = useMobility();
   const [pois, setPois] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [loading, setLoading] = useState(true);
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [userItineraries, setUserItineraries] = useState<any[]>([]);
+  const [userBadges, setUserBadges] = useState<any[]>([]);
+  const [communityStats, setCommunityStats] = useState<any>(null);
 
   // --- STATO TRIANGOLO DELLA VERITÀ (INTEGRALE) ---
   const [isMotorized, setIsMotorized] = useState(false);
@@ -139,7 +143,9 @@ export default function VetrinaScreen() {
   const [lang, setLang] = useState<'IT' | 'UK'>('IT');
   const [isTipsVisible, setIsTipsVisible] = useState(false);
   const sparkleAnim = useRef(new Animated.Value(1)).current;
+  const tipsAnim = useRef(new Animated.Value(1)).current;
   const [isExpModalVisible, setIsExpModalVisible] = useState(false);
+  const [isHomeMobilitySheetVisible, setIsHomeMobilitySheetVisible] = useState(false);
   const [bookedSessions, setBookedSessions] = useState<{ [key: string]: string }>({});
   
   // STATI SPRINT B (Bottom Sheet e Accordion)
@@ -150,18 +156,37 @@ export default function VetrinaScreen() {
   const [isBaptismVisible, setIsBaptismVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastData, setToastData] = useState({ xpAmount: 0, message: '' });
+  const [localXpFallback, setLocalXpFallback] = useState(0);
+  const [localTokensFallback, setLocalTokensFallback] = useState(0);
+  const [localPoisFallback, setLocalPoisFallback] = useState(0);
 
   const t = DICTIONARY[lang];
   const tickerText = currentTenant?.localization?.onboarding_subtitle || t.ticker;
 
   const getLevelInfo = (tokens: number) => {
-    if (tokens >= 500) return { title: t.levelGold, badge: require('../../assets/images/badge_gold_1775676641737.png'), color: theme.accent, stemma: 'workspace-premium' as any };
-    if (tokens >= 100) return { title: t.levelSilver, badge: require('../../assets/images/badge_silver_1775675392322.png'), color: theme.primary, stemma: 'security' as any };
-    return { title: t.levelBronze, badge: require('../../assets/images/badge_bronze_1775675369793.png'), color: theme.secondary, stemma: 'sailing' as any };
+    if (tokens >= 500) return { title: "EROE DEL MARE", badge: require('../../assets/images/badge_gold_1775676641737.png'), color: theme.accent, stemma: 'workspace-premium' as any };
+    if (tokens >= 100) return { title: "ESPLORATORE", badge: require('../../assets/images/badge_silver_1775675392322.png'), color: theme.primary, stemma: 'security' as any };
+    return { title: "TURISTA OCCASIONALE", badge: require('../../assets/images/badge_bronze_1775675369793.png'), color: theme.secondary, stemma: 'sailing' as any };
   };
 
+  // Ricarica i dati dinamicamente ogni volta che si torna sulla Home (es. dopo una scansione NFC)
+  useFocusEffect(
+    useCallback(() => {
+      // Legge eventuali valori accumulati localmente per la resilienza offline
+      AsyncStorage.multiGet(['loto_fallback_xp', 'loto_fallback_tokens', 'loto_fallback_pois']).then(values => {
+        values.forEach(([key, value]) => {
+          if (value) {
+            if (key === 'loto_fallback_xp') setLocalXpFallback(parseInt(value));
+            if (key === 'loto_fallback_tokens') setLocalTokensFallback(parseInt(value));
+            if (key === 'loto_fallback_pois') setLocalPoisFallback(parseInt(value));
+          }
+        });
+      });
+      caricaDati();
+    }, [])
+  );
+
   useEffect(() => {
-    caricaDati();
     const interval = setInterval(() => avviaFiltroCinematico(), KINEMATIC_TIMER_MS);
     
     Animated.loop(
@@ -174,16 +199,37 @@ export default function VetrinaScreen() {
     return () => clearInterval(interval);
   }, []);
 
+  // --- LOGICA LEVEL UP & TIPS ---
+  const [prevXp, setPrevXp] = useState(0);
+  useEffect(() => {
+    if (userProfile && userProfile.total_xp !== undefined) {
+      const currentXp = userProfile.total_xp;
+      if (prevXp > 0 && currentXp > prevXp) {
+        const oldLevel = Math.floor(prevXp / 100);
+        const newLevel = Math.floor(currentXp / 100);
+        if (newLevel > oldLevel) {
+          // LEVEL UP! Mostra i Tips per 3 minuti
+          setIsTipsVisible(true);
+          setTimeout(() => {
+            setIsTipsVisible(false);
+          }, 3 * 60 * 1000); // 3 minuti
+        }
+      }
+      setPrevXp(currentXp);
+    }
+  }, [userProfile?.total_xp]);
+
   const caricaDati = async () => {
     try {
+      let fetchedPois: any[] = [];
       const { data: poiData, error } = await supabase.rpc('get_pois');
       if (error) {
         console.log("ERRORE RPC get_pois:", error);
       }
       if (poiData) {
         // --- INIEZIONE MOCK DATI PROFESSIONALE TRAMITE HELPER ---
-        const processedPois = injectPoisMock(poiData);
-        setPois(processedPois);
+        fetchedPois = injectPoisMock(poiData);
+        setPois(fetchedPois);
       }
 
       let combinedItineraries: any[] = [];
@@ -206,30 +252,77 @@ export default function VetrinaScreen() {
           if(itinData) {
             combinedItineraries = [...combinedItineraries, ...itinData];
           }
+
+          // Fetch user badges
+          const { data: badges } = await supabase
+            .from('user_badges')
+            .select('*, badges(*)')
+            .eq('user_id', user.id);
+          if (badges) setUserBadges(badges);
         }
       }
 
       setUserItineraries(combinedItineraries);
 
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
-          setUserLocation(loc);
-        });
-      }
+      // Fetch Ticker Community
+      const { data: cStats } = await supabase.from('vw_collective_impact').select('*').single();
+      if (cStats) setCommunityStats(cStats);
 
-      // Check per prompt GPS automatico e gentile
-      const hasSeenPrompt = await AsyncStorage.getItem('loto_gps_prompt_seen');
-      if (!hasSeenPrompt && userProfile?.flow_role !== 'LOTO Partner') {
-        setTimeout(() => {
-          promptGentleGps();
-        }, 1500); // Ritardo leggero per non sovrapporsi al wizard
+      // Ritardiamo le richieste di localizzazione per non interrompere il carosello iniziale (che dura circa 12s)
+      setTimeout(async () => {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
+            setUserLocation(loc);
+            
+            // HAPTICS QUANDO CI SI AVVICINA A UN P.O.I. (< 50 METRI)
+            if (fetchedPois && fetchedPois.length > 0) {
+              for (const poi of fetchedPois) {
+                if (poi.latitude && poi.longitude) {
+                  const dist = calculateDistanceRaw(loc.coords.latitude, loc.coords.longitude, poi.latitude, poi.longitude);
+                  if (dist < 50) {
+                    // Vibrazione leggera per indicare prossimità
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+                    break; // Una vibrazione è sufficiente
+                  }
+                }
+              }
+            }
+          }).catch(err => {
+            console.log("Errore in watchPositionAsync (es. GPS spento):", err);
+          });
+        }
+
+        // Check per prompt GPS automatico e gentile in background
+        const hasSeenPrompt = await AsyncStorage.getItem('loto_gps_prompt_seen');
+        if (!hasSeenPrompt && userProfile?.flow_role !== 'LOTO Partner') {
+          setTimeout(() => {
+            promptGentleGps();
+          }, 1500); // Questo 1500ms parte DOPO i 12000ms iniziali
+        }
+      }, 12000);
+
+      // LOGICA TIPS HAPTICS
+      let totalXp = 0;
+      if (user) {
+         const { data: prof } = await supabase.from('profiles').select('total_xp').eq('id', user.id).single();
+         if (prof) totalXp = prof.total_xp || 0;
       }
+      
+      // Il bottone Tips ora vibra sempre, per ricordare le funzioni nascoste (come richiesto)
+      setTimeout(() => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+        Animated.sequence([
+          Animated.timing(tipsAnim, { toValue: 1.5, duration: 300, useNativeDriver: true }),
+          Animated.timing(tipsAnim, { toValue: 0.8, duration: 150, useNativeDriver: true }),
+          Animated.spring(tipsAnim, { toValue: 1, friction: 3, tension: 40, useNativeDriver: true })
+        ]).start();
+      }, 1500);
 
     } catch (e) {
       console.log("Errore caricaDati:", e);
     } finally {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 800);
     }
   };
 
@@ -283,8 +376,12 @@ export default function VetrinaScreen() {
           { 
             text: "Attiva", 
             onPress: async () => {
-              await startBackgroundLocationUpdates();
-              setIsGeofenceActive(true);
+              try {
+                await startBackgroundLocationUpdates();
+                setIsGeofenceActive(true);
+              } catch (e) {
+                console.log("Location BG non autorizzata", e);
+              }
             }
           }
         ]
@@ -294,9 +391,14 @@ export default function VetrinaScreen() {
 
   const toggleSensors = async () => {
     if (!isGeofenceActive) {
-      await startBackgroundLocationUpdates();
-      setIsGeofenceActive(true);
-      Alert.alert("Sensori Attivati", "Ora guadagnerai LOTO PTI camminando!");
+      try {
+        await startBackgroundLocationUpdates();
+        setIsGeofenceActive(true);
+        Alert.alert("Sensori Attivati", "Ora guadagnerai LOTO PTI camminando!");
+      } catch (e) {
+        console.log("Errore sensori", e);
+        Alert.alert("Errore", "Impossibile attivare i sensori. Verifica i permessi.");
+      }
     } else {
       Alert.alert("Risparmio Energetico", "I sensori in background sono stati spenti.");
       setIsGeofenceActive(false);
@@ -355,6 +457,7 @@ export default function VetrinaScreen() {
   };
 
   const handleAction = async (poi: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); // Feedback 'avvicinamento'
     if (poi.category === 'partner') {
       executeScan(poi);
       return;
@@ -364,39 +467,13 @@ export default function VetrinaScreen() {
   };
 
   const handleCheckIn = async (poi: any) => {
-    if (!userProfile) return Alert.alert("Errore", "Profilo non trovato");
-
-    // Simulazione del Modello Ibrido (Sensore Urbano)
-    const simulatedBleDevices = Math.floor(Math.random() * 15) + 1; // Proxy per la densità
-    const isGolden = (userProfile?.total_tokens || 0) >= 100;
-    const xp = isGolden ? 30 : 15;
-
-    const payload = {
-      poi_id: poi.id,
-      session_id: 'anonymous-or-auth-session',
-      nfc_token: 'MOCK_NFC_123',
-      ble_devices_count: simulatedBleDevices,
-      lat: userLocation?.coords.latitude || 40.47,
-      lng: userLocation?.coords.longitude || 17.24,
-      xp_awarded: xp,
-      tenant_id: 'taranto'
-    };
-
-    const { error } = await supabase.from('scans').insert(payload);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsSheetVisible(false);
     
-    if (error) {
-      Alert.alert("Errore", "Impossibile registrare il check-in");
-    } else {
-      const msg = isGolden 
-        ? `Hai sbloccato la storia segreta di ${poi.name}.\n(Indotto: ${simulatedBleDevices} pax)` 
-        : `Benvenuto a ${poi.name}.\n(Indotto: ${simulatedBleDevices} pax)`;
-      
-      setToastData({ xpAmount: xp, message: msg });
-      setToastVisible(true);
-      
-      setIsSheetVisible(false);
-      caricaDati();
-    }
+    // Inoltra il POI reale selezionato al vero flusso NFC simulato
+    setTimeout(() => {
+      router.push(`/p/${poi.id}`);
+    }, 300);
   };
 
   const trovaAlternativa = (poiAffollato: any) => {
@@ -409,279 +486,278 @@ export default function VetrinaScreen() {
       ]
     );
   };
+
+  const { openScanner } = useScanner();
+
   const renderHeader = () => {
+    const nextLevelXp = levelInfo.title === t.levelBronze ? 100 : (levelInfo.title === t.levelSilver ? 500 : 1000);
+    const progressPerc = Math.min(100, Math.max(0, (userXp / nextLevelXp) * 100));
     const isPartner = userProfile?.flow_role === 'LOTO Partner';
-    const showCompleteProfileWarning = userProfile && userProfile.profile_completed === false;
+
+    const mobilityConfig = getMobilityPillStyle(mobilityType || 'dolce');
 
     return (
-      <View style={styles.headerContainer}>
-
-        {/* 1. HEADER 'SYMMETRY' */}
-        <View style={styles.topBar}>
-          <View style={{ alignItems: 'flex-start' }}>
-            <Text style={styles.hubTitleSymmetry}>{isPartner ? 'RETE ACCOGLIENZA' : 'L.O.T.O. HUB'}</Text>
-            <Text style={{ color: theme.primary, fontSize: 15, fontFamily: 'serif', fontStyle: 'italic', letterSpacing: 1, marginTop: 2, opacity: 0.9 }}>
-              {currentCity === 'taranto' ? 'Taranto' : 'Lecce'}
+      <View style={{ paddingBottom: 10 }}>
+        
+        {/* --- 1. HEADER BOUTIQUE --- */}
+        <View style={{ alignItems: 'center', marginBottom: 25, marginTop: 45 }}>
+          <Text style={{ fontFamily: 'serif', fontSize: 44, color: '#1A3621', letterSpacing: 2, textAlign: 'center', fontWeight: 'bold' }}>
+            L.O.T.O. HUB
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+            <MaterialIcons name="eco" size={18} color="#BCA37F" />
+            <Text style={{ fontFamily: 'serif', fontStyle: 'italic', fontSize: 18, color: '#6A5638', marginHorizontal: 12, letterSpacing: 1 }}>
+              Co - ExpErience Engine
             </Text>
+            <MaterialIcons name="eco" size={18} color="#BCA37F" />
           </View>
-          
-          <TouchableOpacity onPress={() => setLang(lang === 'IT' ? 'UK' : 'IT')} style={styles.languageIconWrapper}>
-            <MaterialIcons name="language" size={24} color={theme.text} />
-            <View style={styles.langBadge}>
-              <Text style={styles.langBadgeText}>{lang}</Text>
-            </View>
-          </TouchableOpacity>
         </View>
 
-        {isPartner ? (
-          // ==============================
-          // DASHBOARD PARTNER (NO GAMIFICATION)
-          // ==============================
-          <>
-            <View style={[styles.prestigePill, { backgroundColor: theme.text }]}>
-              <MaterialIcons name="storefront" size={48} color={theme.accent} />
-              <View style={styles.prestigeCenterCol}>
-                <Text style={[styles.prestigeTierTitle, { color: '#FFF' }]} numberOfLines={1} adjustsFontSizeToFit>{userProfile?.nickname || 'Host'}</Text>
-                <View style={styles.prestigeBadgeRow}>
-                  <View style={[styles.prestigePillBadge, { backgroundColor: theme.primary }]}>
-                    <Text style={[styles.prestigePillBadgeText, { color: '#FFF' }]}>Custode Locale</Text>
+        {/* --- 2. PRESTIGE CARD (USER PROFILE) --- */}
+        <View style={{ backgroundColor: '#2D4A22', borderRadius: 20, padding: 20, marginHorizontal: 20, marginBottom: 25, elevation: 6, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10 }}>
+          
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            
+            {/* Left Side: Info & XP */}
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Text style={{ fontFamily: 'Outfit_Bold', fontSize: 11, color: '#D4AF37', letterSpacing: 1, marginBottom: 2 }}>
+                BENTORNATO,
+              </Text>
+              <Text style={{ fontFamily: 'serif', fontSize: 20, color: '#FFF', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 }} numberOfLines={1}>
+                {userProfile?.nickname || 'ESPLORATORE'}
+              </Text>
+              
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                <TouchableOpacity style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialIcons name="eco" size={12} color="#2ECC71" style={{ marginRight: 2 }} />
+                  <Text style={{ color: '#FFF', fontSize: 9, fontWeight: 'bold' }}>{levelInfo?.title?.toUpperCase() || 'ESPLORATORE'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => setIsHomeMobilitySheetVisible(true)}
+                  style={{ backgroundColor: '#E2F0D9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}
+                >
+                  <MaterialIcons 
+                    name={mobilityType === 'pubblica' ? 'directions-bus' : mobilityType === 'privata' ? 'local-taxi' : 'pedal-bike'} 
+                    size={10} 
+                    color="#2E7D32" 
+                    style={{ marginRight: 2 }} 
+                  />
+                  <Text style={{ color: '#2E7D32', fontSize: 9, fontWeight: 'bold' }}>
+                    {mobilityType === 'pubblica' ? 'MEZZI PUBBLICI' : mobilityType === 'privata' ? 'AUTO PRIVATA' : 'MOB. DOLCE'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* XP Bar inside Card */}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flex: 1, height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3 }}>
+                  <View style={{ width: `${userXp % 100}%`, height: '100%', backgroundColor: '#D4AF37', borderRadius: 3 }} />
+                </View>
+                <Text style={{ fontSize: 10, color: '#FFF', fontWeight: 'bold', marginLeft: 8 }}>{Math.floor(userXp)} XP</Text>
+              </View>
+
+            </View>
+
+            {/* Right Side: Avatar Circle */}
+            <TouchableOpacity onPress={() => setIsExpModalVisible(true)} activeOpacity={0.8} style={{ alignItems: 'center' }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#3B5F31', borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', elevation: 4 }}>
+                <Text style={{ fontFamily: 'serif', fontSize: 28, color: '#FFF' }}>
+                  {userProfile?.nickname ? userProfile.nickname[0].toUpperCase() : 'L'}
+                </Text>
+              </View>
+              <View style={{ backgroundColor: '#FDFBF7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: '#D4AF37', marginTop: -8, elevation: 5 }}>
+                <Text style={{ color: '#333', fontSize: 8, fontWeight: 'bold' }}>LIVELLO {Math.floor(userXp / 100)}</Text>
+              </View>
+            </TouchableOpacity>
+
+          </View>
+
+          {/* Badges Row (DYNAMIC PROGRESSION) */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 25, gap: 10 }}>
+            {[
+              { level: 0, icon: 'eco', color: '#2ECC71' },
+              { level: 1, icon: 'explore', color: '#2196F3' },
+              { level: 3, icon: 'security', color: '#FF9800' },
+              { level: 5, icon: 'wb-incandescent', color: '#FFEB3B' },
+              { level: 10, icon: 'vpn-key', color: '#9C27B0' }
+            ].map((badge, idx) => {
+              const currentLevel = Math.floor(userXp / 100);
+              const isUnlocked = currentLevel >= badge.level;
+              
+              if (isUnlocked) {
+                return (
+                  <View key={idx} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: badge.color + '25', borderWidth: 3, borderColor: badge.color, justifyContent: 'center', alignItems: 'center' }}>
+                    <MaterialIcons name={badge.icon as any} size={22} color={badge.color} />
                   </View>
-                </View>
-              </View>
-            </View>
-
-            <TouchableOpacity 
-              style={{
-                backgroundColor: '#25D366', 
-                padding: 20, 
-                borderRadius: 16, 
-                alignItems: 'center', 
-                flexDirection: 'row', 
-                justifyContent: 'center',
-                marginHorizontal: 10,
-                marginTop: 20,
-                elevation: 4,
-                shadowColor: '#000',
-                shadowOffset: {width: 0, height: 2},
-                shadowOpacity: 0.2,
-                shadowRadius: 4
-              }}
-              onPress={() => Linking.openURL('whatsapp://send?phone=393330000000&text=Ciao%20L.O.T.O.%20Concierge,%20ho%20bisogno%20di%20assistenza')}
-            >
-              <MaterialIcons name="chat" size={28} color="#FFF" style={{ marginRight: 10 }} />
-              <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>WhatsApp Concierge</Text>
-            </TouchableOpacity>
-
-            {/* DEMO MOCK: DOUBLE GPS HANDSHAKE */}
-            <TouchableOpacity 
-              style={{
-                backgroundColor: theme.surface, 
-                padding: 15, 
-                borderRadius: 12, 
-                alignItems: 'center', 
-                flexDirection: 'row', 
-                justifyContent: 'center',
-                marginHorizontal: 10,
-                marginTop: 15,
-                borderWidth: 1,
-                borderColor: theme.border
-              }}
-              onPress={() => {
-                Alert.alert(
-                  "Double GPS Handshake (Simulazione)",
-                  "📍 Coordinate Attuali: 40.471, 17.243\n\nSto incrociando le tue coordinate con quelle registrate dall'Operatore L.O.T.O. al momento dell'installazione del Tag NFC...\n\n✅ MATCH COMPLETATO!\nDeviazione: 4.2 metri.\nIl Nodo Civico è stato attivato in sicurezza. Zero-Spoofing garantito.",
-                  [{ text: "OK", style: "default" }]
                 );
-              }}
-            >
-              <MaterialIcons name="security" size={20} color={theme.accent} style={{ marginRight: 8 }} />
-              <Text style={{ color: theme.text, fontWeight: 'bold', fontSize: 14 }}>Simula Attivazione Nodo (Demo)</Text>
-            </TouchableOpacity>
-          </>
+              } else {
+                // Calcolo riempimento fittizio per mostrare progressione verso il prossimo
+                const xpNeeded = badge.level * 100;
+                const percent = Math.min((userXp / xpNeeded), 1);
+                
+                return (
+                  <View key={idx} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.2)', borderWidth: 3, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }}>
+                    {/* Fake progress bar border */}
+                    {percent > 0.2 && <View style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: 22, borderWidth: 3, borderColor: badge.color, borderLeftColor: 'transparent', borderBottomColor: 'transparent', transform: [{ rotate: '45deg'}] }} />}
+                    <MaterialIcons name="lock" size={18} color="rgba(255,255,255,0.3)" />
+                  </View>
+                );
+              }
+            })}
+          </View>
+        </View>
+
+        {/* --- 4 QUADRANT GRID --- */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 15, justifyContent: 'space-between' }}>
+          
+          {/* 1. Clues Found */}
+          <View style={{ width: '48%', backgroundColor: '#2D4A22', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}>
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Indizi Trovati</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialIcons name="search" size={24} color="#D4AF37" />
+              <Text style={{ color: '#FFF', fontSize: 24, fontWeight: 'bold', fontFamily: 'serif', marginLeft: 10 }}>
+                {Math.max(userProfile?.pois_discovered || 0, localPoisFallback)}
+              </Text>
+            </View>
+          </View>
+
+          {/* 2. LOTO PTI */}
+          <View style={{ width: '48%', backgroundColor: '#476537', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}>
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>LOTO PTI</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialIcons name="eco" size={24} color="#D4AF37" />
+              <Text style={{ color: '#FFF', fontSize: 24, fontWeight: 'bold', fontFamily: 'serif', marginLeft: 10 }}>
+                {Math.max(userProfile?.total_tokens || 0, localTokensFallback)}
+              </Text>
+            </View>
+            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 9, marginTop: 10 }}>Valuta per sconti civici</Text>
+          </View>
+
+          {/* 3. Local Map */}
+          <View style={{ width: '48%', backgroundColor: '#D6734E', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}>
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Mappa Locale</Text>
+            <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>{currentCity}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50' }} />
+              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>{pois.length} P.O.I. attivi</Text>
+            </View>
+          </View>
+
+          {/* 4. Achievements */}
+          <View style={{ width: '48%', backgroundColor: '#DFAB55', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}>
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Traguardi</Text>
+            <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>{levelInfo.title}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialIcons name="emoji-events" size={14} color="#FFF" />
+              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>{userBadges.length} Badge Sbloccati</Text>
+            </View>
+            <Text style={{ color: '#FFF', fontSize: 9, marginTop: 8, fontWeight: 'bold' }}>Sfida attiva: Sfida Mappatura Civica</Text>
+          </View>
+
+        </View>
+
+        {/* --- COMMUNITY TICKER (LOCKED UNTIL LV 5) --- */}
+        {Math.floor(userXp / 100) < 5 ? (
+          <View style={{ backgroundColor: 'rgba(26, 26, 26, 0.5)', marginHorizontal: 15, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', elevation: 2, marginBottom: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+            <MaterialIcons name="lock" size={20} color="rgba(255,255,255,0.3)" />
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginLeft: 10, flex: 1, fontFamily: 'serif' }}>
+              <Text style={{ fontWeight: 'bold' }}>COMMUNITY: </Text>
+              Raggiungi il Livello 5 per sbloccare l'accesso.
+            </Text>
+          </View>
         ) : (
-          // ==============================
-          // DASHBOARD TURISTA (GAMIFICATION)
-          // ==============================
-          <>
-            <View style={[styles.prestigePill, isElite && { backgroundColor: 'transparent', borderColor: '#00F0FF', borderWidth: 1 }]}>
-              {/* SX: Stemma Tier */}
-              <MaterialIcons name={levelInfo.stemma || 'emoji-events'} size={48} color={theme.accent} />
-
-              {/* Centro: Testo */}
-              <View style={styles.prestigeCenterCol}>
-                <Text style={styles.prestigeTierTitle} numberOfLines={1} adjustsFontSizeToFit>{levelInfo.title}</Text>
-                <View style={styles.prestigeBadgeRow}>
-                  {isElite && (
-                    <View style={[styles.prestigePillBadge, { backgroundColor: theme.text, flexDirection: 'row', alignItems: 'center' }]}>
-                      <MaterialIcons name="star" size={10} color={theme.accent} style={{ marginRight: 4 }} />
-                      <Text style={[styles.prestigePillBadgeText, { color: theme.accent }]}>ELITE</Text>
-                    </View>
-                  )}
-                  {showCompleteProfileWarning ? (
-                    <TouchableOpacity 
-                      style={[styles.prestigePillBadge, { backgroundColor: theme.accent, flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }]}
-                      onPress={() => router.push('/profile')}
-                    >
-                      <MaterialIcons name="warning" size={12} color="#FFF" style={{ marginRight: 4 }} />
-                      <Text style={[styles.prestigePillBadgeText, { color: '#FFF' }]}>PROFILO ANONIMO</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={[styles.prestigePillBadge, userProfile?.flow_role === 'Flash Cruiser' && { backgroundColor: theme.accent }]}>
-                      <Text style={[styles.prestigePillBadgeText, userProfile?.flow_role === 'Flash Cruiser' && { color: '#FFF' }]}>
-                        {userProfile?.flow_role || 'LOTO Explorer'}
-                      </Text>
-                    </View>
-                  )}
-                  
-                  {!isPartner && mobilityType && !showCompleteProfileWarning && (
-                    <TouchableOpacity
-                      onPress={forceReopenWizard}
-                      activeOpacity={0.8}
-                      style={[
-                        styles.mobilityPillHeader,
-                        { backgroundColor: getMobilityPillStyle(mobilityType).bg }
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.mobilityPillText,
-                          { color: getMobilityPillStyle(mobilityType).text }
-                        ]}
-                      >
-                        {getMobilityPillStyle(mobilityType).label}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-
-              {/* DX: Avatar */}
-              <TouchableOpacity style={[styles.avatarCirclePill, { backgroundColor: levelInfo.color }]} onPress={() => setIsExpModalVisible(true)}>
-                <Text style={styles.avatarInitialPill}>{userProfile?.nickname ? userProfile.nickname[0].toUpperCase() : 'L'}</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* 3. IMPACT CARD '3 ARCHI' */}
-            <View style={styles.archesSection}>
-              <Text style={styles.archesMainTitle}>{t.impactTitle}</Text>
-              <View style={styles.archesContainer}>
-                <View style={[styles.impactArch, isElite ? { backgroundColor: 'transparent', borderColor: theme.primary, borderWidth: 1 } : { backgroundColor: theme.primary }]}>
-                  <MaterialIcons name="eco" size={24} color={isElite ? theme.primary : "#FFF"} style={{ marginBottom: 10 }} />
-                  <Text style={[styles.archVal, isElite && { color: theme.primary }]}>{userProfile?.total_co2?.toFixed(1) ?? '0.0'}</Text>
-                  <Text style={[styles.archLabel, isElite && { color: theme.textMuted }]}>{t.co2Lab}</Text>
-                </View>
-                <View style={[styles.impactArch, isElite ? { backgroundColor: 'transparent', borderColor: '#00F0FF', borderWidth: 1 } : { backgroundColor: theme.secondary }]}>
-                  <MaterialIcons name="nfc" size={24} color={isElite ? '#00F0FF' : "#FFF"} style={{ marginBottom: 10 }} />
-                  <Text style={[styles.archVal, isElite && { color: '#00F0FF' }]}>{userProfile?.nfc_scans_count ?? 0}</Text>
-                  <Text style={[styles.archLabel, isElite && { color: theme.textMuted }]}>Indizi Trovati</Text>
-                </View>
-                <View style={[styles.impactArch, isElite ? { backgroundColor: 'transparent', borderColor: '#FF00FF', borderWidth: 1 } : { backgroundColor: theme.accent }]}>
-                  <MaterialIcons name="toll" size={24} color={isElite ? '#FF00FF' : "#FFF"} style={{ marginBottom: 10 }} />
-                  <Text style={[styles.archVal, isElite && { color: '#FF00FF' }]}>{userProfile?.total_tokens ?? 0}</Text>
-                  <Text style={[styles.archLabel, isElite && { color: theme.textMuted }]}>{t.ptsLab}</Text>
-                </View>
-              </View>
-            </View>
-
-          </>
+          <View style={{ backgroundColor: '#1A1A1A', marginHorizontal: 15, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 5 }}>
+            <MaterialIcons name="groups" size={24} color="#476537" />
+            <Text style={{ color: '#FFF', fontSize: 10, marginLeft: 10, flex: 1, fontFamily: 'serif' }}>
+              <Text style={{ color: '#DFAB55', fontWeight: 'bold' }}>COMMUNITY TARANTO OGGI: </Text>
+              {communityStats ? `${communityStats.total_pti_generated || 0} PTI Generati • ${communityStats.total_co2_saved || 0}kg CO₂ Evitata` : '2.450 PTI Generati • 12kg CO₂ Evitata'}
+            </Text>
+          </View>
         )}
-      <View style={[styles.tickerBar, isElite && { backgroundColor: 'transparent', borderColor: '#FF00FF', borderWidth: 1 }]}>
-        <Text style={[styles.tickerText, isElite && { color: '#00F0FF' }]}>
-          {tickerText}
-        </Text>
+
       </View>
-
-      {/* 5. SWITCHBOARD HUB (Le 3 Sfere) */}
-      <View style={styles.switchboard}>
-        <TouchableOpacity style={styles.hubBtn} onPress={() => router.push('/explore')}>
-          <View style={[styles.hubIconCircle, isElite ? { backgroundColor: '#111827', borderColor: '#00F0FF', borderWidth: 2 } : { backgroundColor: theme.primary }]}>
-            <MaterialIcons name="search" size={isElite ? 28 : 24} color={isElite ? '#00F0FF' : "#FFF"} />
-          </View>
-          <Text style={[styles.hubBtnText, isElite && { color: '#00F0FF' }]}>ESPLORA</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.hubBtn, styles.hubBtnCenter]} onPress={() => router.push('/map')}>
-          <View style={[styles.hubIconCircle, isElite ? { backgroundColor: '#111827', borderColor: '#10B981', borderWidth: 2 } : { backgroundColor: theme.secondary }]}>
-            <MaterialIcons name="map" size={isElite ? 28 : 24} color={isElite ? '#10B981' : "#FFF"} />
-          </View>
-          <Text style={[styles.hubBtnText, { color: isElite ? '#10B981' : theme.secondary }]}>MAPPA</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.hubBtn} onPress={() => router.push('/events')}>
-          <View style={[styles.hubIconCircle, isElite ? { backgroundColor: '#111827', borderColor: '#FF00FF', borderWidth: 2 } : { backgroundColor: theme.primary }]}>
-            <MaterialIcons name="event" size={isElite ? 28 : 24} color={isElite ? '#FF00FF' : "#FFF"} />
-          </View>
-          <Text style={[styles.hubBtnText, isElite && { color: '#FF00FF' }]}>EVENTI</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
   };
 
   if (loading) return <BreathingLeaf fullScreen message="Sintonizzazione LOTO..." />;
 
   const userTokens = userProfile?.total_tokens ?? 0;
-  const userXp = userProfile?.total_xp ?? 0;
+  // OFFLINE FALLBACK: Scegliamo il valore più alto tra il DB (se esiste) e la memoria locale
+  const userXp = Math.max(userProfile?.total_xp ?? 0, localXpFallback);
   const levelInfo = getLevelInfo(userXp);
 
-  const accordionSections = [
-    { id: 'recommended', title: 'Mete Consigliate', data: pois.filter(p => p.is_recommended) },
-    { id: 'free', title: 'Culturali', data: pois.filter(p => p.category === 'free' && !p.is_recommended) },
-    { id: 'partner', title: 'B2B Partner', data: pois.filter(p => p.category === 'partner') },
-    { id: 'secret', title: 'Secret', data: pois.filter(p => p.category === 'secret') }
-  ].filter(s => s.data.length > 0);
+  const getDynamicPois = () => {
+    // Ordina tutti i POI per distanza
+    const sorted = [...pois].sort((a, b) => {
+      const distA = userLocation ? calculateDistanceRaw(userLocation.coords.latitude, userLocation.coords.longitude, a.latitude, a.longitude) : 0;
+      const distB = userLocation ? calculateDistanceRaw(userLocation.coords.latitude, userLocation.coords.longitude, b.latitude, b.longitude) : 0;
+      return distA - distB;
+    });
 
-  const renderAccordionSection = ({ item }: { item: any }) => {
-    const isOpen = openAccordion === item.id;
+    return [
+      { id: 'recommended', title: 'Mete Consigliate ✨', data: sorted.filter(p => p.is_recommended) },
+      { id: 'free', title: 'Culturali 🏛️', data: sorted.filter(p => p.category === 'free' && !p.is_recommended) },
+      { id: 'partner', title: 'Boutique & Partner 🛍️', data: sorted.filter(p => p.category === 'partner') },
+      { id: 'secret', title: 'Mete Segrete 🤫', data: sorted.filter(p => p.category === 'secret') }
+    ].filter(s => s.data.length > 0);
+  };
+
+  const renderShelf = ({ item }: { item: any }) => {
     return (
-      <View style={{ marginBottom: 15 }}>
-        <TouchableOpacity 
-          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isOpen ? theme.primary : '#FFF', padding: 20, borderRadius: 15, marginHorizontal: 20, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5 }}
-          onPress={() => setOpenAccordion(isOpen ? null : item.id)}
-        >
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: isOpen ? '#FFF' : theme.text, fontFamily: 'serif' }}>{item.title}</Text>
-          <MaterialIcons name={isOpen ? "expand-less" : "expand-more"} size={24} color={isOpen ? "#FFF" : "#64748B"} />
-        </TouchableOpacity>
-        
-        {isOpen && (
-          <View style={{ marginTop: 10 }}>
-            {item.data.map((poi: any) => (
-              <View key={poi.id}>
-                <PoiCard 
-                  item={poi} 
-                  userLocation={userLocation} 
-                  userProfile={userProfile} 
-                  onAction={handleCheckIn} 
-                  onAlternative={trovaAlternativa} 
-                  onPress={(p) => {
-                    setSelectedPoi(p);
-                    setIsSheetVisible(true);
-                  }}
-                  t={t} 
-                />
-              </View>
-            ))}
-          </View>
-        )}
+      <View style={{ marginBottom: 30 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, paddingHorizontal: 20 }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', fontFamily: 'serif', color: theme.text }}>
+            {item.title}
+          </Text>
+          {item.id === 'recommended' && (
+            <Animated.View style={{ transform: [{ scale: tipsAnim }] }}>
+              <TouchableOpacity onPress={() => setIsTipsVisible(true)} style={{ backgroundColor: '#FDFBF7', padding: 6, borderRadius: 20, elevation: 4, borderWidth: 1, borderColor: '#D4AF37' }}>
+                <MaterialIcons name="tips-and-updates" size={20} color="#D4AF37" />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+        </View>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={item.data}
+          keyExtractor={poi => poi.id}
+          renderItem={({ item: poi }) => (
+            <View style={{ width: 280, marginRight: -5 }}>
+              <PoiCard 
+                item={poi} 
+                userLocation={userLocation} 
+                userProfile={userProfile} 
+                onAction={handleAction} 
+                onAlternative={trovaAlternativa}
+                onPress={() => {
+                  setSelectedPoi(poi);
+                  setIsSheetVisible(true);
+                }}
+                t={t} 
+              />
+            </View>
+          )}
+          contentContainerStyle={{ paddingLeft: 10, paddingRight: 20 }}
+        />
       </View>
     );
   };
 
-  const ContentWrapper: any = isElite ? View : ImageBackground;
-  const wrapperProps = isElite 
-    ? { style: { flex: 1, backgroundColor: theme.background } } 
-    : { source: require('../../assets/images/eco_bg.png'), style: { flex: 1 }, resizeMode: 'cover' as any };
+  const ContentWrapper: any = ImageBackground;
+  const wrapperProps = { source: require('../../assets/images/loto_bg.jpg'), style: { flex: 1, backgroundColor: '#F8FAF5' }, imageStyle: { opacity: 1 } };
 
   return (
     <ContentWrapper {...wrapperProps}>
-      <SafeAreaView style={[styles.container, isElite && { backgroundColor: theme.background }]}>
-        <StatusBar barStyle={isElite ? "light-content" : "dark-content"} />
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
         <FlatList
-          data={accordionSections}
+          data={getDynamicPois()} // Scaffali Netflix
           ListHeaderComponent={renderHeader}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          renderItem={renderAccordionSection}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          renderItem={renderShelf}
+          showsVerticalScrollIndicator={false}
         />
 
         {isMotorized && (
@@ -700,6 +776,7 @@ export default function VetrinaScreen() {
           levelInfo={levelInfo}
           userItineraries={userItineraries}
           userTransactions={userTransactions}
+          userTokens={Math.max(userProfile?.total_tokens || 0, localTokensFallback)}
           theme={theme}
           t={t}
           setUserProfile={setUserProfile}
@@ -737,18 +814,52 @@ export default function VetrinaScreen() {
           onCheckIn={handleCheckIn}
         />
 
-      {/* BOTTONE TIPS BOUTIQUE ANIMATO */}
-      <Animated.View style={{ position: 'absolute', bottom: 30, left: 20, transform: [{ scale: sparkleAnim }] }}>
-        <TouchableOpacity 
-          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: theme.surface, elevation: 8, shadowColor: theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.border }}
-          onPress={() => setIsTipsVisible(true)}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons name="auto-awesome" size={20} color={theme.primary} />
-        </TouchableOpacity>
-      </Animated.View>
+      {/* BOTTONE TIPS ELIMINATO: spostato nell'header */}
 
       <TipsBoutiqueSheet visible={isTipsVisible} onClose={() => setIsTipsVisible(false)} />
+
+      {/* MODALE SCELTA MOBILITA RAPIDA DALLA HOME */}
+        <Modal visible={isHomeMobilitySheetVisible} transparent animationType="slide">
+          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => setIsHomeMobilitySheetVisible(false)}>
+            <View style={{ backgroundColor: theme.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25, paddingBottom: 40 }}>
+              <View style={{ width: 40, height: 5, backgroundColor: theme.border, borderRadius: 3, alignSelf: 'center', marginBottom: 20 }} />
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.text, textAlign: 'center', marginBottom: 20, fontFamily: 'serif' }}>Come ti stai muovendo?</Text>
+              
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 12, backgroundColor: mobilityType === 'dolce' ? theme.primary + '15' : 'transparent', marginBottom: 10, borderWidth: mobilityType === 'dolce' ? 1 : 0, borderColor: theme.primary }}
+                onPress={() => { saveMobilityChoice('dolce', 2); setIsHomeMobilitySheetVisible(false); }}
+              >
+                <MaterialIcons name="pedal-bike" size={24} color={mobilityType === 'dolce' ? theme.primary : theme.text} style={{ marginRight: 15 }} />
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: mobilityType === 'dolce' ? theme.primary : theme.text }}>Mobilità Dolce</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted }}>Bici, Monopattino, Piedi (Miglior Impatto)</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 12, backgroundColor: mobilityType === 'pubblica' ? theme.primary + '15' : 'transparent', marginBottom: 10, borderWidth: mobilityType === 'pubblica' ? 1 : 0, borderColor: theme.primary }}
+                onPress={() => { saveMobilityChoice('pubblica', 10); setIsHomeMobilitySheetVisible(false); }}
+              >
+                <MaterialIcons name="directions-bus" size={24} color={mobilityType === 'pubblica' ? theme.primary : theme.text} style={{ marginRight: 15 }} />
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: mobilityType === 'pubblica' ? theme.primary : theme.text }}>Mezzi Pubblici</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted }}>Autobus, Treni (Impatto Medio)</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 12, backgroundColor: mobilityType === 'privata' ? theme.primary + '15' : 'transparent', borderWidth: mobilityType === 'privata' ? 1 : 0, borderColor: theme.primary }}
+                onPress={() => { saveMobilityChoice('privata', 30); setIsHomeMobilitySheetVisible(false); }}
+              >
+                <MaterialIcons name="local-taxi" size={24} color={mobilityType === 'privata' ? theme.primary : theme.text} style={{ marginRight: 15 }} />
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: mobilityType === 'privata' ? theme.primary : theme.text }}>Auto Privata</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted }}>Macchina, Moto (Impatto Alto)</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
       </SafeAreaView>
     </ContentWrapper>

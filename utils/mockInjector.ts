@@ -10,9 +10,9 @@ export const injectPoisMock = (poiData: any[]) => {
         difficulty_score: 10,
         crowd_level: 40,
         media: [
-          { id: 'm1', title: 'Audioguida Storica', media_type: 'audio', loto_cost: 0 },
-          { id: 'm2', title: 'Planimetria Antica HR', media_type: 'digital_file', loto_cost: 50 },
-          { id: 'm3', title: 'Archivio Segreto Aragonese', media_type: 'digital_file', loto_cost: 0, is_premium: true }
+          { id: 'm1', title: 'Audioguida Storica', media_type: 'audio', required_level: 2 },
+          { id: 'm2', title: 'Planimetria Antica HR', media_type: 'digital_file', required_level: 4 },
+          { id: 'm3', title: 'Archivio Segreto Aragonese', media_type: 'digital_file', required_level: 6, is_premium: true }
         ]
       };
     }
@@ -55,16 +55,17 @@ export const injectPoisMock = (poiData: any[]) => {
   // Inject Mena Mena Mè as an F&B Partner on the map
   const hasMena = processedPois.some((p: any) => p.name === 'Mena Mena Mè');
   if (!hasMena) {
-    processedPois.push({
+    processedPois.unshift({
       id: 'mena',
       name: 'Mena Mena Mè',
       category: 'partner',
       type: 'f&b',
-      lat: 40.4725, // Coordinate fittizie in Città Vecchia
-      lng: 17.2345,
-      base_tokens: 50,
+      is_recommended: true,
+      lat: 40.4725, 
+      lng: 17.2300,
+      base_tokens: 70,
       difficulty_score: 5,
-      image_url: null,
+      image: require('../assets/images/mena_logo.jpg'),
       recommended_parking_id: 'park_porto_antico',
       description: 'Locale accogliente nel cuore di Taranto vecchia. Oggi ospita un incontro speciale con i ragazzi di Plasticaqquà e TGT per discutere i prossimi interventi sul territorio.',
       events: [
@@ -76,16 +77,18 @@ export const injectPoisMock = (poiData: any[]) => {
   // Inject Diseducation as a Free/Cultural POI on the map
   const hasDiseducation = processedPois.some((p: any) => p.name === 'Diseducation');
   if (!hasDiseducation) {
-    processedPois.push({
+    processedPois.unshift({
       id: 'diseducation',
       name: 'Diseducation',
       category: 'free',
       type: 'social',
       lat: 40.4700, 
       lng: 17.2310,
-      base_tokens: 60,
+      base_tokens: 150, // Bonus Dinamico
       difficulty_score: 5,
-      image_url: null,
+      is_dynamic: true,
+      crowd_level: 15,
+      image: require('../assets/images/diseducation_logo.jpg'),
       recommended_parking_id: 'park_porto_antico',
       description: 'Punto di ritrovo del Nodo Civico per l\'accessibilità. Da qui partono le missioni collettive per tracciare percorsi accessibili in città.',
       events: [
@@ -97,23 +100,24 @@ export const injectPoisMock = (poiData: any[]) => {
   // Inject Castello Aragonese as a Free POI if it doesn't exist
   const hasCastello = processedPois.some((p: any) => p.name && p.name.includes('Castello Aragonese'));
   if (!hasCastello) {
-    processedPois.push({
+    processedPois.unshift({
       id: 'castello',
       name: 'Castello Aragonese',
       category: 'free',
       type: 'storia',
+      is_recommended: true,
       lat: 40.4750, 
       lng: 17.2280,
       base_tokens: 100,
       difficulty_score: 10,
       crowd_level: 25,
-      image_url: null,
+      image: require('../assets/images/castello_aragonese.jpg'),
       recommended_parking_id: 'park_porto_antico',
       events: [],
       media: [
-        { id: 'm1', title: 'Audioguida Storica', media_type: 'audio', loto_cost: 0 },
-        { id: 'm2', title: 'Planimetria Antica HR', media_type: 'digital_file', loto_cost: 50 },
-        { id: 'm3', title: 'Archivio Segreto Aragonese', media_type: 'digital_file', loto_cost: 0, is_premium: true }
+        { id: 'm1', title: 'Audioguida Storica', media_type: 'audio', required_level: 2 },
+        { id: 'm2', title: 'Planimetria Antica HR', media_type: 'digital_file', required_level: 4 },
+        { id: 'm3', title: 'Archivio Segreto Aragonese', media_type: 'digital_file', required_level: 5, is_premium: true }
       ]
     });
   }
@@ -121,7 +125,7 @@ export const injectPoisMock = (poiData: any[]) => {
   // Inject Museo MuDi as a Free/Cultural POI
   const hasMudi = processedPois.some((p: any) => p.name === 'Museo MuDi');
   if (!hasMudi) {
-    processedPois.push({
+    processedPois.unshift({
       id: 'mudi',
       name: 'Museo MuDi',
       category: 'free',
@@ -132,13 +136,75 @@ export const injectPoisMock = (poiData: any[]) => {
       base_tokens: 80,
       difficulty_score: 7,
       crowd_level: 15,
-      image_url: null,
+      image: require('../assets/images/poi_mudi.jpg'),
       recommended_parking_id: 'park_porto_antico',
       website_url: 'https://museodiocesanotaranto.it/',
       events: [],
       media: [
-        { id: 'm4', title: 'Audioguida Sala 1', media_type: 'audio', loto_cost: 0 },
-        { id: 'm5', title: 'Manoscritto Digitalizzato', media_type: 'digital_file', loto_cost: 10, is_premium: false }
+        { id: 'm4', title: 'Audioguida Sala 1', media_type: 'audio', required_level: 2 },
+        { id: 'm5', title: 'Manoscritto Digitalizzato', media_type: 'digital_file', required_level: 3, is_premium: false }
+      ]
+    });
+  }
+
+  // Inject Plasticaqquà as a Cultural/Social POI on the map
+  const hasPlastica = processedPois.some((p: any) => p.name === 'Plasticaqquà');
+  if (!hasPlastica) {
+    processedPois.unshift({
+      id: 'plasticaqqua',
+      name: 'Plasticaqquà',
+      category: 'free',
+      type: 'social',
+      lat: 40.4680, 
+      lng: 17.2320,
+      base_tokens: 120, 
+      difficulty_score: 8,
+      is_dynamic: true,
+      crowd_level: 60,
+      image: require('../assets/images/plasticaqquà.png'),
+      recommended_parking_id: 'park_porto_antico',
+      description: 'Associazione di volontariato attiva nella pulizia delle spiagge e sensibilizzazione ambientale. Unisciti a noi per fare la differenza.',
+      events: [
+        { id: 'ev_plas1', title: 'Clean-up Litoranea', date: 'Sabato, 09:00', is_premium: false }
+      ]
+    });
+  }
+
+  // Inject Gruppo Tracce
+  const hasTracce = processedPois.some((p: any) => p.name === 'Gruppo Tracce');
+  if (!hasTracce) {
+    processedPois.unshift({
+      id: 'tracce',
+      name: 'Gruppo Tracce',
+      category: 'free',
+      type: 'storia',
+      lat: 40.4715, 
+      lng: 17.2295,
+      base_tokens: 60, 
+      difficulty_score: 6,
+      image: require('../assets/images/tracce.png'),
+      description: 'Associazione culturale dedita alla riscoperta delle tradizioni e delle radici storiche.',
+      events: []
+    });
+  }
+
+  // Inject Casa Viola (Demo Hub)
+  const hasCasaViola = processedPois.some((p: any) => p.name === 'Casa Viola (Hub Civico)');
+  if (!hasCasaViola) {
+    processedPois.unshift({
+      id: 'casaviola',
+      name: 'Casa Viola (Hub Civico)',
+      category: 'free',
+      type: 'social',
+      is_recommended: true,
+      lat: 40.4735, // Vicino al centro mockato per comodità
+      lng: 17.2325,
+      base_tokens: 20, 
+      difficulty_score: 6, // Rende esattamente 50 EXP (20 + 6*5)
+      image: require('../assets/images/casa_viola.png'),
+      description: 'Punto di riferimento per l\'innovazione civica. Scansiona il nodo NFC per confermare la tua presenza al Pitch!',
+      events: [
+        { id: 'ev_cv1', title: 'Pitch LOTO Hub Demo', date: 'Oggi, Adesso!', is_premium: false }
       ]
     });
   }

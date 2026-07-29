@@ -1,8 +1,19 @@
-import { Tabs } from 'expo-router';
-import React, { useState, createContext, useContext } from 'react';
+import { Tabs, useRouter } from 'expo-router';
+import React, { useState, createContext, useContext, useEffect } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Dimensions, Alert } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import * as Haptics from 'expo-haptics';
+import NfcManager from 'react-native-nfc-manager';
+
+// Inizializza NFC
+try {
+  NfcManager.start().catch(e => {
+    console.warn("NfcManager.start promise rejection ignorata in DEV", e);
+  });
+} catch (e) {
+  console.warn("NfcManager.start failed (likely Expo Go)", e);
+}
 
 // 1. Context Globale per lo Scanner (accessibile da ogni pagina del tab)
 const ScannerContext = createContext({
@@ -14,19 +25,46 @@ export const useScanner = () => useContext(ScannerContext);
 export default function TabLayout() {
   const { theme, isElite } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+  const router = useRouter();
 
-  const simulateNfcScan = () => {
-    Alert.alert(
-      "Indizio Trovato", 
-      isElite 
-        ? "Benvenuto Esploratore Elite! Hai ricevuto +50 PTI Bonus discreti e sbloccato il Certificato Digitale Esclusivo del P.O.I. gratuito."
-        : "Incontro Autentico confermato! Passa a Elite per sbloccare le memorie del territorio."
-    );
+  const handleOpenScanner = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      const supported = await NfcManager.isSupported();
+      if (!supported) {
+        // Fallback per simulatori
+        console.warn("NFC non supportato sul dispositivo.");
+      } else {
+        const enabled = await NfcManager.isEnabled();
+        if (!enabled) {
+          Alert.alert("Sensore NFC Spento 📵", "Per favore attiva l'NFC dalle impostazioni del tuo telefono per interagire con le targhe fisiche.");
+          // Non blocchiamo per permettere test in Expo Go, ma l'avviso è mostrato.
+        }
+      }
+    } catch(e) {
+      console.warn("NFC check ignorato", e);
+    }
+    setModalVisible(true);
+  };
+
+  const simulateNfcScan = async () => {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setModalVisible(false);
+    
+    // Invece di un finto Alert, spariamo il vero flusso simulando un tag NFC
+    // Creiamo un array di ID mockati per dare varietà ai test
+    const mockPois = ['poi-001', 'poi-002', 'poi-003', 'poi-004'];
+    const randomPoi = mockPois[Math.floor(Math.random() * mockPois.length)];
+    
+    // Piccolo delay per permettere alla modale di chiudersi fluidamente
+    setTimeout(() => {
+      router.push(`/p/${randomPoi}`);
+    }, 300);
   };
 
   return (
-    <ScannerContext.Provider value={{ openScanner: () => setModalVisible(true) }}>
+    <ScannerContext.Provider value={{ openScanner: handleOpenScanner }}>
       <Tabs
         initialRouteName="map"
         screenOptions={{
@@ -64,7 +102,62 @@ export default function TabLayout() {
           }}
         />
 
-        {/* 2. VISIBILE: Profilo (L.O.T.O. Pass) */}
+        {/* 2. VISIBILE: Mappa */}
+        <Tabs.Screen
+          name="map"
+          options={{
+            title: 'Mappa',
+            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="map" color={color} />,
+          }}
+        />
+
+        {/* 3. VISIBILE: Pulsante centrale SCAN (Flottante) */}
+        <Tabs.Screen
+          name="scan"
+          options={{
+            title: 'Scan',
+            tabBarLabel: () => null, // Rimuoviamo il testo sotto il bottone centrale per renderlo più pulito
+            tabBarButton: (props) => (
+              <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center', top: -20, width: 70 }}>
+                <TouchableOpacity 
+                  onPress={(e) => {
+                    e.preventDefault(); 
+                    setModalVisible(true);
+                  }} 
+                  activeOpacity={0.9}
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 32,
+                    backgroundColor: '#2D4A22',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderWidth: 3,
+                    borderColor: '#D4AF37',
+                    elevation: 8,
+                    shadowColor: '#D4AF37',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 10
+                  }}
+                >
+                  <MaterialIcons size={32} name="qr-code-scanner" color="#FFF" />
+                </TouchableOpacity>
+              </View>
+            )
+          }}
+        />
+
+        {/* 4. VISIBILE: Community (BLOCCATO < LV 6) */}
+        <Tabs.Screen
+          name="community"
+          options={{
+            title: 'Community',
+            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="groups" color={color} />,
+          }}
+        />
+
+        {/* 5. VISIBILE: Profilo (e Menu) */}
         <Tabs.Screen
           name="profile"
           options={{
@@ -72,38 +165,8 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => <MaterialIcons size={28} name="account-circle" color={color} />,
           }}
         />
-
-        {/* 3. VISIBILE: Pulsante centrale SCAN (Intercepted) */}
-        <Tabs.Screen
-          name="scan"
-          options={{
-            title: 'Scan',
-            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="qr-code-scanner" color={color} />,
-            tabBarButton: (props) => (
-              <TouchableOpacity 
-                {...(props as any)} 
-                onPress={(e) => {
-                  e.preventDefault(); 
-                  setModalVisible(true);
-                }} 
-              />
-            )
-          }}
-        />
-
-        {/* 4. VISIBILE: Options (diventato Menu) */}
-        <Tabs.Screen
-          name="options"
-          options={{
-            title: 'Menu',
-            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="menu" color={color} />,
-          }}
-        />
-
-        {/* 5. INVISIBILI (Switchboard Routing Target) */}
-        <Tabs.Screen name="explore" options={{ href: null, title: 'Esplora' }} />
-        <Tabs.Screen name="map" options={{ href: null, title: 'Mappa' }} />
-        <Tabs.Screen name="events" options={{ href: null, title: 'Eventi' }} />
+        
+        {/* Schermata Options rimossa, sarà inglobata nel Profile. */}
       </Tabs>
 
       {/* OVERLAY MODALE GLOBALE PER LO SCANNER NFC */}

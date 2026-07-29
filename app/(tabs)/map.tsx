@@ -113,6 +113,14 @@ export default function MapScreen() {
         setActiveEvents(mockEvents);
       }
       setIsLoading(false);
+      
+      // Auto-centra la mappa all'avvio (fix per lo zoom "out piccolo")
+      setTimeout(() => {
+        if (scrollHorizontalRef.current && scrollVerticalRef.current) {
+          scrollHorizontalRef.current.scrollTo({ x: width / 2, animated: false });
+          scrollVerticalRef.current.scrollTo({ y: height * 0.1, animated: false });
+        }
+      }, 100);
     };
     fetchData();
   }, [currentTenant]);

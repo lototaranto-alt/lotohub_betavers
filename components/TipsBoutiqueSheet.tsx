@@ -25,13 +25,13 @@ const TIPS_DATA = [
     id: 'status',
     title: 'Status e Privilegi',
     icon: 'star-outline',
-    content: 'I punti accumulati aumentano il livello del tuo L.O.T.O. Pass. I partner commerciali offrono sconti e privilegi esclusivi in base al tuo Status (es. Elite, Gold, Standard).'
+    content: 'I punti accumulati aumentano il livello del tuo L.O.T.O. Pass sbloccando Titoli speciali. Raggiungendo i nuovi Status (es. Elite, Gold) sbloccherai accessi VIP, funzionalità avanzate sulla mappa e potrai partecipare ad eventi esclusivi riservati alla Community.'
   },
   {
     id: 'civic',
-    title: 'Gamification Civica',
+    title: 'Gamification & Community',
     icon: 'volunteer-activism',
-    content: 'Usa la mobilità dolce e segnala le barriere architettoniche. Contribuirai a rendere la città migliore e verrai premiato nel tuo Impatto sulla Comunità.'
+    content: 'Non si esplora da soli! Usa la mobilità dolce, partecipa alle sfide della Community LOTO, raccogli oggetti collezionabili e segnala le barriere. Contribuirai a rendere la città migliore e verrai premiato per il tuo impatto collettivo.'
   }
 ];
 

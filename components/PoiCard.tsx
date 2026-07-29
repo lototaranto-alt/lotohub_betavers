@@ -115,14 +115,14 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
 }
 
 const styles = StyleSheet.create({
-  poiCardHarmonious: { marginHorizontal: 20, backgroundColor: '#FFF', borderRadius: 30, overflow: 'hidden', elevation: 6, marginBottom: 25, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 15, borderWidth: 1, borderColor: 'rgba(0, 0, 0, 0.06)' },
-  poiImageContainer: { width: '100%', height: 180 },
-  poiImageHarmonious: { width: '100%', height: '100%', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
-  recommendedBadge: { position: 'absolute', top: 15, right: 15, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  recommendedText: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 1, marginLeft: 4 },
-  poiInfoHarmonious: { padding: 25, backgroundColor: '#FFF', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-  poiNameHarmonious: { fontSize: 22, fontWeight: 'bold', fontFamily: 'serif' },
-  poiDistHarmonious: { color: '#64748B', fontSize: 14, fontWeight: '500' },
-  btnActionHarmonious: { borderRadius: 20, alignItems: 'center', paddingVertical: 10, paddingHorizontal: 16, alignSelf: 'flex-start' },
-  btnActionTextHarmonious: { color: '#FFF', fontWeight: 'bold', fontSize: 11, letterSpacing: 0.5 },
+  poiCardHarmonious: { marginHorizontal: 5, backgroundColor: '#FFF', borderRadius: 20, overflow: 'hidden', elevation: 6, marginBottom: 15, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 15, borderWidth: 1, borderColor: 'rgba(0, 0, 0, 0.06)' },
+  poiImageContainer: { width: '100%', height: 130 },
+  poiImageHarmonious: { width: '100%', height: '100%', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  recommendedBadge: { position: 'absolute', top: 10, right: 10, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  recommendedText: { color: '#FFF', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginLeft: 4 },
+  poiInfoHarmonious: { padding: 15, backgroundColor: '#FFF', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  poiNameHarmonious: { fontSize: 18, fontWeight: 'bold', fontFamily: 'serif' },
+  poiDistHarmonious: { color: '#64748B', fontSize: 12, fontWeight: '500' },
+  btnActionHarmonious: { borderRadius: 20, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 12, alignSelf: 'flex-start' },
+  btnActionTextHarmonious: { color: '#FFF', fontWeight: 'bold', fontSize: 10, letterSpacing: 0.5 },
 });
