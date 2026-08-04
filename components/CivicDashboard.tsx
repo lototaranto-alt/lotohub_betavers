@@ -26,15 +26,25 @@ export default function CivicDashboard() {
     { id: 'other', label: 'Altro', icon: 'more-horiz' }
   ];
 
-  // Mock Data per l'Obiettivo Civico (Demo 15 Luglio)
-  const civicGoalMock = {
-    title: "10 Alberi in Piazza Garibaldi",
-    description: "Aiutaci a riqualificare la piazza piantando 10 nuovi alberi. Ogni tua esplorazione contribuisce al fondo!",
-    target: 10000,
-    current: 6500,
-    sponsor: "Plasticaqquà & TGT",
-    participants: 142
-  };
+  const [civicGoal, setCivicGoal] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchCivicGoal = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('civic_goals')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        if (data && !error) setCivicGoal(data);
+      } catch (err) {
+        console.error('Error fetching civic goal:', err);
+      }
+    };
+    fetchCivicGoal();
+  }, []);
 
   const handleGetLocation = async () => {
     setGpsLoading(true);
@@ -200,46 +210,50 @@ export default function CivicDashboard() {
           <View style={{ padding: 10 }}>
             <View style={{ alignItems: 'center', marginBottom: 20 }}>
               <MaterialIcons name="park" size={48} color={theme.secondary} style={{ marginBottom: 10 }} />
-              <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.text, textAlign: 'center' }}>
-                {civicGoalMock.title}
+              <Text style={{ fontSize: 20, fontWeight: '900', color: theme.text, marginBottom: 5 }}>
+                {civicGoal ? civicGoal.title : 'Nessun obiettivo attivo'}
               </Text>
-              <Text style={{ fontSize: 14, color: theme.textMuted, textAlign: 'center', marginTop: 8 }}>
-                {civicGoalMock.description}
+              <Text style={{ fontSize: 14, color: theme.textMuted, lineHeight: 20 }}>
+                {civicGoal ? civicGoal.description : 'Siamo in attesa del prossimo obiettivo civico per la comunità.'}
               </Text>
             </View>
 
             <View style={{ backgroundColor: theme.background, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: theme.border }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-                <Text style={{ fontWeight: 'bold', color: theme.secondary }}>Progresso</Text>
-                <Text style={{ fontWeight: 'bold', color: theme.text }}>{Math.floor((civicGoalMock.current / civicGoalMock.target) * 100)}%</Text>
-              </View>
-              
-              <View style={{ height: 12, backgroundColor: theme.border, borderRadius: 6, overflow: 'hidden' }}>
-                <View style={{ width: `${(civicGoalMock.current / civicGoalMock.target) * 100}%`, height: '100%', backgroundColor: theme.secondary }} />
-              </View>
-              
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 }}>
-                <View>
-                  <Text style={{ fontSize: 12, color: theme.textMuted }}>Raccolti</Text>
-                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text }}>{civicGoalMock.current} PTI</Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 12, color: theme.textMuted }}>Obiettivo</Text>
-                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text }}>{civicGoalMock.target} PTI</Text>
-                </View>
-              </View>
+              {civicGoal && (
+                <>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <Text style={{ fontWeight: 'bold', color: theme.primary }}>Progresso Raggiunto</Text>
+                    <Text style={{ fontWeight: 'bold', color: theme.text }}>{Math.floor((civicGoal.current_pti / civicGoal.target_pti) * 100)}%</Text>
+                  </View>
+
+                  <View style={{ height: 12, backgroundColor: theme.border, borderRadius: 6, overflow: 'hidden', marginBottom: 15 }}>
+                    <View style={{ width: `${Math.min(100, (civicGoal.current_pti / civicGoal.target_pti) * 100)}%`, height: '100%', backgroundColor: theme.secondary }} />
+                  </View>
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <View>
+                      <Text style={{ fontSize: 12, color: theme.textMuted }}>Raccolti</Text>
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text }}>{civicGoal.current_pti} PTI</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={{ fontSize: 12, color: theme.textMuted }}>Obiettivo</Text>
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text }}>{civicGoal.target_pti} PTI</Text>
+                    </View>
+                  </View>
+                </>
+              )}
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, paddingHorizontal: 10 }}>
               <View style={{ alignItems: 'center', flex: 1 }}>
                 <MaterialIcons name="groups" size={24} color={theme.textMuted} />
-                <Text style={{ fontWeight: 'bold', color: theme.text, marginTop: 5 }}>{civicGoalMock.participants}</Text>
+                <Text style={{ fontWeight: 'bold', color: theme.text, marginTop: 5 }}>{civicGoal ? civicGoal.participants_count : 0}</Text>
                 <Text style={{ fontSize: 12, color: theme.textMuted, textAlign: 'center' }}>Esploratori attivi</Text>
               </View>
               <View style={{ width: 1, backgroundColor: theme.border }} />
               <View style={{ alignItems: 'center', flex: 1 }}>
                 <MaterialIcons name="handshake" size={24} color={theme.textMuted} />
-                <Text style={{ fontWeight: 'bold', color: theme.text, marginTop: 5 }}>{civicGoalMock.sponsor}</Text>
+                <Text style={{ fontWeight: 'bold', color: theme.text, marginTop: 5 }}>{civicGoal ? civicGoal.sponsor_name : '-'}</Text>
                 <Text style={{ fontSize: 12, color: theme.textMuted, textAlign: 'center' }}>Ente Promotore</Text>
               </View>
             </View>

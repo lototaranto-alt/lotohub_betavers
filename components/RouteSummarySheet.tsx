@@ -5,8 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../context/ThemeContext';
 import { useRouteBuilder } from '../context/RouteContext';
 import { useMobility } from '../context/MobilityContext';
-import { mockEvents } from '../utils/mockEvents';
-
+import { supabase } from '../utils/supabase';
 const { height } = Dimensions.get('window');
 
 type RouteSummarySheetProps = {
@@ -18,6 +17,15 @@ export default function RouteSummarySheet({ visible, onClose }: RouteSummaryShee
   const { theme } = useTheme();
   const { routePois, removePoiFromRoute, isPoiInRoute, routeName, setRouteName, routeEvents, addEventToRoute, removeEventFromRoute, isEventInRoute, clearRoute, setIsRouteActive } = useRouteBuilder();
   const { mobilityType } = useMobility();
+  const [dbEvents, setDbEvents] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchEvents = async () => {
+      const { data } = await supabase.from('tenant_events').select('*').eq('is_active', true).limit(5);
+      if (data) setDbEvents(data);
+    };
+    if (visible) fetchEvents();
+  }, [visible]);
 
   const getMobilityName = (type: string | null) => {
     if (type === 'pubblica') return 'Mezzi Pubblici';
@@ -120,22 +128,24 @@ export default function RouteSummarySheet({ visible, onClose }: RouteSummaryShee
             <View style={{ marginTop: 20 }}>
               <Text style={[styles.title, { color: theme.text, fontSize: 16, marginBottom: 10 }]}>🤝 Eventi della Community</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -25 }} contentContainerStyle={{ paddingHorizontal: 25 }}>
-                {mockEvents.map(ev => {
+                {dbEvents.map(ev => {
                   const isAdded = isEventInRoute(ev.id);
                   return (
                     <View key={ev.id} style={[styles.eventCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
                       <View style={styles.eventCardHeader}>
-                        <View style={[styles.eventTypeBadge, { backgroundColor: ev.type === 'Competitivo' ? '#EF4444' : ev.type === 'Cooperativo' ? '#10B981' : theme.primary }]}>
-                          <MaterialIcons name={ev.icon as any} size={12} color="#FFF" />
-                          <Text style={{ fontSize: 10, color: '#FFF', fontWeight: 'bold', marginLeft: 4 }}>{ev.type}</Text>
+                        <View style={[styles.eventTypeBadge, { backgroundColor: ev.event_type === 'Competitivo' ? '#EF4444' : ev.event_type === 'Cooperativo' ? '#10B981' : theme.primary }]}>
+                          <MaterialIcons name={'emoji-events'} size={12} color="#FFF" />
+                          <Text style={{ fontSize: 10, color: '#FFF', fontWeight: 'bold', marginLeft: 4 }}>{ev.event_type}</Text>
                         </View>
-                        <Text style={{ fontSize: 12, color: theme.primary, fontWeight: 'bold' }}>+{ev.xp} XP</Text>
+                        <Text style={{ fontSize: 12, color: theme.primary, fontWeight: 'bold' }}>+{ev.reward_xp} XP</Text>
                       </View>
                       <Text style={[styles.poiName, { color: theme.text, marginTop: 8 }]} numberOfLines={1}>{ev.title}</Text>
-                      <Text style={[styles.poiCategory, { color: theme.textMuted }]} numberOfLines={2}>{ev.desc}</Text>
+                      <Text style={[styles.poiCategory, { color: theme.textMuted }]} numberOfLines={2}>{ev.description}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 12 }}>
                         <MaterialIcons name="access-time" size={14} color={theme.textMuted} />
-                        <Text style={{ fontSize: 12, color: theme.textMuted, marginLeft: 4 }}>{ev.date}</Text>
+                        <Text style={{ fontSize: 12, color: theme.textMuted, marginLeft: 4 }}>
+                          {new Date(ev.start_date).toLocaleDateString()}
+                        </Text>
                       </View>
                       
                       <TouchableOpacity 

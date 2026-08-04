@@ -8,11 +8,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { useRouteBuilder } from '../../context/RouteContext';
 import { supabase } from '../../utils/supabase';
 import * as Linking from 'expo-linking';
-import { injectPoisMock } from '../../utils/mockInjector';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import EventDetailSheet from '../../components/EventDetailSheet';
 import RouteSummarySheet from '../../components/RouteSummarySheet';
-import { mockEvents } from '../../utils/mockEvents';
 
 const { width, height } = Dimensions.get('window');
 
@@ -93,24 +91,22 @@ export default function MapScreen() {
         .eq('is_active', true);
         
       if (!poisError && poisData) {
-        // Applichiamo il simulatore per iniettare Diseducation e Mena Mena Mè
-        const finalPois = injectPoisMock(poisData);
-        setPois(finalPois);
+        // I POI arrivano ora formattati dal database
+        setPois(poisData);
       } else if (poisError) {
         console.error("[Map] Errore fetch POI:", poisError);
       }
 
       // Fetch Events
       const { data: eventsData, error: eventsError } = await supabase
-        .from('active_tenant_events')
+        .from('tenant_events')
         .select('*')
-        .eq('tenant_id', currentTenant.id);
+        .eq('tenant_id', currentTenant.slug || currentTenant.id);
         
       if (!eventsError && eventsData && eventsData.length > 0) {
         setActiveEvents(eventsData);
       } else {
-        // Fallback MOCK per demo
-        setActiveEvents(mockEvents);
+        setActiveEvents([]);
       }
       setIsLoading(false);
       

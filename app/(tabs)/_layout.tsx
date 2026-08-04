@@ -5,6 +5,9 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet, Dimensions, Alert } fr
 import { useTheme } from '../../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 import NfcManager from 'react-native-nfc-manager';
+import { supabase } from '../../utils/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { calculateLevel } from '../../utils/levelUtils';
 
 // Inizializza NFC
 try {
@@ -25,7 +28,27 @@ export const useScanner = () => useContext(ScannerContext);
 export default function TabLayout() {
   const { theme, isElite } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+  const [userLevel, setUserLevel] = useState(1);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchLevel = async () => {
+      let dbXp = 0;
+      let localXp = 0;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase.from('profiles').select('total_xp').eq('id', user.id).single();
+          if (profile) dbXp = profile.total_xp || 0;
+        }
+        const fallbackStr = await AsyncStorage.getItem('loto_fallback_xp');
+        if (fallbackStr) localXp = parseInt(fallbackStr);
+      } catch (e) {}
+      
+      setUserLevel(calculateLevel(Math.max(dbXp, localXp)));
+    };
+    fetchLevel();
+  }, []);
 
   const handleOpenScanner = async () => {
     try {
@@ -102,7 +125,7 @@ export default function TabLayout() {
           }}
         />
 
-        {/* 2. VISIBILE: Mappa */}
+        {/* 2. Mappa (Accessibile fin dal Livello 1 - Easy Entry) */}
         <Tabs.Screen
           name="map"
           options={{
@@ -148,9 +171,17 @@ export default function TabLayout() {
           }}
         />
 
-        {/* 4. VISIBILE: Community (BLOCCATO < LV 6) */}
+        {/* 4. Community (Sempre visibile, ma mostra Popup se livello < 5) */}
         <Tabs.Screen
           name="community"
+          listeners={{
+            tabPress: (e) => {
+              if (userLevel < 5) {
+                e.preventDefault();
+                Alert.alert("Sezione Chiusa 🔒", "Raggiungi il Livello 5 per sbloccare la Community e gli Eventi!");
+              }
+            }
+          }}
           options={{
             title: 'Community',
             tabBarIcon: ({ color }) => <MaterialIcons size={28} name="groups" color={color} />,

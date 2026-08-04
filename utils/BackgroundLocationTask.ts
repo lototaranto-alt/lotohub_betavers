@@ -7,7 +7,7 @@ const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
 let lastCityChangeTimestamp = 0;
 const HYSTERESIS_TIMER_MS = 10 * 60 * 1000; // 10 minuti di "raffreddamento" prima di cambiare città di nuovo
 
-TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
+TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any): Promise<void> => {
   if (error) {
     console.error('[BackgroundLocationTask] Errore:', error);
     return;

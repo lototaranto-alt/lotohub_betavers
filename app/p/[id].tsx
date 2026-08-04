@@ -23,7 +23,7 @@ export default function DeepLinkPoiScreen() {
         title: 'Casa Viola',
         subtitle: 'B2B Partner - Centro Storico',
         description: 'Un angolo di quiete nel cuore della città.\n\nCasa Viola è un avamposto LOTO per la sostenibilità e la cultura. Effettuando la scansione hai validato la tua presenza e sostenuto il nodo civico.\n\n📍 BONUS ATTIVO: Hai sbloccato l\'accesso a eventi esclusivi.',
-        reward: 250, // Per arrivare a lv 5 dal lv 3
+        reward: 50,
         type: 'XP' as 'XP'|'PTI',
         tags: ['Cultura', 'Partner', 'VIP']
       };
@@ -33,7 +33,7 @@ export default function DeepLinkPoiScreen() {
         title: 'Diseducation',
         subtitle: 'Associazione Accessibilità - Taranto',
         description: 'Dis-Education è un nome che richiama l\'idea di educare alle disuguaglianze, favorendo maggiore consapevolezza, senso civico e responsabilità sociale.\n\nL\'associazione sostiene persone con disabilità e chiunque viva condizioni di marginalità sociale, promuovendo rispetto, autonomia e piena partecipazione alla vita della comunità.\n\n📍 EVENTO ATTIVO: Passeggiata Scan Inaccessibilità. Partecipa con la community per tracciare le barriere architettoniche del quartiere.',
-        reward: 150,
+        reward: 50,
         type: 'XP' as 'XP'|'PTI',
         tags: ['Accessibilità', 'Sociale', 'Cultura', 'Inclusione']
       };
@@ -43,7 +43,7 @@ export default function DeepLinkPoiScreen() {
         title: 'Taranto Grand Tour',
         subtitle: 'Esplorazione e Patrimonio',
         description: 'Benvenuto nel cuore storico di Taranto!\n\nTaranto Grand Tour ti invita a scoprire l\'anima più autentica della città, esplorando i vicoli e i segreti del borgo antico.\n\n📍 STORIA SBLOCCATA: Il segreto del vicolo. Hai esplorato un nuovo angolo della mappa!',
-        reward: 120,
+        reward: 50,
         type: 'XP' as 'XP'|'PTI',
         tags: ['Cultura', 'Esplorazione', 'Tour']
       };
@@ -53,7 +53,7 @@ export default function DeepLinkPoiScreen() {
       title: 'Plasticaqquà',
       subtitle: 'Nodo Civico Ambientale',
       description: 'Benvenuto nel cuore della rigenerazione urbana!\n\nPlasticaqquà ti invita a scoprire l\'anima più autentica della città unendo la tutela dell\'ambiente marino alla valorizzazione del patrimonio.\n\n📍 MISSIONE ATTIVA: Operazione "Spiagge Pulite". La tua visita genera un impatto reale per il nostro territorio. Hai finanziato la nostra prossima missione!',
-      reward: 300, // Per saltare da Lv 0 a Lv 3 al primo colpo
+      reward: 50,
       type: 'XP' as 'XP'|'PTI',
       tags: ['Ambiente', 'Civico', 'Impatto']
     };

@@ -11,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import { useRouteBuilder } from '../context/RouteContext';
+import { calculateLevel } from '../utils/levelUtils';
 
 const LOTO_PALETTE = {
   VERDE_OLIVA: '#5F713D',
@@ -40,7 +41,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
   // Stati per la gestione del Vault Multimediale
   const [vaultMedia, setVaultMedia] = useState<any[]>([]);
   const [mediaStatus, setMediaStatus] = useState<{[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'}>({});
-  const [premiumMockVisible, setPremiumMockVisible] = useState(false);
+  const [premiumPreviewVisible, setPremiumMockVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'media' | 'info' | 'events'>('media');
 
   useEffect(() => {
@@ -145,15 +146,15 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
   };
 
   const handleUnlockMedia = async (media: any) => {
-    let currentLevel = 0;
+    let currentLevel = 1;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase.from('profiles').select('total_xp').eq('id', user.id).single();
-        if (profile) currentLevel = Math.floor((profile.total_xp || 0) / 100);
+        if (profile) currentLevel = calculateLevel(profile.total_xp || 0);
       } else {
         const fallbackStr = await AsyncStorage.getItem('loto_fallback_xp');
-        if (fallbackStr) currentLevel = Math.floor(parseInt(fallbackStr) / 100);
+        if (fallbackStr) currentLevel = calculateLevel(parseInt(fallbackStr));
       }
     } catch(e) {}
     
@@ -187,7 +188,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
     try {
       // Gestione Mock Data (m1, m2, m3)
       if (media.id.startsWith('m')) {
-        const simulaSbloccoMock = () => {
+        const testUnlockNfc = () => {
           setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
           setTimeout(() => {
             setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
@@ -237,62 +238,58 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                await avviaSbloccoNativo();
             } else {
                Alert.alert("NFC Disabilitato", "Attiva l'NFC dalle impostazioni, oppure prosegui con la simulazione.", [
-                 { text: "Simula Sblocco", onPress: simulaSbloccoMock }
+                 { text: "Simula Sblocco", onPress: testUnlockNfc }
                ]);
             }
           } else {
             // Dispositivo senza NFC (es. vecchi iPhone, Simulatori, Expo Web)
-            simulaSbloccoMock();
+            testUnlockNfc();
           }
         } else {
           // Per m1 o m2, simula subito
-          simulaSbloccoMock();
+          testUnlockNfc();
         }
         
         return; // Interrompe per qualsiasi mock
       }
 
       setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
-      const { data, error } = await supabase.rpc('sblocca_media', {
-        p_media_id: media.id
-      });
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Utente non autenticato");
 
-      if (error) {
-        Alert.alert("Errore", error.message);
+      // Inseriamo lo sblocco gratis nel DB
+      const { error } = await supabase
+        .from('user_unlocked_media')
+        .insert({ profile_id: user.id, media_id: media.id });
+
+      if (error && error.code !== '23505') { // Ignora errore se già sbloccato
+        Alert.alert("Errore", "Impossibile registrare lo sblocco nel Cloud.");
         setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
         return;
       }
 
-      const res = data as any;
-      const success = res[0]?.unlocked;
-      const mediaPath = res[0]?.media_path;
-      const msg = res[0]?.message;
+      // Ora procediamo al download
+      const { data: signedData, error: storageError } = await supabase
+        .storage
+        .from('loto-vault')
+        .createSignedUrl(media.media_path, 900);
 
-      if (success) {
-        const { data: signedData, error: storageError } = await supabase
-          .storage
-          .from('loto-vault')
-          .createSignedUrl(mediaPath, 900);
-
-        if (storageError || !signedData?.signedUrl) {
-          Alert.alert("Errore", "Impossibile caricare il file multimediale dal server.");
-          setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
-          return;
-        }
-
-        const fileName = mediaPath.split('/').pop() || `${media.id}.mp4`;
-        const localPath = await LruCacheManager.downloadFile(signedData.signedUrl, fileName);
-
-        if (localPath) {
-          setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
-          Alert.alert("Successo!", `"${media.title}" è stato sbloccato e scaricato localmente per l'ascolto offline.`);
-        } else {
-          setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
-          Alert.alert("Errore", "Salvataggio locale fallito.");
-        }
-      } else {
-        Alert.alert("Sblocco Fallito", msg || "Saldo LOTO PTI insufficiente.");
+      if (storageError || !signedData?.signedUrl) {
+        Alert.alert("Errore", "Impossibile scaricare il file multimediale dal server.");
         setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+        return;
+      }
+
+      const fileName = media.media_path?.split('/').pop() || `${media.id}.mp4`;
+      const localPath = await LruCacheManager.downloadFile(signedData.signedUrl, fileName);
+
+      if (localPath) {
+        setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
+        Alert.alert("Successo!", `"${media.title}" è stato sbloccato e scaricato localmente per l'ascolto offline.`);
+      } else {
+        setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+        Alert.alert("Errore", "Salvataggio locale fallito.");
       }
 
     } catch (e) {
@@ -621,7 +618,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
         </View>
 
         {/* MOCK VISUALIZZATORE PREMIUM ALTO LIVELLO */}
-        {premiumMockVisible && (
+        {premiumPreviewVisible && (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: '#121417', zIndex: 1000 }]}>
             <Image 
               source={require('../assets/images/archivio_aragonese.png')} 

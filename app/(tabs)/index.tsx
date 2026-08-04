@@ -10,9 +10,12 @@ import { injectPoisMock } from '../../utils/mockInjector';
 import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
 import { ThemeProvider as AppThemeProvider } from '../../context/ThemeContext';
 import { useCity } from '../../context/CityContext';
+import { getLevelProgress } from '../../utils/levelUtils';
 import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
+import BadgeCollectionModal from '../../components/BadgeCollectionModal';
+import GameAchievementsSheet from '../../components/GameAchievementsSheet';
 import TouristBaptismModal from '../../components/TouristBaptismModal';
 import XpToast from '../../components/XpToast';
 import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
@@ -144,7 +147,11 @@ export default function VetrinaScreen() {
   const [isTipsVisible, setIsTipsVisible] = useState(false);
   const sparkleAnim = useRef(new Animated.Value(1)).current;
   const tipsAnim = useRef(new Animated.Value(1)).current;
-  const [isExpModalVisible, setIsExpModalVisible] = useState(false);
+  const [isExpModalVisible, setIsExpModalVisible] = useState(false); // --- NUOVI STATI GAMIFICATION ---
+  const [isBadgeModalVisible, setIsBadgeModalVisible] = useState(false);
+  const [isGameAchievementsVisible, setIsGameAchievementsVisible] = useState(false);
+  
+  // --- STATI SHEET ---
   const [isHomeMobilitySheetVisible, setIsHomeMobilitySheetVisible] = useState(false);
   const [bookedSessions, setBookedSessions] = useState<{ [key: string]: string }>({});
   
@@ -520,17 +527,20 @@ export default function VetrinaScreen() {
             
             {/* Left Side: Info & XP */}
             <View style={{ flex: 1, paddingRight: 10 }}>
-              <Text style={{ fontFamily: 'Outfit_Bold', fontSize: 11, color: '#D4AF37', letterSpacing: 1, marginBottom: 2 }}>
-                BENTORNATO,
+              <Text style={{ fontFamily: 'serif', fontSize: 11, color: levelProgress.color || '#D4AF37', letterSpacing: 1, marginBottom: 2 }}>
+                BENTORNATO, TARANTO
               </Text>
               <Text style={{ fontFamily: 'serif', fontSize: 20, color: '#FFF', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 }} numberOfLines={1}>
-                {userProfile?.nickname || 'ESPLORATORE'}
+                {userProfile?.nickname || t.guest}
               </Text>
               
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                <TouchableOpacity style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
-                  <MaterialIcons name="eco" size={12} color="#2ECC71" style={{ marginRight: 2 }} />
-                  <Text style={{ color: '#FFF', fontSize: 9, fontWeight: 'bold' }}>{levelInfo?.title?.toUpperCase() || 'ESPLORATORE'}</Text>
+                <TouchableOpacity 
+                  onPress={() => setIsGameAchievementsVisible(true)}
+                  style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}
+                >
+                  <MaterialIcons name={levelProgress.stemma as any} size={12} color={levelProgress.color} style={{ marginRight: 4 }} />
+                  <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold' }}>{levelProgress.levelTitle}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   onPress={() => setIsHomeMobilitySheetVisible(true)}
@@ -551,29 +561,29 @@ export default function VetrinaScreen() {
               {/* XP Bar inside Card */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1, height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3 }}>
-                  <View style={{ width: `${userXp % 100}%`, height: '100%', backgroundColor: '#D4AF37', borderRadius: 3 }} />
+                  <View style={{ width: `${levelProgress.percent}%`, height: '100%', backgroundColor: levelProgress.color || '#D4AF37', borderRadius: 3 }} />
                 </View>
-                <Text style={{ fontSize: 10, color: '#FFF', fontWeight: 'bold', marginLeft: 8 }}>{Math.floor(userXp)} XP</Text>
+                <Text style={{ fontSize: 10, color: '#FFF', fontWeight: 'bold', marginLeft: 8 }}>{Math.floor(userXp)} / {levelProgress.nextXp} XP</Text>
               </View>
 
             </View>
 
             {/* Right Side: Avatar Circle */}
             <TouchableOpacity onPress={() => setIsExpModalVisible(true)} activeOpacity={0.8} style={{ alignItems: 'center' }}>
-              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#3B5F31', borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', elevation: 4 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#3B5F31', borderWidth: levelProgress.currentLevel >= 5 ? 3 : 2, borderColor: levelProgress.currentLevel >= 5 ? '#D4AF37' : 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', elevation: levelProgress.currentLevel >= 5 ? 10 : 4, shadowColor: levelProgress.currentLevel >= 5 ? '#D4AF37' : '#000' }}>
                 <Text style={{ fontFamily: 'serif', fontSize: 28, color: '#FFF' }}>
                   {userProfile?.nickname ? userProfile.nickname[0].toUpperCase() : 'L'}
                 </Text>
               </View>
-              <View style={{ backgroundColor: '#FDFBF7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: '#D4AF37', marginTop: -8, elevation: 5 }}>
-                <Text style={{ color: '#333', fontSize: 8, fontWeight: 'bold' }}>LIVELLO {Math.floor(userXp / 100)}</Text>
+              <View style={{ backgroundColor: '#FDFBF7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: levelProgress.color || '#D4AF37', marginTop: -8, elevation: 5 }}>
+                <Text style={{ color: '#333', fontSize: 8, fontWeight: 'bold' }}>LIVELLO {levelProgress.currentLevel}</Text>
               </View>
             </TouchableOpacity>
 
           </View>
 
           {/* Badges Row (DYNAMIC PROGRESSION) */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 25, gap: 10 }}>
+          <TouchableOpacity onPress={() => setIsBadgeModalVisible(true)} activeOpacity={0.8} style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 25, gap: 10 }}>
             {[
               { level: 0, icon: 'eco', color: '#2ECC71' },
               { level: 1, icon: 'explore', color: '#2196F3' },
@@ -581,7 +591,7 @@ export default function VetrinaScreen() {
               { level: 5, icon: 'wb-incandescent', color: '#FFEB3B' },
               { level: 10, icon: 'vpn-key', color: '#9C27B0' }
             ].map((badge, idx) => {
-              const currentLevel = Math.floor(userXp / 100);
+              const currentLevel = levelProgress.currentLevel;
               const isUnlocked = currentLevel >= badge.level;
               
               if (isUnlocked) {
@@ -592,8 +602,8 @@ export default function VetrinaScreen() {
                 );
               } else {
                 // Calcolo riempimento fittizio per mostrare progressione verso il prossimo
-                const xpNeeded = badge.level * 100;
-                const percent = Math.min((userXp / xpNeeded), 1);
+                const xpNeeded = badge.level > currentLevel ? levelProgress.nextXp : 0;
+                const percent = xpNeeded > 0 ? Math.min((userXp / xpNeeded), 1) : 0;
                 
                 return (
                   <View key={idx} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.2)', borderWidth: 3, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }}>
@@ -604,7 +614,7 @@ export default function VetrinaScreen() {
                 );
               }
             })}
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* --- 4 QUADRANT GRID --- */}
@@ -621,25 +631,38 @@ export default function VetrinaScreen() {
             </View>
           </View>
 
-          {/* 2. LOTO PTI */}
-          <View style={{ width: '48%', backgroundColor: '#476537', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}>
-            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>LOTO PTI</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <MaterialIcons name="eco" size={24} color="#D4AF37" />
-              <Text style={{ color: '#FFF', fontSize: 24, fontWeight: 'bold', fontFamily: 'serif', marginLeft: 10 }}>
-                {Math.max(userProfile?.total_tokens || 0, localTokensFallback)}
-              </Text>
+          {/* 2. LOTO PTI + CO2 */}
+          <TouchableOpacity 
+            onPress={() => setIsExpModalVisible(true)}
+            activeOpacity={0.9} 
+            style={{ width: '48%', backgroundColor: '#476537', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
+          >
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Impatto & Punti</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                  <MaterialIcons name="eco" size={12} color="#2ECC71" style={{marginRight: 4}} />
+                  <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'serif' }}>
+                    {userProfile?.total_co2?.toFixed(1) ?? '0.0'} kg
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialIcons name="toll" size={12} color="#D4AF37" style={{marginRight: 4}} />
+                  <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'serif' }}>
+                    {Math.max(userProfile?.total_tokens || 0, localTokensFallback)} PTI
+                  </Text>
+                </View>
+              </View>
             </View>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 9, marginTop: 10 }}>Valuta per sconti civici</Text>
-          </View>
+          </TouchableOpacity>
 
-          {/* 3. Local Map */}
+          {/* 3. Vault Multimediale */}
           <View style={{ width: '48%', backgroundColor: '#D6734E', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}>
-            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Mappa Locale</Text>
-            <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>{currentCity}</Text>
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Memoria LOTO</Text>
+            <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>Audioguide & Foto</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50' }} />
-              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>{pois.length} P.O.I. attivi</Text>
+              <MaterialIcons name="photo-library" size={14} color="#FFF" />
+              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>Sbloccati: {Math.floor((userProfile?.pois_discovered || 0) * 1.5)}</Text>
             </View>
           </View>
 
@@ -657,21 +680,27 @@ export default function VetrinaScreen() {
         </View>
 
         {/* --- COMMUNITY TICKER (LOCKED UNTIL LV 5) --- */}
-        {Math.floor(userXp / 100) < 5 ? (
-          <View style={{ backgroundColor: 'rgba(26, 26, 26, 0.5)', marginHorizontal: 15, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', elevation: 2, marginBottom: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-            <MaterialIcons name="lock" size={20} color="rgba(255,255,255,0.3)" />
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginLeft: 10, flex: 1, fontFamily: 'serif' }}>
-              <Text style={{ fontWeight: 'bold' }}>COMMUNITY: </Text>
-              Raggiungi il Livello 5 per sbloccare l'accesso.
-            </Text>
+        {levelProgress.currentLevel < 5 ? (
+          <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', elevation: 2, marginBottom: 15, borderWidth: 1, borderColor: theme.border }}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(212,175,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
+              <MaterialIcons name="lock-outline" size={14} color="#D4AF37" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: theme.text, fontSize: 11, fontWeight: 'bold' }}>Community LOTO</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 9 }}>Raggiungi Liv. 5 per sbloccare l'impatto globale.</Text>
+            </View>
           </View>
         ) : (
-          <View style={{ backgroundColor: '#1A1A1A', marginHorizontal: 15, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 5 }}>
-            <MaterialIcons name="groups" size={24} color="#476537" />
-            <Text style={{ color: '#FFF', fontSize: 10, marginLeft: 10, flex: 1, fontFamily: 'serif' }}>
-              <Text style={{ color: '#DFAB55', fontWeight: 'bold' }}>COMMUNITY TARANTO OGGI: </Text>
-              {communityStats ? `${communityStats.total_pti_generated || 0} PTI Generati • ${communityStats.total_co2_saved || 0}kg CO₂ Evitata` : '2.450 PTI Generati • 12kg CO₂ Evitata'}
-            </Text>
+          <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 15, borderWidth: 1, borderColor: '#D4AF37' }}>
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(71,101,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+              <MaterialIcons name="public" size={20} color="#476537" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: theme.text, fontSize: 12, fontWeight: 'bold', marginBottom: 2, letterSpacing: 0.5 }}>IMPATTO CITTADINO (OGGI)</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 11, lineHeight: 15 }}>
+                Generati <Text style={{ color: '#D4AF37', fontWeight: 'bold' }}>{communityStats?.total_pti_generated || '2.450'} PTI</Text> e <Text style={{ color: '#2ECC71', fontWeight: 'bold' }}>{communityStats?.total_co2_saved || '12'}kg</Text> di CO₂ evitata.
+              </Text>
+            </View>
           </View>
         )}
 
@@ -684,7 +713,8 @@ export default function VetrinaScreen() {
   const userTokens = userProfile?.total_tokens ?? 0;
   // OFFLINE FALLBACK: Scegliamo il valore più alto tra il DB (se esiste) e la memoria locale
   const userXp = Math.max(userProfile?.total_xp ?? 0, localXpFallback);
-  const levelInfo = getLevelInfo(userXp);
+  const levelProgress = getLevelProgress(userXp, theme);
+  const levelInfo = { title: levelProgress.levelTitle, stemma: levelProgress.stemma, color: levelProgress.color };
 
   const getDynamicPois = () => {
     // Ordina tutti i POI per distanza
@@ -745,7 +775,7 @@ export default function VetrinaScreen() {
   };
 
   const ContentWrapper: any = ImageBackground;
-  const wrapperProps = { source: require('../../assets/images/loto_bg.jpg'), style: { flex: 1, backgroundColor: '#F8FAF5' }, imageStyle: { opacity: 1 } };
+  const wrapperProps = { source: require('../../assets/images/elite_bg.png'), style: { flex: 1, backgroundColor: theme.background }, imageStyle: { opacity: 0.15 } };
 
   return (
     <ContentWrapper {...wrapperProps}>
@@ -817,6 +847,30 @@ export default function VetrinaScreen() {
       {/* BOTTONE TIPS ELIMINATO: spostato nell'header */}
 
       <TipsBoutiqueSheet visible={isTipsVisible} onClose={() => setIsTipsVisible(false)} />
+
+      <BadgeCollectionModal
+        visible={isBadgeModalVisible}
+        onClose={() => setIsBadgeModalVisible(false)}
+        userBadges={userBadges}
+        userProfile={userProfile}
+        theme={theme}
+        onAction={(action) => {
+          setIsBadgeModalVisible(false);
+          // Handle badge actions here (e.g. navigation)
+        }}
+      />
+
+      <GameAchievementsSheet
+        visible={isGameAchievementsVisible}
+        onClose={() => setIsGameAchievementsVisible(false)}
+        userXp={userXp}
+        userBadges={userBadges}
+        theme={theme}
+        onOpenBadgeCollection={() => {
+          setIsGameAchievementsVisible(false);
+          setTimeout(() => setIsBadgeModalVisible(true), 300);
+        }}
+      />
 
       {/* MODALE SCELTA MOBILITA RAPIDA DALLA HOME */}
         <Modal visible={isHomeMobilitySheetVisible} transparent animationType="slide">

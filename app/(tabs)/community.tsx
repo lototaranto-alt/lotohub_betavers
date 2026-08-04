@@ -6,10 +6,10 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import EmptyStateCard from '../../components/EmptyStateCard';
 import { supabase } from '../../utils/supabase';
 import { useFocusEffect } from 'expo-router';
-import { mockEvents } from '../../utils/mockEvents';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CivicReportSheet } from '../../components/CivicReportSheet';
 import * as Location from 'expo-location';
+import { calculateLevel } from '../../utils/levelUtils';
 
 // Componente Scaffale (Netflix-style)
 const HorizontalShelf = ({ title, data, renderItem, theme }: any) => {
@@ -65,7 +65,7 @@ export default function CommunityScreen() {
         } catch(e) {}
         
         const effectiveXp = Math.max(dbXp, localXp);
-        setUserLevel(Math.floor(effectiveXp / 100));
+        setUserLevel(calculateLevel(effectiveXp));
       };
       fetchUser();
     }, [])
@@ -73,7 +73,7 @@ export default function CommunityScreen() {
 
   React.useEffect(() => {
     const fetchEvents = async () => {
-      const { data } = await supabase.from('events').select('*').order('event_date', { ascending: true });
+      const { data } = await supabase.from('tenant_events').select('*').order('event_date', { ascending: true });
       if (data) setEventiData(data);
     };
     const fetchStats = async () => {
@@ -161,9 +161,9 @@ export default function CommunityScreen() {
     </TouchableOpacity>
   );
 
-  if (userLevel < 5) {
+  if (userLevel < 2) {
     return (
-      <ImageBackground source={require('../../assets/images/loto_bg.jpg')} style={{ flex: 1, backgroundColor: '#F8FAF5' }} imageStyle={{ opacity: 1 }}>
+      <ImageBackground source={require('../../assets/images/elite_bg.png')} style={{ flex: 1, backgroundColor: theme.background }} imageStyle={{ opacity: 0.15 }}>
         <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
           <View style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: 30, borderRadius: 24, marginHorizontal: 25, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 }}>
             <MaterialIcons name="lock" size={80} color="rgba(0,0,0,0.15)" />
@@ -171,7 +171,7 @@ export default function CommunityScreen() {
               Sezione Bloccata
             </Text>
             <Text style={{ textAlign: 'center', marginTop: 15, color: '#475569', lineHeight: 22, fontSize: 15 }}>
-              Continua ad esplorare e raggiungi il <Text style={{fontWeight: 'bold', color: theme.primary}}>Livello 5</Text> per sbloccare l'accesso alla Community, alle classifiche globali e agli eventi collettivi.
+              Continua ad esplorare e raggiungi il <Text style={{fontWeight: 'bold', color: theme.primary}}>Livello 2</Text> per sbloccare l'accesso agli Eventi e alla Community.
             </Text>
           </View>
         </SafeAreaView>
@@ -180,7 +180,7 @@ export default function CommunityScreen() {
   }
 
   return (
-    <ImageBackground source={require('../../assets/images/loto_bg.jpg')} style={{ flex: 1, backgroundColor: '#F8FAF5' }} imageStyle={{ opacity: 1 }}>
+    <ImageBackground source={require('../../assets/images/elite_bg.png')} style={{ flex: 1, backgroundColor: theme.background }} imageStyle={{ opacity: 0.15 }}>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>Community</Text>
@@ -203,7 +203,7 @@ export default function CommunityScreen() {
           {reportsData.length > 0 && (
             <HorizontalShelf title="Segnalazioni Recenti" data={reportsData} renderItem={renderReport} theme={theme} />
           )}
-          <HorizontalShelf title="Sfide della Settimana" data={mockEvents} renderItem={renderEvento} theme={theme} />
+          <HorizontalShelf title="Sfide della Settimana" data={displayEvents.filter((e: any) => e.xp_reward > 50)} renderItem={renderEvento} theme={theme} />
         </ScrollView>
         
         <CivicReportSheet 

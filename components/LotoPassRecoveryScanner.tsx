@@ -22,38 +22,23 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
       // che verifica il codice e restituisce un Custom JWT per quell'utente,
       // oppure fonde i dati del vecchio profilo con il nuovo UUID anonimo appena creato.
       
-      // Simuliamo la chiamata RPC
       const { data, error } = await supabase.rpc('recover_loto_pass', {
-        secure_code: code.trim()
+        recovery_code: code.trim()
       });
 
       if (error) {
-        // Se la RPC non esiste ancora sul DB, mostriamo un mockup coerente
-        if (error.message.includes('Could not find the function')) {
-          console.warn('[Mock Fallback] RPC recover_loto_pass non trovata. Simulazione recupero.');
-          await mockRecovery(code);
-        } else {
-          throw error;
-        }
-      } else {
-        Alert.alert('Recupero Riuscito', 'Bentornato! Il tuo L.O.T.O. Pass è valido e i tuoi dati sono stati ripristinati.');
+        throw error;
+      } else if (data?.success) {
+        Alert.alert('Recupero Riuscito', data.message || 'Bentornato! Il tuo L.O.T.O. Pass è valido e i tuoi dati sono stati ripristinati.');
         onClose();
+      } else {
+        Alert.alert('Attenzione', data?.message || 'Codice non valido.');
       }
     } catch (err: any) {
-      Alert.alert('Errore di Recupero', 'Codice non valido o scaduto: ' + err.message);
+      Alert.alert('Errore di Recupero', 'Impossibile verificare il codice: ' + err.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const mockRecovery = async (code: string) => {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        Alert.alert('Simulazione Riuscita', `Codice ${code} riconosciuto in locale. Per funzionare in produzione, la RPC Supabase deve essere deployata.`);
-        onClose();
-        resolve(true);
-      }, 1500);
-    });
   };
 
   return (
@@ -67,11 +52,11 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
             </TouchableOpacity>
           </View>
 
-          {/* MOCK SCANNER AREA */}
-          <View style={[styles.cameraMock, { borderColor: theme.accent }]}>
+          {/* PLACEHOLDER SCANNER AREA */}
+          <View style={[styles.cameraPlaceholder, { borderColor: theme.accent }]}>
             <MaterialIcons name="qr-code-scanner" size={60} color={theme.textMuted} />
             <Text style={{ color: theme.textMuted, marginTop: 10, textAlign: 'center' }}>
-              Inquadra il QR Code salvato nella tua galleria.
+              (Funzione Scanner nativa in arrivo) Inquadra il QR Code salvato nella tua galleria.
             </Text>
           </View>
 
@@ -104,7 +89,7 @@ const styles = StyleSheet.create({
   container: { width: '90%', borderRadius: 24, padding: 25, elevation: 10 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 20, fontWeight: 'bold' },
-  cameraMock: { height: 200, borderWidth: 2, borderStyle: 'dashed', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  cameraPlaceholder: { height: 200, borderWidth: 2, borderStyle: 'dashed', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 20 },
   input: { padding: 15, borderRadius: 12, borderWidth: 1, fontSize: 16, textAlign: 'center', letterSpacing: 1 },
   button: { padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 15 },
   buttonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 }

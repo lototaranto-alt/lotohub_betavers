@@ -170,7 +170,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ImageBackground source={require('../../assets/images/loto_bg.jpg')} style={{ flex: 1, backgroundColor: '#F8FAF5' }} imageStyle={{ opacity: 1 }}>
+    <ImageBackground source={require('../../assets/images/elite_bg.png')} style={{ flex: 1, backgroundColor: theme.background }} imageStyle={{ opacity: 0.15 }}>
       <SafeAreaView style={styles.container} edges={['top']}>
         
         {/* HEADER */}

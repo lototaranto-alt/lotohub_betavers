@@ -207,7 +207,34 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                )}
             </TouchableOpacity>
 
-
+            {/* CARD 4: MAPPA LOCALE */}
+            <View 
+              style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, paddingVertical: 0, paddingHorizontal: 0, backgroundColor: '#D6734E', overflow: 'hidden' }]}
+            >
+               <View style={{ padding: 25, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                 <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}>
+                   <MaterialIcons name="map" size={36} color="#FFF" />
+                 </View>
+                 <Text style={[styles.mStatValBoutique, { color: '#FFF', fontSize: 24 }]}>Mappa Locale</Text>
+                 <Text style={[styles.mStatLab, { color: 'rgba(255,255,255,0.8)' }]}>Taranto</Text>
+                 
+                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 15, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50' }} />
+                   <Text style={{ color: '#FFF', fontSize: 11, marginLeft: 6, fontWeight: 'bold' }}>P.O.I. attivi in città</Text>
+                 </View>
+                 
+                 <TouchableOpacity 
+                   style={{ backgroundColor: '#FFF', paddingVertical: 10, paddingHorizontal: 22, borderRadius: 25, flexDirection: 'row', alignItems: 'center', marginTop: 20, elevation: 2 }}
+                   onPress={() => {
+                     onClose();
+                     router.push('/map');
+                   }}
+                 >
+                   <MaterialIcons name="explore" size={16} color="#D6734E" style={{ marginRight: 6 }} />
+                   <Text style={{ color: '#D6734E', fontWeight: 'bold', fontSize: 12 }}>ESPLORA ORA</Text>
+                 </TouchableOpacity>
+               </View>
+            </View>
 
           </ScrollView>
           
