@@ -573,7 +573,7 @@ export default function VetrinaScreen() {
       <View style={{ paddingBottom: 10 }}>
         
         {/* --- 1. HEADER BOUTIQUE --- */}
-        <View style={{ alignItems: 'center', marginBottom: 25, marginTop: 45 }}>
+        <View style={{ alignItems: 'center', marginBottom: 15, marginTop: 30 }}>
           <Text style={{ fontFamily: 'PlayfairDisplay_400Regular', fontSize: 48, color: '#1A3621', letterSpacing: 3, textAlign: 'center' }}>
             L.O.T.O. HUB
           </Text>
@@ -586,8 +586,8 @@ export default function VetrinaScreen() {
           </View>
         </View>
 
-        {/* --- 2. PRESTIGE CARD (USER PROFILE) --- */}
-        <View style={{ backgroundColor: '#2D4A22', borderRadius: 20, padding: 20, marginHorizontal: 20, marginBottom: 25, elevation: 6, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10 }}>
+        {/* --- PRESTIGE CARD COMPATTA --- */}
+        <View style={{ backgroundColor: '#2D4A22', borderRadius: 20, padding: 15, marginHorizontal: 20, marginBottom: 15, elevation: 6, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10 }}>
           
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             
@@ -649,7 +649,7 @@ export default function VetrinaScreen() {
           </View>
 
           {/* Badges Row (5 Milestone con Anello di Progressione - Cliccabili per Collezione) */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 25, gap: 10 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 15, gap: 10 }}>
             {cardBadges.map((badge, idx) => {
               if (badge.unlocked) {
                 return (
@@ -677,7 +677,7 @@ export default function VetrinaScreen() {
         </View>
 
         {/* --- 4 QUADRANT GRID --- */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 15, justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 15 }}>
           
           {/* 1. Clues Found */}
           <TouchableOpacity 
@@ -751,7 +751,7 @@ export default function VetrinaScreen() {
         </View>
 
         {/* --- LIVE COMMUNITY FEED --- */}
-        <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 5, borderWidth: 1, borderColor: '#D4AF37' }}>
+        <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 15, borderWidth: 1, borderColor: '#D4AF37' }}>
           <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(71,101,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
             <MaterialIcons name="rss-feed" size={16} color="#476537" />
           </View>

@@ -219,11 +219,11 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
       </View>
 
       {showBackupModal && (
-        <LotoPassBackupModal visible={showBackupModal} onClose={() => setShowBackupModal(false)} userProfile={userProfile} />
+        <LotoPassBackupModal visible={showBackupModal} onClose={() => setShowBackupModal(false)} userUuid={userProfile?.id} theme={theme} />
       )}
       
       {showRecoveryModal && (
-        <LotoPassRecoveryScanner visible={showRecoveryModal} onClose={() => setShowRecoveryModal(false)} />
+        <LotoPassRecoveryScanner visible={showRecoveryModal} onClose={() => setShowRecoveryModal(false)} theme={theme} />
       )}
     </Modal>
   );
