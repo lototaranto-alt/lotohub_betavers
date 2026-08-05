@@ -96,18 +96,6 @@ export default function PlasticaqquaEventSheet({ visible, onClose, onCheckInEven
               </Text>
             </View>
           </ScrollView>
-
-          {/* CALL TO ACTION */}
-          <View style={[styles.footer, { borderTopColor: theme.border, backgroundColor: theme.surface }]}>
-            <TouchableOpacity 
-              style={[styles.checkInBtn, { backgroundColor: theme.primary }]} 
-              onPress={onCheckInEvent}
-            >
-              <MaterialIcons name="check-circle" size={20} color={theme.background} style={{ marginRight: 8 }} />
-              <Text style={[styles.checkInBtnText, { color: theme.background }]}>Conferma Partecipazione</Text>
-            </TouchableOpacity>
-          </View>
-
         </View>
       </View>
     </Modal>
