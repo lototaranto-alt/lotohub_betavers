@@ -10,6 +10,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CivicReportSheet } from '../../components/CivicReportSheet';
 import * as Location from 'expo-location';
 import { calculateLevel } from '../../utils/levelUtils';
+import PlasticaqquaEventSheet from '../../components/PlasticaqquaEventSheet';
+import { Alert } from 'react-native';
 
 // Componente Scaffale (Netflix-style)
 const HorizontalShelf = ({ title, data, renderItem, theme }: any) => {
@@ -45,6 +47,7 @@ export default function CommunityScreen() {
   const [userLevel, setUserLevel] = React.useState(0);
   const [userId, setUserId] = React.useState<string | null>(null);
   const [isReportSheetVisible, setIsReportSheetVisible] = React.useState(false);
+  const [isEventSheetVisible, setIsEventSheetVisible] = React.useState(false);
   const [userLocation, setUserLocation] = React.useState<any>(null);
 
   useFocusEffect(
@@ -142,7 +145,18 @@ export default function CommunityScreen() {
   ] : fallbackStats;
 
   const renderEvento = (item: any, index: number) => (
-    <TouchableOpacity key={index} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]} activeOpacity={0.8}>
+    <TouchableOpacity 
+      key={index} 
+      style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]} 
+      activeOpacity={0.8}
+      onPress={() => {
+        if (item.id === 99) {
+          setIsEventSheetVisible(true);
+        } else {
+          Alert.alert('Info', 'Evento non ancora disponibile per il check-in.');
+        }
+      }}
+    >
       <View style={[styles.cardIconBox, { backgroundColor: theme.primary }]}>
         <MaterialIcons name={item.event_type || item.icon || 'event'} size={24} color="#FFF" />
       </View>
@@ -253,6 +267,18 @@ export default function CommunityScreen() {
           onClose={() => setIsReportSheetVisible(false)}
           userId={userId || ''}
           initialLocation={userLocation ? { lat: userLocation.coords.latitude, lng: userLocation.coords.longitude } : { lat: 40.47, lng: 17.24 }}
+        />
+
+        <PlasticaqquaEventSheet
+           visible={isEventSheetVisible}
+           onClose={() => setIsEventSheetVisible(false)}
+           onCheckInEvent={() => {
+             setIsEventSheetVisible(false);
+             Alert.alert(
+               '✨ Check-in Completato!', 
+               'Hai confermato la presenza. Ti è stato conferito il badge "Sentinella"! I contatori si sono aggiornati.'
+             );
+           }}
         />
       </SafeAreaView>
     </ImageBackground>
