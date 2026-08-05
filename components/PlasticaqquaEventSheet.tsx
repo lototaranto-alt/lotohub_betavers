@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../context/ThemeContext';
+import { supabase } from '../utils/supabase';
 
 const { height } = Dimensions.get('window');
 
@@ -13,7 +14,23 @@ interface PlasticaqquaEventSheetProps {
 
 export default function PlasticaqquaEventSheet({ visible, onClose, onCheckInEvent }: PlasticaqquaEventSheetProps) {
   const { theme } = useTheme();
+  const [participants, setParticipants] = useState<number>(23);
+  const [actions, setActions] = useState<number>(38);
   
+  useEffect(() => {
+    if (visible) {
+      const fetchRealStats = async () => {
+        try {
+          const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+          const { count: badgeCount } = await supabase.from('user_badges').select('*', { count: 'exact', head: true });
+          if (userCount) setParticipants(userCount);
+          if (badgeCount) setActions(badgeCount);
+        } catch(e) {}
+      };
+      fetchRealStats();
+    }
+  }, [visible]);
+
   if (!visible) return null;
 
   return (
@@ -59,13 +76,13 @@ export default function PlasticaqquaEventSheet({ visible, onClose, onCheckInEven
               <View style={styles.statsRow}>
                 <View style={[styles.statBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
                   <MaterialIcons name="group" size={28} color="#2196F3" />
-                  <Text style={[styles.statValue, { color: theme.text }]}>23</Text>
+                  <Text style={[styles.statValue, { color: theme.text }]}>{participants}</Text>
                   <Text style={[styles.statLabel, { color: theme.textMuted }]}>Partecipanti</Text>
                 </View>
                 
                 <View style={[styles.statBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
                   <MaterialIcons name="eco" size={28} color="#4CAF50" />
-                  <Text style={[styles.statValue, { color: theme.text }]}>38</Text>
+                  <Text style={[styles.statValue, { color: theme.text }]}>{actions}</Text>
                   <Text style={[styles.statLabel, { color: theme.textMuted }]}>Azioni Civiche</Text>
                 </View>
               </View>
