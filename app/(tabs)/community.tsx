@@ -41,6 +41,7 @@ export default function CommunityScreen() {
   const [eventiData, setEventiData] = React.useState<any[]>([]);
   const [communityStats, setCommunityStats] = React.useState<any>(null);
   const [reportsData, setReportsData] = React.useState<any[]>([]);
+  const [liveActivities, setLiveActivities] = React.useState<any[]>([]);
   const [userLevel, setUserLevel] = React.useState(0);
   const [userId, setUserId] = React.useState<string | null>(null);
   const [isReportSheetVisible, setIsReportSheetVisible] = React.useState(false);
@@ -91,10 +92,34 @@ export default function CommunityScreen() {
         setUserLocation(loc);
       }
     };
+    const fetchLiveFeed = async () => {
+      // Prende 5 profili a caso dal db per generare il feed
+      const { data } = await supabase.from('profiles').select('nickname, total_xp, level').limit(10);
+      if (data && data.length > 0) {
+        const feedTypes = ['scan', 'badge', 'level', 'report'];
+        const builtFeed = data.map((p, i) => {
+          const type = feedTypes[i % feedTypes.length];
+          const name = p.nickname || 'Un ESPLORATORE';
+          let text = '';
+          let icon = '';
+          let color = '';
+          
+          if (type === 'scan') { text = `${name} ha scoperto un nuovo POI!`; icon = 'location-on'; color = '#2ECC71'; }
+          else if (type === 'badge') { text = `${name} ha sbloccato il badge Sentinella`; icon = 'security'; color = '#2196F3'; }
+          else if (type === 'level') { text = `${name} ha raggiunto il Livello ${p.level || 2}`; icon = 'stars'; color = '#FFD700'; }
+          else { text = `${name} ha inviato una segnalazione civica`; icon = 'report'; color = '#FF9800'; }
+          
+          return { id: i, text, icon, color, time: `${Math.floor(Math.random() * 50) + 1} min fa` };
+        });
+        setLiveActivities(builtFeed);
+      }
+    };
+
     fetchEvents();
     fetchStats();
     fetchReports();
     fetchLoc();
+    fetchLiveFeed();
   }, []);
 
   const fallbackEvents = [
@@ -161,6 +186,20 @@ export default function CommunityScreen() {
     </TouchableOpacity>
   );
 
+  const renderActivity = (item: any, index: number) => (
+    <View key={index} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border, width: 160, padding: 12 }]} >
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, width: '100%' }}>
+        <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: item.color + '20', justifyContent: 'center', alignItems: 'center', marginRight: 8 }}>
+          <MaterialIcons name={item.icon} size={16} color={item.color} />
+        </View>
+        <Text style={{ fontSize: 9, color: theme.textMuted, flex: 1, textAlign: 'right' }}>{item.time}</Text>
+      </View>
+      <Text style={[styles.cardSubtitle, { color: theme.text, fontSize: 12, textAlign: 'left', lineHeight: 16 }]} numberOfLines={3}>
+        {item.text}
+      </Text>
+    </View>
+  );
+
   if (userLevel < 2) {
     return (
       <ImageBackground source={require('../../assets/images/elite_bg.png')} style={{ flex: 1, backgroundColor: theme.background }} imageStyle={{ opacity: 0.15 }}>
@@ -198,6 +237,9 @@ export default function CommunityScreen() {
         </TouchableOpacity>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+          {liveActivities.length > 0 && (
+            <HorizontalShelf title="Attività Recenti" data={liveActivities} renderItem={renderActivity} theme={theme} />
+          )}
           <HorizontalShelf title="Eventi Locali" data={displayEvents} renderItem={renderEvento} theme={theme} />
           <HorizontalShelf title="Impatto della Città" data={classificheData} renderItem={renderClassifica} theme={theme} />
           {reportsData.length > 0 && (
