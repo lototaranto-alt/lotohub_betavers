@@ -6,7 +6,6 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Alert, Dimensions, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Animated, Easing, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../utils/supabase';
-import { injectPoisMock } from '../../utils/mockInjector';
 import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
 import { ThemeProvider as AppThemeProvider } from '../../context/ThemeContext';
 import { useCity } from '../../context/CityContext';
@@ -243,8 +242,7 @@ export default function VetrinaScreen() {
         console.log("ERRORE RPC get_pois:", error);
       }
       if (poiData) {
-        // --- INIEZIONE MOCK DATI PROFESSIONALE TRAMITE HELPER ---
-        fetchedPois = injectPoisMock(poiData);
+        fetchedPois = poiData;
         setPois(fetchedPois);
       }
 

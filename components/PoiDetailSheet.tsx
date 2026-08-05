@@ -8,6 +8,7 @@ import { LruCacheManager } from '../utils/LruCacheManager';
 import { OfflineQueueManager } from '../utils/OfflineQueueManager';
 import NetInfo from '@react-native-community/netinfo';
 import { useTheme } from '../context/ThemeContext';
+import PoiScannerModal from './PoiScannerModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import { useRouteBuilder } from '../context/RouteContext';
@@ -38,7 +39,9 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
   const { isPoiInRoute, addPoiToRoute, removePoiFromRoute } = useRouteBuilder();
   const inRoute = poi ? isPoiInRoute(poi.id) : false;
   
-  // Stati per la gestione del Vault Multimediale
+  // Auth & Progression State
+  const [session, setSession] = useState<any>(null);
+  const [isScannerVisible, setIsScannerVisible] = useState(false);
   const [vaultMedia, setVaultMedia] = useState<any[]>([]);
   const [mediaStatus, setMediaStatus] = useState<{[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'}>({});
   const [premiumPreviewVisible, setPremiumMockVisible] = useState(false);
@@ -152,9 +155,6 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
       if (user) {
         const { data: profile } = await supabase.from('profiles').select('total_xp').eq('id', user.id).single();
         if (profile) currentLevel = calculateLevel(profile.total_xp || 0);
-      } else {
-        const fallbackStr = await AsyncStorage.getItem('loto_fallback_xp');
-        if (fallbackStr) currentLevel = calculateLevel(parseInt(fallbackStr));
       }
     } catch(e) {}
     
@@ -186,73 +186,6 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
     }
 
     try {
-      // Gestione Mock Data (m1, m2, m3)
-      if (media.id.startsWith('m')) {
-        const testUnlockNfc = () => {
-          setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
-          setTimeout(() => {
-            setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
-            if (media.id === 'm3') {
-              Alert.alert("Successo!", `Hai decifrato il tag NFC (Simulazione) e ottenuto l'accesso all'Archivio!`);
-            } else {
-              Alert.alert("Successo!", `"${media.title}" è stato sbloccato con successo (Simulazione)`);
-            }
-          }, 1500);
-        };
-
-        if (media.id === 'm3') {
-          const avviaSbloccoNativo = async () => {
-            try {
-              setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
-              /*
-              await NfcManager.requestTechnology(NfcTech.Ndef);
-              const tag = await NfcManager.getTag();
-              */
-              const tag = null; // Forza mock per Expo Go
-              if (tag) {
-                setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
-                Alert.alert("Successo TSaaSI!", `L'hardware ha verificato l'NFC NTAG424. Contenuto sbloccato.`);
-              } else {
-                throw new Error("NFC Mock forzato in Expo Go");
-              }
-            } catch (e) {
-              setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
-              Alert.alert("Errore NFC", "Non è stato possibile leggere il tag.");
-            } finally {
-              // NfcManager.cancelTechnologyRequest();
-            }
-          };
-
-          // Approccio Lean: se il device supporta NFC ed è abilitato, proviamo quello vero. Altrimenti Mock.
-          let isSupported = false;
-          try {
-            // isSupported = await NfcManager.isSupported();
-          } catch (nfcErr) {
-            console.log('[NFC] Modulo nativo non trovato (ambiente Expo Go). Uso fallback.');
-          }
-          
-          if (isSupported) {
-            // const isEnabled = await NfcManager.isEnabled();
-            const isEnabled = false;
-            if (isEnabled) {
-               await avviaSbloccoNativo();
-            } else {
-               Alert.alert("NFC Disabilitato", "Attiva l'NFC dalle impostazioni, oppure prosegui con la simulazione.", [
-                 { text: "Simula Sblocco", onPress: testUnlockNfc }
-               ]);
-            }
-          } else {
-            // Dispositivo senza NFC (es. vecchi iPhone, Simulatori, Expo Web)
-            testUnlockNfc();
-          }
-        } else {
-          // Per m1 o m2, simula subito
-          testUnlockNfc();
-        }
-        
-        return; // Interrompe per qualsiasi mock
-      }
-
       setMediaStatus(prev => ({ ...prev, [media.id]: 'downloading' }));
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -426,15 +359,30 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
 
               {/* NFC SCAN BUTTON MOVED TO TOP */}
               <TouchableOpacity 
-                style={[styles.mainBtn, { backgroundColor: theme.primary, marginTop: 15 }]} 
-                onPress={() => onCheckIn(poi)}
+                style={[styles.mainBtn, { backgroundColor: theme.text, flex: 1, elevation: 4, shadowColor: theme.text }]}
+                onPress={() => setIsScannerVisible(true)}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <MaterialIcons name="nfc" size={20} color={theme.background} style={{ marginRight: 8 }} />
-                  <Text style={[styles.mainBtnText, { color: theme.background }]}>Rileva Passaggio (NFC/QR)</Text>
+                  <MaterialIcons name="qr-code-scanner" size={20} color={theme.background} style={{ marginRight: 8 }} />
+                  <Text style={[styles.mainBtnText, { color: theme.background }]}>Scansiona QR</Text>
                 </View>
               </TouchableOpacity>
             </View>
+
+            <PoiScannerModal 
+              visible={isScannerVisible} 
+              onClose={() => setIsScannerVisible(false)} 
+              onScanSuccess={async (scannedData) => {
+                try {
+                  const { data, error } = await supabase.rpc('scan_poi', { p_poi_id: poi.id });
+                  if (error) throw error;
+                  Alert.alert('Ottimo!', `Hai ottenuto i punti di questo POI. I tuoi XP sono ora ${data.new_total_xp}.`);
+                  onCheckIn(poi); // Chiude la scheda e aggiorna la home
+                } catch(e: any) {
+                  Alert.alert('Errore', 'Non è stato possibile validare la scansione sul server: ' + e.message);
+                }
+              }}
+            />
 
             {/* SELETTORE TAB */}
             <View style={styles.tabBar}>
