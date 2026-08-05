@@ -16,11 +16,15 @@ import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import BadgeCollectionModal from '../../components/BadgeCollectionModal';
 import GameAchievementsSheet from '../../components/GameAchievementsSheet';
+import ScannedPoisSheet from '../../components/ScannedPoisSheet';
+import SingleBadgeSheet from '../../components/SingleBadgeSheet';
 import TouristBaptismModal from '../../components/TouristBaptismModal';
 import XpToast from '../../components/XpToast';
 import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
 import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
+import ImpactStatsModal from '../../components/ImpactStatsModal';
+import VaultModal from '../../components/VaultModal';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
 import { useTenant } from '../../context/TenantContext';
@@ -35,7 +39,7 @@ const { width, height } = Dimensions.get('window');
 const DICTIONARY = {
   IT: {
     hello: 'Ciao',
-    guest: 'Ospite Loto',
+    guest: 'ESPLORATORE',
     impactTitle: 'IL TUO IMPATTO ECO-SOSTENIBILE',
     co2Lab: 'Kg CO₂ Evitata',
     ptsLab: 'LOTO PTI',
@@ -149,7 +153,12 @@ export default function VetrinaScreen() {
   const tipsAnim = useRef(new Animated.Value(1)).current;
   const [isExpModalVisible, setIsExpModalVisible] = useState(false); // --- NUOVI STATI GAMIFICATION ---
   const [isBadgeModalVisible, setIsBadgeModalVisible] = useState(false);
+  const [isImpactModalVisible, setIsImpactModalVisible] = useState(false);
+  const [isVaultModalVisible, setIsVaultModalVisible] = useState(false);
   const [isGameAchievementsVisible, setIsGameAchievementsVisible] = useState(false);
+  const [isScannedPoisVisible, setIsScannedPoisVisible] = useState(false);
+  const [isSingleBadgeVisible, setIsSingleBadgeVisible] = useState(false);
+  const [selectedBadgeData, setSelectedBadgeData] = useState<any>(null);
   
   // --- STATI SHEET ---
   const [isHomeMobilitySheetVisible, setIsHomeMobilitySheetVisible] = useState(false);
@@ -275,11 +284,12 @@ export default function VetrinaScreen() {
       const { data: cStats } = await supabase.from('vw_collective_impact').select('*').single();
       if (cStats) setCommunityStats(cStats);
 
-      // Ritardiamo le richieste di localizzazione per non interrompere il carosello iniziale (che dura circa 12s)
+      // Ritardiamo le richieste di localizzazione di 13.3s per coprire l'intera durata del carosello (4 clip x 3.3s)
       setTimeout(async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === 'granted') {
-          Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
+        try {
+          let { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted') {
+            Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
             setUserLocation(loc);
             
             // HAPTICS QUANDO CI SI AVVICINA A UN P.O.I. (< 50 METRI)
@@ -299,6 +309,9 @@ export default function VetrinaScreen() {
             console.log("Errore in watchPositionAsync (es. GPS spento):", err);
           });
         }
+        } catch (err) {
+          console.log("Errore richiesta permessi GPS (possibile GPS di sistema disattivato):", err);
+        }
 
         // Check per prompt GPS automatico e gentile in background
         const hasSeenPrompt = await AsyncStorage.getItem('loto_gps_prompt_seen');
@@ -307,7 +320,7 @@ export default function VetrinaScreen() {
             promptGentleGps();
           }, 1500); // Questo 1500ms parte DOPO i 12000ms iniziali
         }
-      }, 12000);
+      }, 13300);
 
       // LOGICA TIPS HAPTICS
       let totalXp = 0;
@@ -343,20 +356,24 @@ export default function VetrinaScreen() {
 
 
   const avviaFiltroCinematico = async () => {
-    const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-    if (lastSample.current) {
-      const distance = getDistance(
-        lastSample.current.coords.latitude,
-        lastSample.current.coords.longitude,
-        current.coords.latitude,
-        current.coords.longitude
-      );
-      const timeDiff = (current.timestamp - lastSample.current.timestamp) / 1000;
-      const velocity = distance / timeDiff;
+    try {
+      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      if (lastSample.current) {
+        const distance = getDistance(
+          lastSample.current.coords.latitude,
+          lastSample.current.coords.longitude,
+          current.coords.latitude,
+          current.coords.longitude
+        );
+        const timeDiff = (current.timestamp - lastSample.current.timestamp) / 1000;
+        const velocity = distance / timeDiff;
 
-      setIsMotorized(velocity > SPEED_LIMIT_KMS);
+        setIsMotorized(velocity > SPEED_LIMIT_KMS);
+      }
+      lastSample.current = { coords: current.coords, timestamp: current.timestamp };
+    } catch (e) {
+      console.log("Filtro Cinematico bypassato (GPS spento)");
     }
-    lastSample.current = { coords: current.coords, timestamp: current.timestamp };
   };
 
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -502,18 +519,28 @@ export default function VetrinaScreen() {
     const isPartner = userProfile?.flow_role === 'LOTO Partner';
 
     const mobilityConfig = getMobilityPillStyle(mobilityType || 'dolce');
+    const isLevel5OrAbove = levelProgress.currentLevel >= 5;
+
+    // Catalogo dei 5 badge mostrati nella Prestige Card
+    const cardBadges = [
+      { id: 'badge_first_scan', name: 'Battesimo', icon: 'location-on', color: '#2ECC71', unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan') || (userProfile?.pois_discovered || 0) > 0 },
+      { id: 'badge_civic_3', name: 'Sentinella', icon: 'security', color: '#2196F3', unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_civic_3') },
+      { id: 'badge_eco_5kg', name: 'Eco-Sostenitore', icon: 'eco', color: '#4CAF50', unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg') || mobilityType === 'dolce' },
+      { id: 'badge_marathon_3', name: 'Maratoneta', icon: 'directions-run', color: '#FF9800', unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_marathon_3') || (userProfile?.itineraries_count || 0) >= 3 },
+      { id: 'badge_level_5', name: 'Cittadino Attivo', icon: 'stars', color: '#FFD700', unlocked: isLevel5OrAbove }
+    ];
 
     return (
       <View style={{ paddingBottom: 10 }}>
         
         {/* --- 1. HEADER BOUTIQUE --- */}
         <View style={{ alignItems: 'center', marginBottom: 25, marginTop: 45 }}>
-          <Text style={{ fontFamily: 'serif', fontSize: 44, color: '#1A3621', letterSpacing: 2, textAlign: 'center', fontWeight: 'bold' }}>
+          <Text style={{ fontFamily: 'PlayfairDisplay_400Regular', fontSize: 48, color: '#1A3621', letterSpacing: 3, textAlign: 'center' }}>
             L.O.T.O. HUB
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
             <MaterialIcons name="eco" size={18} color="#BCA37F" />
-            <Text style={{ fontFamily: 'serif', fontStyle: 'italic', fontSize: 18, color: '#6A5638', marginHorizontal: 12, letterSpacing: 1 }}>
+            <Text style={{ fontFamily: 'Raleway_400Regular', fontSize: 18, color: '#6A5638', marginHorizontal: 12, letterSpacing: 1 }}>
               Co - ExpErience Engine
             </Text>
             <MaterialIcons name="eco" size={18} color="#BCA37F" />
@@ -527,10 +554,10 @@ export default function VetrinaScreen() {
             
             {/* Left Side: Info & XP */}
             <View style={{ flex: 1, paddingRight: 10 }}>
-              <Text style={{ fontFamily: 'serif', fontSize: 11, color: levelProgress.color || '#D4AF37', letterSpacing: 1, marginBottom: 2 }}>
+              <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 11, color: '#D4AF37', letterSpacing: 1, marginBottom: 2 }}>
                 BENTORNATO, TARANTO
               </Text>
-              <Text style={{ fontFamily: 'serif', fontSize: 20, color: '#FFF', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 }} numberOfLines={1}>
+              <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 20, color: '#FFF', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 }} numberOfLines={1}>
                 {userProfile?.nickname || t.guest}
               </Text>
               
@@ -571,8 +598,8 @@ export default function VetrinaScreen() {
             {/* Right Side: Avatar Circle */}
             <TouchableOpacity onPress={() => setIsExpModalVisible(true)} activeOpacity={0.8} style={{ alignItems: 'center' }}>
               <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#3B5F31', borderWidth: levelProgress.currentLevel >= 5 ? 3 : 2, borderColor: levelProgress.currentLevel >= 5 ? '#D4AF37' : 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', elevation: levelProgress.currentLevel >= 5 ? 10 : 4, shadowColor: levelProgress.currentLevel >= 5 ? '#D4AF37' : '#000' }}>
-                <Text style={{ fontFamily: 'serif', fontSize: 28, color: '#FFF' }}>
-                  {userProfile?.nickname ? userProfile.nickname[0].toUpperCase() : 'L'}
+                <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 28, color: '#FFF' }}>
+                  {(userProfile?.nickname || 'ESPLORATORE')[0].toUpperCase()}
                 </Text>
               </View>
               <View style={{ backgroundColor: '#FDFBF7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: levelProgress.color || '#D4AF37', marginTop: -8, elevation: 5 }}>
@@ -582,34 +609,23 @@ export default function VetrinaScreen() {
 
           </View>
 
-          {/* Badges Row (DYNAMIC PROGRESSION) */}
-          <TouchableOpacity onPress={() => setIsBadgeModalVisible(true)} activeOpacity={0.8} style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 25, gap: 10 }}>
-            {[
-              { level: 0, icon: 'eco', color: '#2ECC71' },
-              { level: 1, icon: 'explore', color: '#2196F3' },
-              { level: 3, icon: 'security', color: '#FF9800' },
-              { level: 5, icon: 'wb-incandescent', color: '#FFEB3B' },
-              { level: 10, icon: 'vpn-key', color: '#9C27B0' }
-            ].map((badge, idx) => {
-              const currentLevel = levelProgress.currentLevel;
-              const isUnlocked = currentLevel >= badge.level;
-              
-              if (isUnlocked) {
+          {/* Badges Row (5 Milestone con Anello di Progressione - Cliccabili per Collezione) */}
+          <TouchableOpacity 
+            onPress={() => Alert.alert("L.O.T.O. HUB", "La tua collezione completa dei badge sarà esplorabile a breve!")}
+            activeOpacity={0.85}
+            style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 25, gap: 10 }}
+          >
+            {cardBadges.map((badge, idx) => {
+              if (badge.unlocked) {
                 return (
-                  <View key={idx} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: badge.color + '25', borderWidth: 3, borderColor: badge.color, justifyContent: 'center', alignItems: 'center' }}>
-                    <MaterialIcons name={badge.icon as any} size={22} color={badge.color} />
+                  <View key={idx} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: badge.color + '25', borderWidth: 2.5, borderColor: badge.color, justifyContent: 'center', alignItems: 'center' }}>
+                    <MaterialIcons name={badge.icon as any} size={20} color={badge.color} />
                   </View>
                 );
               } else {
-                // Calcolo riempimento fittizio per mostrare progressione verso il prossimo
-                const xpNeeded = badge.level > currentLevel ? levelProgress.nextXp : 0;
-                const percent = xpNeeded > 0 ? Math.min((userXp / xpNeeded), 1) : 0;
-                
                 return (
-                  <View key={idx} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.2)', borderWidth: 3, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }}>
-                    {/* Fake progress bar border */}
-                    {percent > 0.2 && <View style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: 22, borderWidth: 3, borderColor: badge.color, borderLeftColor: 'transparent', borderBottomColor: 'transparent', transform: [{ rotate: '45deg'}] }} />}
-                    <MaterialIcons name="lock" size={18} color="rgba(255,255,255,0.3)" />
+                  <View key={idx} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.25)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                    <MaterialIcons name="lock" size={16} color="rgba(255,255,255,0.35)" />
                   </View>
                 );
               }
@@ -621,19 +637,23 @@ export default function VetrinaScreen() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 15, justifyContent: 'space-between' }}>
           
           {/* 1. Clues Found */}
-          <View style={{ width: '48%', backgroundColor: '#2D4A22', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}>
+          <TouchableOpacity 
+            onPress={() => setIsScannedPoisVisible(true)}
+            activeOpacity={0.9}
+            style={{ width: '48%', backgroundColor: '#2D4A22', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
+          >
             <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Indizi Trovati</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialIcons name="search" size={24} color="#D4AF37" />
-              <Text style={{ color: '#FFF', fontSize: 24, fontWeight: 'bold', fontFamily: 'serif', marginLeft: 10 }}>
+              <Text style={{ color: '#FFF', fontSize: 24, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold', marginLeft: 10 }}>
                 {Math.max(userProfile?.pois_discovered || 0, localPoisFallback)}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* 2. LOTO PTI + CO2 */}
           <TouchableOpacity 
-            onPress={() => setIsExpModalVisible(true)}
+            onPress={() => setIsImpactModalVisible(true)}
             activeOpacity={0.9} 
             style={{ width: '48%', backgroundColor: '#476537', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
           >
@@ -642,13 +662,13 @@ export default function VetrinaScreen() {
               <View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                   <MaterialIcons name="eco" size={12} color="#2ECC71" style={{marginRight: 4}} />
-                  <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'serif' }}>
+                  <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
                     {userProfile?.total_co2?.toFixed(1) ?? '0.0'} kg
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <MaterialIcons name="toll" size={12} color="#D4AF37" style={{marginRight: 4}} />
-                  <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'serif' }}>
+                  <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
                     {Math.max(userProfile?.total_tokens || 0, localTokensFallback)} PTI
                   </Text>
                 </View>
@@ -657,17 +677,25 @@ export default function VetrinaScreen() {
           </TouchableOpacity>
 
           {/* 3. Vault Multimediale */}
-          <View style={{ width: '48%', backgroundColor: '#D6734E', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}>
+          <TouchableOpacity 
+            onPress={() => setIsVaultModalVisible(true)}
+            activeOpacity={0.9}
+            style={{ width: '48%', backgroundColor: '#D6734E', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
+          >
             <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Memoria LOTO</Text>
             <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>Audioguide & Foto</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialIcons name="photo-library" size={14} color="#FFF" />
               <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>Sbloccati: {Math.floor((userProfile?.pois_discovered || 0) * 1.5)}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* 4. Achievements */}
-          <View style={{ width: '48%', backgroundColor: '#DFAB55', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}>
+          <TouchableOpacity 
+            onPress={() => setIsBadgeModalVisible(true)}
+            activeOpacity={0.9}
+            style={{ width: '48%', backgroundColor: '#DFAB55', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
+          >
             <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Traguardi</Text>
             <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>{levelInfo.title}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -675,30 +703,30 @@ export default function VetrinaScreen() {
               <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>{userBadges.length} Badge Sbloccati</Text>
             </View>
             <Text style={{ color: '#FFF', fontSize: 9, marginTop: 8, fontWeight: 'bold' }}>Sfida attiva: Sfida Mappatura Civica</Text>
-          </View>
+          </TouchableOpacity>
 
         </View>
 
-        {/* --- COMMUNITY TICKER (LOCKED UNTIL LV 5) --- */}
-        {levelProgress.currentLevel < 5 ? (
-          <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', elevation: 2, marginBottom: 15, borderWidth: 1, borderColor: theme.border }}>
-            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(212,175,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
-              <MaterialIcons name="lock-outline" size={14} color="#D4AF37" />
+        {/* --- COMMUNITY TICKER --- */}
+        {!isLevel5OrAbove ? (
+          <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', elevation: 2, marginBottom: 5, borderWidth: 1, borderColor: theme.border }}>
+            <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(212,175,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
+              <MaterialIcons name="lock-outline" size={12} color="#D4AF37" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.text, fontSize: 11, fontWeight: 'bold' }}>Community LOTO</Text>
+              <Text style={{ color: theme.text, fontSize: 10, fontWeight: 'bold' }}>Community LOTO</Text>
               <Text style={{ color: theme.textMuted, fontSize: 9 }}>Raggiungi Liv. 5 per sbloccare l'impatto globale.</Text>
             </View>
           </View>
         ) : (
-          <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 15, borderWidth: 1, borderColor: '#D4AF37' }}>
-            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(71,101,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
-              <MaterialIcons name="public" size={20} color="#476537" />
+          <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 5, borderWidth: 1, borderColor: '#D4AF37' }}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(71,101,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+              <MaterialIcons name="public" size={16} color="#476537" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.text, fontSize: 12, fontWeight: 'bold', marginBottom: 2, letterSpacing: 0.5 }}>IMPATTO CITTADINO (OGGI)</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 11, lineHeight: 15 }}>
-                Generati <Text style={{ color: '#D4AF37', fontWeight: 'bold' }}>{communityStats?.total_pti_generated || '2.450'} PTI</Text> e <Text style={{ color: '#2ECC71', fontWeight: 'bold' }}>{communityStats?.total_co2_saved || '12'}kg</Text> di CO₂ evitata.
+              <Text style={{ color: theme.text, fontSize: 10, fontWeight: 'bold', marginBottom: 1, letterSpacing: 0.5 }}>IMPATTO CITTADINO (OGGI)</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 10, lineHeight: 12 }}>
+                Generati <Text style={{ color: '#D4AF37', fontWeight: 'bold' }}>{communityStats?.total_pti_generated || '2.450'} PTI</Text> e <Text style={{ color: '#2ECC71', fontWeight: 'bold' }}>{communityStats?.total_co2_saved || '12'}kg</Text> di CO₂.
               </Text>
             </View>
           </View>
@@ -708,7 +736,7 @@ export default function VetrinaScreen() {
     );
   };
 
-  if (loading) return <BreathingLeaf fullScreen message="Sintonizzazione LOTO..." />;
+  // Rimossa BreathingLeaf iniziale come richiesto
 
   const userTokens = userProfile?.total_tokens ?? 0;
   // OFFLINE FALLBACK: Scegliamo il valore più alto tra il DB (se esiste) e la memoria locale
@@ -736,7 +764,7 @@ export default function VetrinaScreen() {
     return (
       <View style={{ marginBottom: 30 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, paddingHorizontal: 20 }}>
-          <Text style={{ fontSize: 20, fontWeight: 'bold', fontFamily: 'serif', color: theme.text }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold', color: theme.text }}>
             {item.title}
           </Text>
           {item.id === 'recommended' && (
@@ -775,7 +803,7 @@ export default function VetrinaScreen() {
   };
 
   const ContentWrapper: any = ImageBackground;
-  const wrapperProps = { source: require('../../assets/images/elite_bg.png'), style: { flex: 1, backgroundColor: theme.background }, imageStyle: { opacity: 0.15 } };
+  const wrapperProps = { source: require('../../assets/images/loto_bg.jpg'), style: { flex: 1, backgroundColor: '#F8FAF5' }, imageStyle: { opacity: 1 } };
 
   return (
     <ContentWrapper {...wrapperProps}>
@@ -785,7 +813,7 @@ export default function VetrinaScreen() {
           data={getDynamicPois()} // Scaffali Netflix
           ListHeaderComponent={renderHeader}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingBottom: 180 }}
           renderItem={renderShelf}
           showsVerticalScrollIndicator={false}
         />
@@ -818,6 +846,37 @@ export default function VetrinaScreen() {
             }
             setUserItineraries(prev => prev.filter(i => i.id !== id));
           }}
+        />
+
+        {/* MODALE IMPATTO E PUNTI (DAL QUADRANTE 2) */}
+        <ImpactStatsModal
+          visible={isImpactModalVisible}
+          onClose={() => setIsImpactModalVisible(false)}
+          userProfile={userProfile}
+          userTransactions={userTransactions}
+          userTokens={Math.max(userProfile?.total_tokens || 0, localTokensFallback)}
+          theme={theme}
+        />
+
+        <VaultModal
+          visible={isVaultModalVisible}
+          onClose={() => setIsVaultModalVisible(false)}
+          userProfile={userProfile}
+          theme={theme}
+        />
+
+        <SingleBadgeSheet
+          visible={isSingleBadgeVisible}
+          onClose={() => setIsSingleBadgeVisible(false)}
+          badge={selectedBadgeData}
+          theme={theme}
+        />
+
+        <ScannedPoisSheet
+          visible={isScannedPoisVisible}
+          onClose={() => setIsScannedPoisVisible(false)}
+          scannedPois={pois.slice(0, Math.max(userProfile?.pois_discovered || 0, localPoisFallback))}
+          theme={theme}
         />
 
         <TouristBaptismModal
@@ -877,7 +936,7 @@ export default function VetrinaScreen() {
           <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => setIsHomeMobilitySheetVisible(false)}>
             <View style={{ backgroundColor: theme.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25, paddingBottom: 40 }}>
               <View style={{ width: 40, height: 5, backgroundColor: theme.border, borderRadius: 3, alignSelf: 'center', marginBottom: 20 }} />
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.text, textAlign: 'center', marginBottom: 20, fontFamily: 'serif' }}>Come ti stai muovendo?</Text>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.text, textAlign: 'center', marginBottom: 20, fontFamily: 'PlayfairDisplay_700Bold' }}>Come ti stai muovendo?</Text>
               
               <TouchableOpacity 
                 style={{ flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 12, backgroundColor: mobilityType === 'dolce' ? theme.primary + '15' : 'transparent', marginBottom: 10, borderWidth: mobilityType === 'dolce' ? 1 : 0, borderColor: theme.primary }}
@@ -926,7 +985,7 @@ const getStyles = (theme: any) => StyleSheet.create({
 
   // HEADER SYMMETRY
   topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingLeft: 18, paddingRight: 25, paddingTop: 35, paddingBottom: 5, alignItems: 'center' },
-  hubTitleSymmetry: { fontSize: 40, fontWeight: '900', color: theme.text, fontFamily: 'serif', letterSpacing: 0.5, lineHeight: 44, includeFontPadding: false, textAlignVertical: 'center' },
+  hubTitleSymmetry: { fontSize: 40, fontWeight: '900', color: theme.text, fontFamily: 'PlayfairDisplay_700Bold', letterSpacing: 0.5, lineHeight: 44, includeFontPadding: false, textAlignVertical: 'center' },
   languageIconWrapper: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: theme.secondary, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   langBadge: { position: 'absolute', bottom: -5, right: -5, backgroundColor: theme.text, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 8 },
   langBadgeText: { color: '#FFF', fontSize: 8, fontWeight: 'bold' },
@@ -947,16 +1006,16 @@ const getStyles = (theme: any) => StyleSheet.create({
   // RETTANGOLO PRESTIGE
   prestigePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.primary, marginTop: 5, marginBottom: 15, marginRight: 25, paddingVertical: 16, paddingLeft: 6, paddingRight: 10, borderTopRightRadius: 50, borderBottomRightRadius: 50, elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
   prestigeCenterCol: { flex: 1, marginLeft: 8, marginRight: 8, justifyContent: 'center', alignItems: 'flex-start' },
-  prestigeTierTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFF', fontFamily: 'serif', marginBottom: 3, textAlign: 'left' },
+  prestigeTierTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFF', fontFamily: 'PlayfairDisplay_700Bold', marginBottom: 3, textAlign: 'left' },
   prestigeBadgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' },
   prestigePillBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginRight: 6 },
   prestigePillBadgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
   avatarCirclePill: { width: 54, height: 54, borderRadius: 27, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF', marginLeft: 5, marginRight: 2 },
-  avatarInitialPill: { color: '#FFF', fontWeight: 'bold', fontSize: 22, fontFamily: 'serif' },
+  avatarInitialPill: { color: '#FFF', fontWeight: 'bold', fontSize: 22, fontFamily: 'PlayfairDisplay_700Bold' },
 
   // IMPACT CARD '3 ARCHI'
   archesSection: { marginHorizontal: 20, marginBottom: 15 },
-  archesMainTitle: { color: theme.text, fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'serif', textAlign: 'center', marginBottom: 10 },
+  archesMainTitle: { color: theme.text, fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'PlayfairDisplay_700Bold', textAlign: 'center', marginBottom: 10 },
   archesContainer: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   impactArch: { flex: 1, alignItems: 'center', paddingTop: 20, paddingBottom: 25, borderTopLeftRadius: 80, borderTopRightRadius: 80, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, elevation: 6, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
   archVal: { color: '#FFF', fontSize: 26, fontWeight: 'bold' },
@@ -973,7 +1032,7 @@ const getStyles = (theme: any) => StyleSheet.create({
   hubIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
   hubBtnText: { color: theme.text, fontWeight: 'bold', fontSize: 11, marginTop: 8, textTransform: 'uppercase' },
 
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', fontFamily: 'serif', marginLeft: 25, marginBottom: 15, color: theme.text },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold', marginLeft: 25, marginBottom: 15, color: theme.text },
 
   // POI CARD HARMONIOUS
   poiCardHarmonious: { marginHorizontal: 20, backgroundColor: '#FFF', borderRadius: 30, overflow: 'hidden', elevation: 6, marginBottom: 25, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 15, borderWidth: 1, borderColor: 'rgba(0, 0, 0, 0.06)' },
@@ -983,7 +1042,7 @@ const getStyles = (theme: any) => StyleSheet.create({
   recommendedBadge: { position: 'absolute', top: 15, right: 15, backgroundColor: theme.secondary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   recommendedText: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
   poiInfoHarmonious: { padding: 25, backgroundColor: '#FFF', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-  poiNameHarmonious: { fontSize: 22, fontWeight: 'bold', color: theme.text, fontFamily: 'serif' },
+  poiNameHarmonious: { fontSize: 22, fontWeight: 'bold', color: theme.text, fontFamily: 'PlayfairDisplay_700Bold' },
   poiDistHarmonious: { color: '#64748B', fontSize: 14, fontWeight: '500' },
   btnActionHarmonious: { borderRadius: 20, alignItems: 'center', paddingVertical: 10, paddingHorizontal: 16, alignSelf: 'flex-start' },
   btnActionTextHarmonious: { color: '#FFF', fontWeight: 'bold', fontSize: 11, letterSpacing: 0.5 },
@@ -1008,7 +1067,7 @@ const getStyles = (theme: any) => StyleSheet.create({
     shadowRadius: 5,
     elevation: 3
   },
-  expNameBoutique: { fontSize: 24, fontWeight: '900', color: theme.text, fontFamily: 'serif', marginTop: 10 },
+  expNameBoutique: { fontSize: 24, fontWeight: '900', color: theme.text, fontFamily: 'PlayfairDisplay_700Bold', marginTop: 10 },
   expTitleBoutique: { fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
   modalStatsRowBoutique: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', backgroundColor: '#FFF', padding: 20, borderRadius: 20, borderWidth: 0.5, borderColor: '#C9C4B8', elevation: 2 },
   modalStat: { alignItems: 'center', flex: 1 },

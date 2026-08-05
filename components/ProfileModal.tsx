@@ -28,7 +28,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [activeProfileSection, setActiveProfileSection] = useState<'badges' | 'itineraries'>('badges');
   const [editingNickname, setEditingNickname] = useState(false);
-  const [tempNickname, setTempNickname] = useState(userProfile?.nickname || '');
+  const [tempNickname, setTempNickname] = useState(userProfile?.nickname || 'ESPLORATORE');
   const [userBadges, setUserBadges] = useState<string[]>([]);
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
@@ -109,9 +109,9 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
               onPress={() => setExpandedCard(expandedCard === 'profile' ? null : 'profile')}
               style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'profile' ? 'flex-start' : 'center', paddingVertical: expandedCard === 'profile' ? 20 : 35, height: expandedCard === 'profile' ? 320 : 310 }]}
             >
-              {!userProfile?.nickname && expandedCard !== 'profile' && (
+              {expandedCard !== 'profile' && (
                 <View style={{ position: 'absolute', top: 20, right: 20 }}>
-                  <TouchableOpacity onPress={() => { setTempNickname(userProfile?.nickname || ''); setEditingNickname(!editingNickname); }} style={{ padding: 5 }}>
+                  <TouchableOpacity onPress={() => { setTempNickname(userProfile?.nickname || 'ESPLORATORE'); setEditingNickname(!editingNickname); }} style={{ padding: 5 }}>
                     <MaterialIcons name={editingNickname ? "check" : "edit"} size={20} color={theme.accent} />
                   </TouchableOpacity>
                 </View>
@@ -127,7 +127,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                     <TextInput style={{ borderBottomWidth: 1, borderBottomColor: theme.accent, fontSize: 24, fontWeight: 'bold', color: theme.text, textAlign: 'center', minWidth: 150 }} value={tempNickname} onChangeText={setTempNickname} autoFocus onSubmitEditing={salvaNickname} />
                   </View>
                 ) : (
-                  <Text style={[styles.expNameBoutique, expandedCard === 'profile' && { fontSize: 20 }]}>{userProfile?.nickname || (userProfile?.email ? 'Inserisci Nome' : 'Utente Anonimo')}</Text>
+                  <Text style={[styles.expNameBoutique, expandedCard === 'profile' && { fontSize: 20 }]}>{userProfile?.nickname || 'ESPLORATORE'}</Text>
                 )}
                 <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0, fontSize: expandedCard === 'profile' ? 14 : 16 }]}>{levelInfo.title} ({userXp} XP)</Text>
               </View>
@@ -135,105 +135,79 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
               {expandedCard !== 'profile' && (
                 <Text style={{ fontSize: 11, color: theme.textMuted, textAlign: 'center', lineHeight: 16, paddingHorizontal: 5, marginTop: 15 }}>Continua a esplorare per salire di livello.</Text>
               )}
+
+              {expandedCard === 'profile' && (
+                <View style={{ marginTop: 25, width: '100%', paddingHorizontal: 15 }}>
+                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: theme.textMuted, marginBottom: 10, textTransform: 'uppercase' }}>Sicurezza Account Anonimo</Text>
+                  
+                  <TouchableOpacity 
+                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.03)', padding: 12, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' }}
+                    onPress={() => setShowBackupModal(true)}
+                  >
+                    <MaterialIcons name="qr-code" size={20} color={theme.text} style={{ marginRight: 10 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: theme.text, fontWeight: 'bold', fontSize: 13 }}>Salva LOTO Pass</Text>
+                      <Text style={{ color: theme.textMuted, fontSize: 10 }}>Crea il QR Code di backup</Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.03)', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' }}
+                    onPress={() => setShowRecoveryModal(true)}
+                  >
+                    <MaterialIcons name="restore" size={20} color={theme.primary} style={{ marginRight: 10 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: theme.primary, fontWeight: 'bold', fontSize: 13 }}>Recupera Profilo</Text>
+                      <Text style={{ color: theme.textMuted, fontSize: 10 }}>Inquadra un QR salvato</Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
+                  </TouchableOpacity>
+                </View>
+              )}
             </TouchableOpacity>
 
-            {/* CARD 2: CO2 Counter */}
-            <TouchableOpacity 
-              activeOpacity={0.9}
-              onPress={() => setExpandedCard(expandedCard === 'co2' ? null : 'co2')}
-              style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'co2' ? 'flex-start' : 'center', height: expandedCard === 'co2' ? 450 : 310 }]}
-            >
-               <MaterialIcons name="eco" size={expandedCard === 'co2' ? 40 : 60} color={theme.primary} style={{marginBottom: expandedCard === 'co2' ? 10 : 20}} />
-               <Text style={[styles.mStatValBoutique, { fontSize: expandedCard === 'co2' ? 24 : 32, color: theme.primary }]}>{userProfile?.total_co2?.toFixed(2) ?? '0.00'} kg</Text>
-               <Text style={[styles.mStatLab, { fontSize: 14 }]}>CO₂ Risparmiata</Text>
-               
-               {expandedCard === 'co2' && (
-                 <View style={{ flex: 1, width: '100%', marginTop: 20 }}>
-                   <Text style={{fontSize:12, fontWeight:'bold', color: theme.text, marginBottom:10, alignSelf:'flex-start'}}>CRONOLOGIA IMPATTO</Text>
-                   {userTransactions.filter(tx => tx.co2_saved > 0).length === 0 ? (
-                     <Text style={{fontSize:12, color: theme.textMuted, textAlign:'center', marginTop:20}}>Nessuna attività registrata.</Text>
-                   ) : (
-                     <FlatList
-                       data={userTransactions.filter(tx => tx.co2_saved > 0)}
-                       keyExtractor={item => item.id}
-                       showsVerticalScrollIndicator={false}
-                       renderItem={({item}) => (
-                         <View style={{flexDirection:'row', justifyContent:'space-between', borderBottomWidth:1, borderBottomColor: theme.border, paddingVertical:10}}>
-                           <View>
-                             <Text style={{fontSize:12, fontWeight:'bold', color: theme.text}}>{item.action_type || 'Attività Eco'}</Text>
-                             <Text style={{fontSize:10, color: theme.textMuted}}>{new Date(item.created_at).toLocaleDateString()}</Text>
-                           </View>
-                           <Text style={{fontSize:14, fontWeight:'bold', color: theme.primary}}>+{item.co2_saved.toFixed(1)} kg</Text>
-                         </View>
-                       )}
-                     />
-                   )}
-                 </View>
-               )}
-            </TouchableOpacity>
-
-            {/* CARD 3: PTI Counter */}
-            <TouchableOpacity 
-              activeOpacity={0.9}
-              onPress={() => setExpandedCard(expandedCard === 'pts' ? null : 'pts')}
-              style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, justifyContent: expandedCard === 'pts' ? 'flex-start' : 'center', height: expandedCard === 'pts' ? 450 : 310 }]}
-            >
-               <MaterialIcons name="toll" size={expandedCard === 'pts' ? 40 : 60} color={theme.accent} style={{marginBottom: expandedCard === 'pts' ? 10 : 20}} />
-               <Text style={[styles.mStatValBoutique, { fontSize: expandedCard === 'pts' ? 24 : 32, color: theme.accent }]}>{userTokens} PTI</Text>
-               <Text style={[styles.mStatLab, { fontSize: 14 }]}>LOTO Tokens</Text>
-
-               {expandedCard === 'pts' && (
-                 <View style={{ flex: 1, width: '100%', marginTop: 20 }}>
-                   <Text style={{fontSize:12, fontWeight:'bold', color: theme.text, marginBottom:10, alignSelf:'flex-start'}}>CRONOLOGIA GUADAGNI</Text>
-                   {userTransactions.filter(tx => tx.tokens_earned > 0).length === 0 ? (
-                     <Text style={{fontSize:12, color: theme.textMuted, textAlign:'center', marginTop:20}}>Nessun LOTO PTI accumulato.</Text>
-                   ) : (
-                     <FlatList
-                       data={userTransactions.filter(tx => tx.tokens_earned > 0)}
-                       keyExtractor={item => item.id}
-                       showsVerticalScrollIndicator={false}
-                       renderItem={({item}) => (
-                         <View style={{flexDirection:'row', justifyContent:'space-between', borderBottomWidth:1, borderBottomColor: theme.border, paddingVertical:10}}>
-                           <View>
-                             <Text style={{fontSize:12, fontWeight:'bold', color: theme.text}}>{item.action_type || 'Bonus LOTO'}</Text>
-                             <Text style={{fontSize:10, color: theme.textMuted}}>{new Date(item.created_at).toLocaleDateString()}</Text>
-                           </View>
-                           <Text style={{fontSize:14, fontWeight:'bold', color: theme.accent}}>+{item.tokens_earned} PTI</Text>
-                         </View>
-                       )}
-                     />
-                   )}
-                 </View>
-               )}
-            </TouchableOpacity>
-
-            {/* CARD 4: MAPPA LOCALE */}
+            {/* LE CARD CO2 E PTI SONO STATE RIMOSSE (ora gestite in Home) */}
+            {/* CARD 2: MAPPA LOCALE (Stile Boutique con POI divisi) */}
             <View 
-              style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, paddingVertical: 0, paddingHorizontal: 0, backgroundColor: '#D6734E', overflow: 'hidden' }]}
+              style={[styles.expCardBoutique, { width: width * 0.75, marginHorizontal: width * 0.025, paddingVertical: 25, paddingHorizontal: 20, justifyContent: 'center', alignItems: 'center' }]}
             >
-               <View style={{ padding: 25, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                 <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}>
-                   <MaterialIcons name="map" size={36} color="#FFF" />
-                 </View>
-                 <Text style={[styles.mStatValBoutique, { color: '#FFF', fontSize: 24 }]}>Mappa Locale</Text>
-                 <Text style={[styles.mStatLab, { color: 'rgba(255,255,255,0.8)' }]}>Taranto</Text>
-                 
-                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 15, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
-                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50' }} />
-                   <Text style={{ color: '#FFF', fontSize: 11, marginLeft: 6, fontWeight: 'bold' }}>P.O.I. attivi in città</Text>
-                 </View>
-                 
-                 <TouchableOpacity 
-                   style={{ backgroundColor: '#FFF', paddingVertical: 10, paddingHorizontal: 22, borderRadius: 25, flexDirection: 'row', alignItems: 'center', marginTop: 20, elevation: 2 }}
-                   onPress={() => {
-                     onClose();
-                     router.push('/map');
-                   }}
-                 >
-                   <MaterialIcons name="explore" size={16} color="#D6734E" style={{ marginRight: 6 }} />
-                   <Text style={{ color: '#D6734E', fontWeight: 'bold', fontSize: 12 }}>ESPLORA ORA</Text>
-                 </TouchableOpacity>
+               <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(214, 115, 78, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 15 }}>
+                 <MaterialIcons name="map" size={36} color="#D6734E" />
                </View>
+               <Text style={[styles.mStatValBoutique, { color: theme.text, fontSize: 24 }]}>Mappa Locale</Text>
+               <Text style={[styles.mStatLab, { color: theme.textMuted, marginBottom: 20 }]}>Esplora il territorio</Text>
+               
+               {/* Griglia P.O.I. Divisi */}
+               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 15, width: '100%', marginBottom: 20 }}>
+                 <View style={{ alignItems: 'center' }}>
+                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#2ECC71' }}>12</Text>
+                   <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Natura</Text>
+                 </View>
+                 <View style={{ alignItems: 'center' }}>
+                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#3498DB' }}>8</Text>
+                   <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Cultura</Text>
+                 </View>
+                 <View style={{ alignItems: 'center' }}>
+                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#E67E22' }}>5</Text>
+                   <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Partner</Text>
+                 </View>
+                 <View style={{ alignItems: 'center' }}>
+                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#9B59B6' }}>3</Text>
+                   <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Segreti</Text>
+                 </View>
+               </View>
+               
+               <TouchableOpacity 
+                 style={{ backgroundColor: '#D6734E', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 25, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+                 onPress={() => {
+                   onClose();
+                   router.push('/map');
+                 }}
+               >
+                 <MaterialIcons name="explore" size={16} color="#FFF" style={{ marginRight: 6 }} />
+                 <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>APRI MAPPA</Text>
+               </TouchableOpacity>
             </View>
 
           </ScrollView>
@@ -243,6 +217,14 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
           </TouchableOpacity>
         </View>
       </View>
+
+      {showBackupModal && (
+        <LotoPassBackupModal visible={showBackupModal} onClose={() => setShowBackupModal(false)} userProfile={userProfile} />
+      )}
+      
+      {showRecoveryModal && (
+        <LotoPassRecoveryScanner visible={showRecoveryModal} onClose={() => setShowRecoveryModal(false)} />
+      )}
     </Modal>
   );
 }

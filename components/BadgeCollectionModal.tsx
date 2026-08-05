@@ -98,22 +98,24 @@ export default function BadgeCollectionModal({ visible, onClose, userBadges, use
   // Calcola il progresso numerico reale per ciascun badge
   const getBadgeProgress = (badge: any) => {
     let current = 0;
+    
+    // Mostriamo il progresso solo se il dato è realmente presente nel profilo (convalidato)
     if (badge.metricKey === 'pois_discovered') {
-      current = userProfile?.pois_discovered || (unlockedIds.includes(badge.id) ? 1 : 0);
+      current = userProfile?.pois_discovered || 0;
     } else if (badge.metricKey === 'total_co2') {
       current = userProfile?.total_co2 || 0;
     } else if (badge.metricKey === 'level') {
       current = userProfile?.level || 1;
     } else if (badge.metricKey === 'reports_count') {
-      current = userProfile?.reports_count || (unlockedIds.includes(badge.id) ? 3 : 0);
+      current = userProfile?.reports_count || 0;
     } else if (badge.metricKey === 'itineraries_count') {
-      current = userProfile?.itineraries_count || (unlockedIds.includes(badge.id) ? 3 : 0);
-    } else {
-      current = unlockedIds.includes(badge.id) ? badge.target : 0;
+      current = userProfile?.itineraries_count || 0;
     }
 
+    // Se l'id è forzatamente sbloccato dal database user_badges, lo consideriamo completo
     const isCompleted = current >= badge.target || unlockedIds.includes(badge.id);
-    const percent = Math.min(100, Math.round((current / badge.target) * 100));
+    // Se è completato forzatamente ma non abbiamo il contatore, simuliamo il 100% visivo
+    const percent = isCompleted ? 100 : Math.min(100, Math.round((current / badge.target) * 100));
     return { current, isCompleted, percent };
   };
 
@@ -273,9 +275,9 @@ const styles = StyleSheet.create({
   // Dettaglio Modal
   detailOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   detailBox: { width: '100%', maxWidth: 360, backgroundColor: '#FDFBF7', borderRadius: 24, padding: 25, alignItems: 'center', elevation: 10, borderWidth: 1, borderColor: '#D5CBB9' },
-  detailIconWrap: { width: 76, height: 76, borderRadius: 38, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-  detailTitle: { fontSize: 20, fontWeight: 'bold', fontFamily: 'serif', color: '#1A3621', marginBottom: 8, textAlign: 'center' },
-  reqPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F0E4', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, marginBottom: 15 },
+  detailIconWrap: { width: 76, height: 76, borderRadius: 38, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  detailTitle: { fontSize: 22, fontWeight: 'bold', fontFamily: 'serif', color: '#1A3621', marginBottom: 12, textAlign: 'center', lineHeight: 28, paddingHorizontal: 10 },
+  reqPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F0E4', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 12, marginBottom: 15 },
   reqText: { fontSize: 11, color: '#2D4A22', marginLeft: 6, fontWeight: 'bold' },
   detailDesc: { textAlign: 'center', color: '#6A5638', fontSize: 13, lineHeight: 20, marginBottom: 25 },
   detailActions: { flexDirection: 'row', gap: 12, width: '100%' },

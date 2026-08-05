@@ -21,8 +21,26 @@ type PoiCardProps = {
 export default function PoiCard({ item, userLocation, userProfile, onAction, onAlternative, onPress, isBooked, t }: PoiCardProps) {
   const { theme } = useTheme();
 
-  const img = (item.id === 'castello' || (item.name && item.name.includes('Castello Aragonese'))) ? require('../assets/images/castello-evento.png') : (item.image_url ? { uri: item.image_url } : (item.image ? (typeof item.image === 'string' ? { uri: item.image } : item.image) : require('../assets/images/eco_bg.png')));
-  const isCrowded = item.crowd_level && item.crowd_level > 80;
+  const img = item.image_url ? { uri: item.image_url } : (item.image ? (typeof item.image === 'string' ? { uri: item.image } : item.image) : require('../assets/images/eco_bg.png'));
+  
+  const crowdLevel = item.crowd_level || 20; // Default basso
+  const isCrowded = crowdLevel > 75;
+  const isMediumCrowd = crowdLevel > 40 && crowdLevel <= 75;
+  
+  let badgeText = '';
+  let badgeColor = '';
+  let badgeIcon = '';
+  
+  if (item.bonus_pts || (!isCrowded && !isMediumCrowd)) {
+    badgeText = item.bonus_pts ? `BONUS +${item.bonus_pts} PTI` : 'META CONSIGLIATA';
+    badgeColor = theme.accent;
+    badgeIcon = 'workspace-premium';
+  } else {
+    badgeText = `CAPACITÀ: ${isCrowded ? 'ALTA' : 'MEDIA'}`;
+    badgeColor = isCrowded ? '#D32F2F' : '#F57C00';
+    badgeIcon = 'groups';
+  }
+
   const hasWater = item.amenities?.includes('water');
   const userTokens = userProfile?.total_tokens || 0;
   const canUnlockStory = userTokens >= 100 && item.category !== 'partner';
@@ -41,17 +59,17 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
     >
       <View style={styles.poiImageContainer}>
         {img ? <Image source={img} style={styles.poiImageHarmonious} /> : <View style={[styles.poiImageHarmonious, { backgroundColor: '#E2E8F0' }]} />}
-        <View style={[styles.recommendedBadge, { backgroundColor: theme.accent, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }]}>
-          <MaterialIcons name="workspace-premium" size={14} color="#FFF" />
-          <Text style={[styles.recommendedText, { color: '#FFF', marginLeft: 4, fontSize: 10, fontWeight: 'bold' }]}>BONUS +10 PTI</Text>
+        <View style={[styles.recommendedBadge, { backgroundColor: badgeColor, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }]}>
+          <MaterialIcons name={badgeIcon as any} size={14} color="#FFF" />
+          <Text style={[styles.recommendedText, { color: '#FFF', marginLeft: 4, fontSize: 10, fontWeight: 'bold' }]}>{badgeText}</Text>
         </View>
       </View>
 
       <View style={styles.poiInfoHarmonious}>
-        <Text style={[styles.poiNameHarmonious, { color: theme.text }]}>{item.name}</Text>
+        <Text style={[styles.poiNameHarmonious, { color: theme.text, fontFamily: 'PlayfairDisplay_700Bold' }]} numberOfLines={1}>{item.name}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
           <MaterialIcons name="place" size={14} color={theme.primary} />
-          <Text style={styles.poiDistHarmonious}> {userLocation && item.latitude && item.longitude ? calculateDistance(userLocation.coords.latitude, userLocation.coords.longitude, item.latitude, item.longitude) : 'Calcolo...'} • <Text style={{ color: isCrowded ? theme.secondary : theme.primary }}>{isCrowded ? 'Affollato' : 'Capacità Sicura'}</Text></Text>
+          <Text style={[styles.poiDistHarmonious, { fontFamily: 'Raleway_600SemiBold' }]}> {userLocation && item.latitude && item.longitude ? calculateDistance(userLocation.coords.latitude, userLocation.coords.longitude, item.latitude, item.longitude) : 'Calcolo distanza...'} </Text>
         </View>
         
         {showAccessibilityWarning && (

@@ -11,6 +11,7 @@ import * as Linking from 'expo-linking';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import EventDetailSheet from '../../components/EventDetailSheet';
 import RouteSummarySheet from '../../components/RouteSummarySheet';
+import { useFocusEffect } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -77,49 +78,58 @@ export default function MapScreen() {
     { id: 'secret', title: 'Secret', icon: 'vpn-key' }
   ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!currentTenant?.id) return;
-      
-      console.log(`[Map] Fetching data for tenant: ${currentTenant.id}`);
-      
-      // Fetch POIs using the Frontend View to get decoded lat/lng from PostGIS coords
-      const { data: poisData, error: poisError } = await supabase
-        .from('vw_pois_frontend')
-        .select('*')
-        .eq('tenant_id', currentTenant.slug)
-        .eq('is_active', true);
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+      const fetchData = async () => {
+        if (!currentTenant?.id) return;
         
-      if (!poisError && poisData) {
-        // I POI arrivano ora formattati dal database
-        setPois(poisData);
-      } else if (poisError) {
-        console.error("[Map] Errore fetch POI:", poisError);
-      }
-
-      // Fetch Events
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('tenant_events')
-        .select('*')
-        .eq('tenant_id', currentTenant.slug || currentTenant.id);
+        console.log(`[Map] Fetching data for tenant: ${currentTenant.id}`);
         
-      if (!eventsError && eventsData && eventsData.length > 0) {
-        setActiveEvents(eventsData);
-      } else {
-        setActiveEvents([]);
-      }
-      setIsLoading(false);
-      
-      // Auto-centra la mappa all'avvio (fix per lo zoom "out piccolo")
-      setTimeout(() => {
-        if (scrollHorizontalRef.current && scrollVerticalRef.current) {
-          scrollHorizontalRef.current.scrollTo({ x: width / 2, animated: false });
-          scrollVerticalRef.current.scrollTo({ y: height * 0.1, animated: false });
+        // Fetch POIs using the Frontend View to get decoded lat/lng from PostGIS coords
+        const { data: poisData, error: poisError } = await supabase
+          .from('vw_pois_frontend')
+          .select('*')
+          .eq('tenant_id', currentTenant.slug)
+          .eq('is_active', true);
+          
+        if (isActive && !poisError && poisData) {
+          setPois(poisData);
+        } else if (poisError) {
+          console.error("[Map] Errore fetch POI:", poisError);
         }
-      }, 100);
-    };
-    fetchData();
-  }, [currentTenant]);
+
+        // Fetch Events
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('tenant_events')
+          .select('*')
+          .eq('tenant_id', currentTenant.slug || currentTenant.id);
+          
+        if (isActive) {
+          if (!eventsError && eventsData && eventsData.length > 0) {
+            setActiveEvents(eventsData);
+          } else {
+            setActiveEvents([]);
+          }
+          setIsLoading(false);
+        }
+        
+        // Auto-centra la mappa all'avvio
+        setTimeout(() => {
+          if (isActive && scrollHorizontalRef.current && scrollVerticalRef.current) {
+            scrollHorizontalRef.current.scrollTo({ x: width / 2, animated: false });
+            scrollVerticalRef.current.scrollTo({ y: height * 0.1, animated: false });
+          }
+        }, 100);
+      };
+      
+      fetchData();
+      
+      return () => {
+        isActive = false;
+      };
+    }, [currentTenant])
+  );
 
   // Listener per Deferred Deep Linking
   useEffect(() => {

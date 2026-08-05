@@ -2,6 +2,8 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { useFonts, PlayfairDisplay_400Regular, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
+import { Raleway_400Regular, Raleway_600SemiBold } from '@expo-google-fonts/raleway';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -31,6 +33,13 @@ export default function RootLayout() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
+
+  const [fontsLoaded] = useFonts({
+    PlayfairDisplay_400Regular,
+    PlayfairDisplay_700Bold,
+    Raleway_400Regular,
+    Raleway_600SemiBold,
+  });
 
   const initAuth = async () => {
     try {
@@ -115,7 +124,7 @@ export default function RootLayout() {
     );
   }
 
-  if (!isAuthReady) {
+  if (!isAuthReady || !fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FDFBF2' }}>
         <ActivityIndicator size="large" color="#5F713D" style={{ marginBottom: 20 }} />
