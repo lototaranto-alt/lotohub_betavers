@@ -521,11 +521,36 @@ export default function VetrinaScreen() {
 
     // Catalogo dei 5 badge mostrati nella Prestige Card
     const cardBadges = [
-      { id: 'badge_first_scan', name: 'Battesimo', icon: 'location-on', color: '#2ECC71', unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan') || (userProfile?.pois_discovered || 0) > 0 },
-      { id: 'badge_civic_3', name: 'Sentinella', icon: 'security', color: '#2196F3', unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_civic_3') },
-      { id: 'badge_eco_5kg', name: 'Eco-Sostenitore', icon: 'eco', color: '#4CAF50', unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg') || mobilityType === 'dolce' },
-      { id: 'badge_marathon_3', name: 'Maratoneta', icon: 'directions-run', color: '#FF9800', unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_marathon_3') || (userProfile?.itineraries_count || 0) >= 3 },
-      { id: 'badge_level_5', name: 'Cittadino Attivo', icon: 'stars', color: '#FFD700', unlocked: isLevel5OrAbove }
+      { 
+        id: 'badge_first_scan', name: 'Battesimo', icon: 'location-on', color: '#2ECC71', 
+        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan') || (userProfile?.pois_discovered || 0) > 0,
+        actionDescription: 'Scansiona il tuo primo POI (fontanella o punto d\'ombra) per iniziare a mappare la città.',
+        progress: Math.min(100, (userProfile?.pois_discovered || 0) * 100)
+      },
+      { 
+        id: 'badge_civic_3', name: 'Sentinella', icon: 'security', color: '#2196F3', 
+        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_civic_3'),
+        actionDescription: 'Partecipa a 3 eventi civici (es. Raccolta Rifiuti Plasticaqqua).',
+        progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_civic_3') ? 100 : 0
+      },
+      { 
+        id: 'badge_eco_5kg', name: 'Eco-Sostenitore', icon: 'eco', color: '#4CAF50', 
+        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg') || mobilityType === 'dolce',
+        actionDescription: 'Mantieni uno stile di mobilità dolce (bici/piedi) per 5 giorni consecutivi.',
+        progress: mobilityType === 'dolce' ? 100 : 20
+      },
+      { 
+        id: 'badge_marathon_3', name: 'Maratoneta', icon: 'directions-run', color: '#FF9800', 
+        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_marathon_3') || (userProfile?.itineraries_count || 0) >= 3,
+        actionDescription: 'Completa 3 Itinerari consigliati da LOTO.',
+        progress: Math.min(100, Math.round(((userProfile?.itineraries_count || 0) / 3) * 100))
+      },
+      { 
+        id: 'badge_level_5', name: 'Cittadino Attivo', icon: 'stars', color: '#FFD700', 
+        unlocked: isLevel5OrAbove,
+        actionDescription: 'Raggiungi il Livello 5 accumulando punti esperienza per la città.',
+        progress: Math.min(100, Math.round(((levelProgress.currentLevel) / 5) * 100))
+      }
     ];
 
     return (

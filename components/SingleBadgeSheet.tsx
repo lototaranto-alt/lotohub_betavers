@@ -29,11 +29,27 @@ export default function SingleBadgeSheet({ visible, onClose, badge, theme }: Sin
                 <MaterialIcons name={badge.icon || 'star'} size={40} color={badge.color} />
               )}
             </View>
-            <Text style={[styles.title, { color: theme.text }]}>{badge.title || `Livello ${badge.level}`}</Text>
+            <Text style={[styles.title, { color: theme.text }]}>{badge.title || 'Badge Misterioso'}</Text>
             <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-              Questo badge si sblocca al livello {badge.level}. 
-              {badge.isUnlocked ? ' Congratulazioni, lo hai sbloccato!' : ' Continua l\'esplorazione per sbloccarlo.'}
+              {badge.actionDescription || 'Completa specifiche azioni nel mondo reale per sbloccare questo badge.'}
             </Text>
+            
+            {!badge.isUnlocked && (
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressBar, { backgroundColor: theme.border }]}>
+                  <View style={[styles.progressFill, { backgroundColor: badge.color, width: `${badge.progress || 0}%` }]} />
+                </View>
+                <Text style={{ color: theme.text, marginTop: 8, fontSize: 12 }}>
+                  Progresso: {badge.progress || 0}%
+                </Text>
+              </View>
+            )}
+            
+            {badge.isUnlocked && (
+              <View style={[styles.unlockedBadge, { backgroundColor: badge.color + '20' }]}>
+                <Text style={{ color: badge.color, fontWeight: 'bold' }}>✓ Sbloccato!</Text>
+              </View>
+            )}
             
             <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.accent }]} onPress={onClose}>
               <Text style={styles.closeButtonText}>Chiudi</Text>
@@ -93,9 +109,29 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 20,
     lineHeight: 20,
     paddingHorizontal: 20,
+  },
+  progressContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  progressBar: {
+    width: '80%',
+    height: 10,
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+  },
+  unlockedBadge: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 20,
   },
   closeButton: {
     paddingHorizontal: 30,

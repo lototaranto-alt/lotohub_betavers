@@ -374,9 +374,20 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
               onClose={() => setIsScannerVisible(false)} 
               onScanSuccess={async (scannedData) => {
                 try {
-                  const { data, error } = await supabase.rpc('scan_poi', { p_poi_id: poi.id });
-                  if (error) throw error;
-                  Alert.alert('Ottimo!', `Hai ottenuto i punti di questo POI. I tuoi XP sono ora ${data.new_total_xp}.`);
+                  // EVENTO SPECIALE: Raccolta Rifiuti Lido Azzurro (Plasticaqqua)
+                  // Intercetta lo short link o l'ID dell'evento (max 47 bytes sul tag NFC)
+                  if (scannedData.includes('loto.app/e/1') || scannedData.includes('plasticaqqua')) {
+                     Alert.alert(
+                       '✨ Evento Sbloccato: Plasticaqqua!', 
+                       'Hai completato il check-in per la Raccolta Rifiuti al Lido Azzurro. Ti è stato conferito il badge "Sentinella"!'
+                     );
+                     // Fallback RPC o logica speciale per l'evento qui
+                  } else {
+                    const { data, error } = await supabase.rpc('scan_poi', { p_poi_id: poi.id });
+                    if (error) throw error;
+                    Alert.alert('Ottimo!', `Hai ottenuto i punti di questo POI. I tuoi XP sono ora ${data.new_total_xp}.`);
+                  }
+                  
                   onCheckIn(poi); // Chiude la scheda e aggiorna la home
                 } catch(e: any) {
                   Alert.alert('Errore', 'Non è stato possibile validare la scansione sul server: ' + e.message);
