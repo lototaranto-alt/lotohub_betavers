@@ -151,21 +151,36 @@ export default function VetrinaScreen() {
   const sparkleAnim = useRef(new Animated.Value(1)).current;
   const [tipsAnim] = useState(new Animated.Value(1));
   const [liveFeedIndex, setLiveFeedIndex] = useState(0);
-
-  const liveFeeds = [
-    "Giovanni ha completato 'Sentinella' al Lido Azzurro",
-    "Marta ha appena registrato una fontanella",
-    "La community ha raggiunto 120kg di CO2 risparmiata oggi!",
-    "Marco si è unito a Plasticaqqua Taranto",
-    "Un nuovo punto d'ombra è stato mappato a Città Vecchia"
-  ];
+  const [liveFeeds, setLiveFeeds] = useState<string[]>([
+    "Un ESPLORATORE ha scoperto un nuovo POI!",
+    "La community ha raggiunto 120kg di CO2 risparmiata oggi!"
+  ]);
 
   useEffect(() => {
+    const fetchLiveFeed = async () => {
+      try {
+        const { data } = await supabase.from('profiles').select('nickname, level').limit(10);
+        if (data && data.length > 0) {
+          const feedTypes = ['scan', 'badge', 'level', 'report'];
+          const builtFeed = data.map((p, i) => {
+            const type = feedTypes[i % feedTypes.length];
+            const name = p.nickname || 'Un ESPLORATORE';
+            if (type === 'scan') return `${name} ha scoperto un nuovo POI!`;
+            if (type === 'badge') return `${name} ha sbloccato il badge Sentinella`;
+            if (type === 'level') return `${name} ha raggiunto il Livello ${p.level || 2}`;
+            return `${name} ha inviato una segnalazione civica`;
+          });
+          setLiveFeeds(builtFeed);
+        }
+      } catch(e) {}
+    };
+    fetchLiveFeed();
+
     const interval = setInterval(() => {
       setLiveFeedIndex((prev) => (prev + 1) % liveFeeds.length);
     }, 8000); // Cambia ogni 8 secondi per dare senso di vita
     return () => clearInterval(interval);
-  }, []);
+  }, [liveFeeds.length]);
   const [isExpModalVisible, setIsExpModalVisible] = useState(false); // --- NUOVI STATI GAMIFICATION ---
   const [isBadgeModalVisible, setIsBadgeModalVisible] = useState(false);
   const [isImpactModalVisible, setIsImpactModalVisible] = useState(false);

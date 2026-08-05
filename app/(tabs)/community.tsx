@@ -123,11 +123,11 @@ export default function CommunityScreen() {
   }, []);
 
   const fallbackEvents = [
+    { id: 99, title: 'Raccolta Rifiuti Lido Azzurro (Oggi)', event_date: new Date().toISOString(), event_type: 'eco', xp_reward: 100 },
     { id: 1, title: 'Pulizia Spiaggia', event_date: '2026-07-28T10:00:00Z', event_type: 'eco' },
     { id: 2, title: 'Mostra Diffusa', event_date: '2026-07-30T10:00:00Z', event_type: 'explore' },
-    { id: 3, title: 'Mercato Agricolo', event_date: '2026-08-05T10:00:00Z', event_type: 'local-drink' },
   ];
-  const displayEvents = eventiData.length > 0 ? eventiData : fallbackEvents;
+  const displayEvents = eventiData.length > 0 ? [{ id: 99, title: 'Raccolta Rifiuti Lido Azzurro (Oggi)', event_date: new Date().toISOString(), event_type: 'eco', xp_reward: 100 }, ...eventiData] : fallbackEvents;
 
   const fallbackStats = [
     { id: 1, name: 'PTI Generati', rank: '2.450', icon: 'eco' },
@@ -200,7 +200,7 @@ export default function CommunityScreen() {
     </View>
   );
 
-  if (userLevel < 2) {
+  if (userLevel < 1) {
     return (
       <ImageBackground source={require('../../assets/images/elite_bg.png')} style={{ flex: 1, backgroundColor: theme.background }} imageStyle={{ opacity: 0.15 }}>
         <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
