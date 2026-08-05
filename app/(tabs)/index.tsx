@@ -149,7 +149,23 @@ export default function VetrinaScreen() {
   const [lang, setLang] = useState<'IT' | 'UK'>('IT');
   const [isTipsVisible, setIsTipsVisible] = useState(false);
   const sparkleAnim = useRef(new Animated.Value(1)).current;
-  const tipsAnim = useRef(new Animated.Value(1)).current;
+  const [tipsAnim] = useState(new Animated.Value(1));
+  const [liveFeedIndex, setLiveFeedIndex] = useState(0);
+
+  const liveFeeds = [
+    "Giovanni ha completato 'Sentinella' al Lido Azzurro",
+    "Marta ha appena registrato una fontanella",
+    "La community ha raggiunto 120kg di CO2 risparmiata oggi!",
+    "Marco si è unito a Plasticaqqua Taranto",
+    "Un nuovo punto d'ombra è stato mappato a Città Vecchia"
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveFeedIndex((prev) => (prev + 1) % liveFeeds.length);
+    }, 8000); // Cambia ogni 8 secondi per dare senso di vita
+    return () => clearInterval(interval);
+  }, []);
   const [isExpModalVisible, setIsExpModalVisible] = useState(false); // --- NUOVI STATI GAMIFICATION ---
   const [isBadgeModalVisible, setIsBadgeModalVisible] = useState(false);
   const [isImpactModalVisible, setIsImpactModalVisible] = useState(false);
@@ -633,27 +649,31 @@ export default function VetrinaScreen() {
           </View>
 
           {/* Badges Row (5 Milestone con Anello di Progressione - Cliccabili per Collezione) */}
-          <TouchableOpacity 
-            onPress={() => Alert.alert("L.O.T.O. HUB", "La tua collezione completa dei badge sarà esplorabile a breve!")}
-            activeOpacity={0.85}
-            style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 25, gap: 10 }}
-          >
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 25, gap: 10 }}>
             {cardBadges.map((badge, idx) => {
               if (badge.unlocked) {
                 return (
-                  <View key={idx} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: badge.color + '25', borderWidth: 2.5, borderColor: badge.color, justifyContent: 'center', alignItems: 'center' }}>
+                  <TouchableOpacity 
+                    key={idx} 
+                    onPress={() => { setSelectedBadgeData(badge); setIsSingleBadgeVisible(true); }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: badge.color + '25', borderWidth: 2.5, borderColor: badge.color, justifyContent: 'center', alignItems: 'center' }}
+                  >
                     <MaterialIcons name={badge.icon as any} size={20} color={badge.color} />
-                  </View>
+                  </TouchableOpacity>
                 );
               } else {
                 return (
-                  <View key={idx} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.25)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                  <TouchableOpacity 
+                    key={idx} 
+                    onPress={() => { setSelectedBadgeData(badge); setIsSingleBadgeVisible(true); }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.25)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}
+                  >
                     <MaterialIcons name="lock" size={16} color="rgba(255,255,255,0.35)" />
-                  </View>
+                  </TouchableOpacity>
                 );
               }
             })}
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* --- 4 QUADRANT GRID --- */}
@@ -730,30 +750,19 @@ export default function VetrinaScreen() {
 
         </View>
 
-        {/* --- COMMUNITY TICKER --- */}
-        {!isLevel5OrAbove ? (
-          <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', elevation: 2, marginBottom: 5, borderWidth: 1, borderColor: theme.border }}>
-            <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(212,175,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
-              <MaterialIcons name="lock-outline" size={12} color="#D4AF37" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.text, fontSize: 10, fontWeight: 'bold' }}>Community LOTO</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 9 }}>Raggiungi Liv. 5 per sbloccare l'impatto globale.</Text>
-            </View>
+        {/* --- LIVE COMMUNITY FEED --- */}
+        <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 5, borderWidth: 1, borderColor: '#D4AF37' }}>
+          <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(71,101,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+            <MaterialIcons name="rss-feed" size={16} color="#476537" />
           </View>
-        ) : (
-          <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 5, borderWidth: 1, borderColor: '#D4AF37' }}>
-            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(71,101,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
-              <MaterialIcons name="public" size={16} color="#476537" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.text, fontSize: 10, fontWeight: 'bold', marginBottom: 1, letterSpacing: 0.5 }}>IMPATTO CITTADINO (OGGI)</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 10, lineHeight: 12 }}>
-                Generati <Text style={{ color: '#D4AF37', fontWeight: 'bold' }}>{communityStats?.total_pti_generated || '2.450'} PTI</Text> e <Text style={{ color: '#2ECC71', fontWeight: 'bold' }}>{communityStats?.total_co2_saved || '12'}kg</Text> di CO₂.
-              </Text>
-            </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: theme.text, fontSize: 10, fontWeight: 'bold', marginBottom: 1, letterSpacing: 0.5 }}>LIVE FEED CITTADINO</Text>
+            <Text style={{ color: theme.textMuted, fontSize: 10, lineHeight: 12 }} numberOfLines={1}>
+              {liveFeeds[liveFeedIndex]}
+            </Text>
           </View>
-        )}
+        </View>
+
 
       </View>
     );

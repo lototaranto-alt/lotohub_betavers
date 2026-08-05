@@ -9,6 +9,7 @@ import { OfflineQueueManager } from '../utils/OfflineQueueManager';
 import NetInfo from '@react-native-community/netinfo';
 import { useTheme } from '../context/ThemeContext';
 import PoiScannerModal from './PoiScannerModal';
+import PlasticaqquaEventSheet from './PlasticaqquaEventSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import { useRouteBuilder } from '../context/RouteContext';
@@ -42,6 +43,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
   // Auth & Progression State
   const [session, setSession] = useState<any>(null);
   const [isScannerVisible, setIsScannerVisible] = useState(false);
+  const [isEventSheetVisible, setIsEventSheetVisible] = useState(false);
   const [vaultMedia, setVaultMedia] = useState<any[]>([]);
   const [mediaStatus, setMediaStatus] = useState<{[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'}>({});
   const [premiumPreviewVisible, setPremiumMockVisible] = useState(false);
@@ -359,14 +361,17 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
 
               {/* NFC SCAN BUTTON MOVED TO TOP */}
               <TouchableOpacity 
-                style={[styles.mainBtn, { backgroundColor: theme.text, flex: 1, elevation: 4, shadowColor: theme.text }]}
+                style={[styles.mainBtn, { backgroundColor: theme.text, elevation: 4, shadowColor: theme.text, marginTop: 15 }]}
                 onPress={() => setIsScannerVisible(true)}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <MaterialIcons name="qr-code-scanner" size={20} color={theme.background} style={{ marginRight: 8 }} />
-                  <Text style={[styles.mainBtnText, { color: theme.background }]}>Scansiona QR</Text>
+                  <MaterialIcons name="nfc" size={20} color={theme.background} style={{ marginRight: 8 }} />
+                  <Text style={[styles.mainBtnText, { color: theme.background }]}>Acquisisci POI (NFC/QR)</Text>
                 </View>
               </TouchableOpacity>
+              <Text style={{ textAlign: 'center', fontSize: 11, color: theme.textMuted, marginTop: 6 }}>
+                Avvicina lo smartphone al sensore oppure inquadra il QR
+              </Text>
             </View>
 
             <PoiScannerModal 
@@ -375,24 +380,31 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
               onScanSuccess={async (scannedData) => {
                 try {
                   // EVENTO SPECIALE: Raccolta Rifiuti Lido Azzurro (Plasticaqqua)
-                  // Intercetta lo short link o l'ID dell'evento (max 47 bytes sul tag NFC)
                   if (scannedData.includes('loto.app/e/1') || scannedData.includes('plasticaqqua')) {
-                     Alert.alert(
-                       '✨ Evento Sbloccato: Plasticaqqua!', 
-                       'Hai completato il check-in per la Raccolta Rifiuti al Lido Azzurro. Ti è stato conferito il badge "Sentinella"!'
-                     );
-                     // Fallback RPC o logica speciale per l'evento qui
+                     setIsEventSheetVisible(true);
                   } else {
                     const { data, error } = await supabase.rpc('scan_poi', { p_poi_id: poi.id });
                     if (error) throw error;
                     Alert.alert('Ottimo!', `Hai ottenuto i punti di questo POI. I tuoi XP sono ora ${data.new_total_xp}.`);
+                    onCheckIn(poi);
                   }
-                  
-                  onCheckIn(poi); // Chiude la scheda e aggiorna la home
                 } catch(e: any) {
                   Alert.alert('Errore', 'Non è stato possibile validare la scansione sul server: ' + e.message);
                 }
               }}
+            />
+
+            <PlasticaqquaEventSheet
+               visible={isEventSheetVisible}
+               onClose={() => setIsEventSheetVisible(false)}
+               onCheckInEvent={() => {
+                 setIsEventSheetVisible(false);
+                 Alert.alert(
+                   '✨ Evento Completato!', 
+                   'Hai confermato la presenza alla Raccolta Rifiuti al Lido Azzurro. Ti è stato conferito il badge "Sentinella"!'
+                 );
+                 onCheckIn(poi); // Aggiorna la Home
+               }}
             />
 
             {/* SELETTORE TAB */}
