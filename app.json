@@ -11,6 +11,7 @@
       "supportsTablet": true,
       "infoPlist": {
         "NFCReaderUsageDescription": "L.O.T.O. HUB ha bisogno del lettore NFC per scansionare i tag fisici (Zero-IoT) e sbloccare i check-in e le conversioni B2B.",
+        "com.apple.developer.nfc.readersession.formats": ["NDEF", "TAG"],
         "UIBackgroundModes": [
           "location",
           "fetch"

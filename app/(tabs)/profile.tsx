@@ -12,6 +12,7 @@ import { supabase } from '../../utils/supabase';
 import { useFocusEffect } from 'expo-router';
 import { useRouteBuilder } from '../../context/RouteContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getLevelProgress } from '../../utils/levelUtils';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -47,14 +48,17 @@ export default function ProfileScreen() {
   const [userBadges, setUserBadges] = useState<any[]>([]);
   const [userItineraries, setUserItineraries] = useState<any[]>([]);
   
-  const getLevelInfo = (tokens: number) => {
-    if (tokens >= 500) return { title: "EROE DEL MARE", color: theme.accent, stemma: 'workspace-premium' as any };
-    if (tokens >= 100) return { title: "ESPLORATORE", color: theme.primary, stemma: 'security' as any };
-    return { title: "TURISTA OCCASIONALE", color: theme.secondary, stemma: 'sailing' as any };
+  // Dati reali dal backend
+  const [userTotalXp, setUserTotalXp] = useState<number>(0);
+  const [userTokens, setUserTokens] = useState<number>(0);
+  
+  // Sfruttiamo le VERE logiche matematiche di levelUtils
+  const progressInfo = getLevelProgress(userTotalXp, theme);
+  const currentRank = {
+    title: progressInfo.levelTitle,
+    color: progressInfo.color,
+    stemma: progressInfo.stemma as any
   };
-  const [userLevel, setUserLevel] = useState<number>(4);
-  const [userTokens, setUserTokens] = useState<number>(150);
-  const currentRank = getLevelInfo(userTokens);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,14 +71,14 @@ export default function ProfileScreen() {
   // GESTIONE FOCUS PER RE-FETCH E TASTO INDIETRO
   useFocusEffect(
     useCallback(() => {
-      // Re-fetch dei dati ogni volta che si entra nel tab Profilo (es. dopo aver salvato un itinerario in Home)
+      // Re-fetch dei dati ogni volta che si entra nel tab Profilo
       const fetchProfileData = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setIsAnonymous(!user.email);
           const { data: profile } = await supabase.from('profiles').select('total_xp, total_tokens').eq('id', user.id).single();
           if (profile) {
-            setUserLevel(Math.floor((profile.total_xp || 0) / 100));
+            setUserTotalXp(profile.total_xp || 0);
             setUserTokens(profile.total_tokens || 0);
           }
 
@@ -85,22 +89,13 @@ export default function ProfileScreen() {
             .eq('user_id', user.id);
           if (badgesData) setUserBadges(badgesData);
 
-          // Fetch Itineraries
-          let combinedItineraries: any[] = [];
-          try {
-            const localItinStr = await AsyncStorage.getItem('loto_diary');
-            if (localItinStr) {
-              combinedItineraries = JSON.parse(localItinStr);
-            }
-          } catch(e) {
-            console.log("Errore caricamento itinerari locali:", e);
-          }
-          
+          // Fetch Itineraries (solo dati REALI dal DB)
           const { data: itinData } = await supabase.rpc('get_user_itineraries');
-          if(itinData) {
-            combinedItineraries = [...combinedItineraries, ...itinData];
+          if (itinData) {
+            setUserItineraries(itinData);
+          } else {
+            setUserItineraries([]);
           }
-          setUserItineraries(combinedItineraries);
         }
       };
       fetchProfileData();
@@ -158,7 +153,7 @@ export default function ProfileScreen() {
               if (session) {
                 await supabase.from('profiles').update({ total_xp: 0, pois_discovered: 0, total_tokens: 0 }).eq('id', session.user.id);
               }
-              setUserLevel(0);
+              setUserTotalXp(0);
               Alert.alert("Fatto", "XP azzerati e Onboarding ripristinato. Ora chiudi e riapri l'app per vederlo dall'inizio!");
             } catch(e) {
               console.log("Errore durante l'azzeramento:", e);

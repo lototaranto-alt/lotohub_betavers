@@ -210,14 +210,6 @@ export default function TabLayout() {
               Avvicina il telefono all'Indizio del Luogo...
             </Text>
             
-            <TouchableOpacity 
-              style={[styles.actionBtn, { backgroundColor: theme.primary }]} 
-              onPress={simulateNfcScan}
-            >
-              <MaterialIcons name="tap-and-play" size={28} color={theme.background} />
-              <Text style={[styles.actionBtnText, { color: theme.background }]}>SIMULA SCANSIONE NFC</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(false)}>
               <Text style={[styles.closeBtnText, { color: theme.textMuted }]}>ANNULLA</Text>
             </TouchableOpacity>

@@ -136,6 +136,7 @@ export default function VetrinaScreen() {
   const [userItineraries, setUserItineraries] = useState<any[]>([]);
   const [userBadges, setUserBadges] = useState<any[]>([]);
   const [communityStats, setCommunityStats] = useState<any>(null);
+  const [recentUsers, setRecentUsers] = useState<any[]>([]);
 
   // --- STATO TRIANGOLO DELLA VERITÀ (INTEGRALE) ---
   const [isMotorized, setIsMotorized] = useState(false);
@@ -231,6 +232,19 @@ export default function VetrinaScreen() {
       caricaDati();
     }, [])
   );
+
+  useEffect(() => {
+    if (currentTenant?.id) {
+      supabase.from('profiles')
+        .select('nickname')
+        .eq('tenant_id', currentTenant.id)
+        .order('created_at', { ascending: false })
+        .limit(3)
+        .then(({ data }) => {
+          if (data) setRecentUsers(data);
+        });
+    }
+  }, [currentTenant]);
 
   useEffect(() => {
     const interval = setInterval(() => avviaFiltroCinematico(), KINEMATIC_TIMER_MS);
@@ -554,9 +568,9 @@ export default function VetrinaScreen() {
     const cardBadges = [
       { 
         id: 'badge_first_scan', name: 'Battesimo', icon: 'location-on', color: '#2ECC71', 
-        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan') || (userProfile?.pois_discovered || 0) > 0,
+        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan'),
         actionDescription: 'Scansiona il tuo primo POI (fontanella o punto d\'ombra) per iniziare a mappare la città.',
-        progress: Math.min(100, (userProfile?.pois_discovered || 0) * 100)
+        progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan') ? 100 : Math.min(99, (userProfile?.pois_discovered || 0) * 100)
       },
       { 
         id: 'badge_civic_3', name: 'Sentinella', icon: 'security', color: '#2196F3', 
@@ -566,15 +580,15 @@ export default function VetrinaScreen() {
       },
       { 
         id: 'badge_eco_5kg', name: 'Eco-Sostenitore', icon: 'eco', color: '#4CAF50', 
-        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg') || mobilityType === 'dolce',
+        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg'),
         actionDescription: 'Mantieni uno stile di mobilità dolce (bici/piedi) per 5 giorni consecutivi.',
-        progress: mobilityType === 'dolce' ? 100 : 20
+        progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg') ? 100 : 20
       },
       { 
         id: 'badge_marathon_3', name: 'Maratoneta', icon: 'directions-run', color: '#FF9800', 
-        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_marathon_3') || (userProfile?.itineraries_count || 0) >= 3,
+        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_marathon_3'),
         actionDescription: 'Completa 3 Itinerari consigliati da LOTO.',
-        progress: Math.min(100, Math.round(((userProfile?.itineraries_count || 0) / 3) * 100))
+        progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_marathon_3') ? 100 : Math.min(99, Math.round(((userProfile?.itineraries_count || 0) / 3) * 100))
       },
       { 
         id: 'badge_level_5', name: 'Cittadino Attivo', icon: 'stars', color: '#FFD700', 
@@ -595,7 +609,7 @@ export default function VetrinaScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
             <MaterialIcons name="eco" size={18} color="#BCA37F" />
             <Text style={{ fontFamily: 'Raleway_400Regular', fontSize: 18, color: '#6A5638', marginHorizontal: 12, letterSpacing: 1 }}>
-              Co - ExpErience Engine
+              {currentTenant?.name ? `Comune di ${currentTenant.name}` : 'Co - ExpErience Engine'}
             </Text>
             <MaterialIcons name="eco" size={18} color="#BCA37F" />
           </View>
@@ -656,7 +670,7 @@ export default function VetrinaScreen() {
                   {(userProfile?.nickname || 'ESPLORATORE')[0].toUpperCase()}
                 </Text>
               </View>
-              <View style={{ backgroundColor: '#FDFBF7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: levelProgress.color || '#D4AF37', marginTop: -8, elevation: 5 }}>
+              <View style={{ backgroundColor: '#FDFBF7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: levelProgress.color || '#D4AF37', marginTop: 2, elevation: 5 }}>
                 <Text style={{ color: '#333', fontSize: 8, fontWeight: 'bold' }}>LIVELLO {levelProgress.currentLevel}</Text>
               </View>
             </TouchableOpacity>
@@ -766,17 +780,19 @@ export default function VetrinaScreen() {
         </View>
 
         {/* --- LIVE COMMUNITY FEED --- */}
-        <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 15, borderWidth: 1, borderColor: '#D4AF37' }}>
-          <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(71,101,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
-            <MaterialIcons name="rss-feed" size={16} color="#476537" />
+        {recentUsers.length > 0 && (
+          <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 15, borderWidth: 1, borderColor: '#D4AF37' }}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(71,101,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+              <MaterialIcons name="rss-feed" size={16} color="#476537" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: theme.text, fontSize: 10, fontWeight: 'bold', marginBottom: 1, letterSpacing: 0.5 }}>NUOVI ESPLORATORI</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 10, lineHeight: 12 }} numberOfLines={1}>
+                {recentUsers.map((u, i) => <Text key={i} style={{ fontStyle: 'italic' }}>{u.nickname || 'Anonimo'}{i < recentUsers.length - 1 ? ', ' : ''}</Text>)} si sono appena uniti!
+              </Text>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: theme.text, fontSize: 10, fontWeight: 'bold', marginBottom: 1, letterSpacing: 0.5 }}>LIVE FEED CITTADINO</Text>
-            <Text style={{ color: theme.textMuted, fontSize: 10, lineHeight: 12 }} numberOfLines={1}>
-              {liveFeeds[liveFeedIndex]}
-            </Text>
-          </View>
-        </View>
+        )}
 
 
       </View>
