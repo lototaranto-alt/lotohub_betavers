@@ -11,10 +11,12 @@ interface ImpactStatsModalProps {
   userTransactions: any[];
   userTokens: number;
   theme: any;
+  stepsToday?: number;
+  isAccessibleMode?: boolean;
 }
 
-export default function ImpactStatsModal({ visible, onClose, userProfile, userTransactions, userTokens, theme }: ImpactStatsModalProps) {
-  const [activeTab, setActiveTab] = useState<'co2' | 'pts'>('co2');
+export default function ImpactStatsModal({ visible, onClose, userProfile, userTransactions, userTokens, theme, stepsToday = 0, isAccessibleMode = false }: ImpactStatsModalProps) {
+  const [activeTab, setActiveTab] = useState<'co2' | 'pts' | 'sync'>('co2');
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -45,6 +47,14 @@ export default function ImpactStatsModal({ visible, onClose, userProfile, userTr
               <MaterialIcons name="toll" size={20} color={activeTab === 'pts' ? theme.accent : theme.textMuted} />
               <Text style={[styles.tabText, { color: activeTab === 'pts' ? theme.accent : theme.textMuted }]}>LOTO PTI</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'sync' && { borderBottomColor: theme.secondary, borderBottomWidth: 3 }]} 
+              onPress={() => setActiveTab('sync')}
+            >
+              <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={20} color={activeTab === 'sync' ? theme.secondary : theme.textMuted} />
+              <Text style={[styles.tabText, { color: activeTab === 'sync' ? theme.secondary : theme.textMuted }]}>MOBILITÀ</Text>
+            </TouchableOpacity>
           </View>
 
           <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ padding: 20 }}>
@@ -71,7 +81,7 @@ export default function ImpactStatsModal({ visible, onClose, userProfile, userTr
                   )}
                 </View>
               </View>
-            ) : (
+            ) : activeTab === 'pts' ? (
               <View style={{ alignItems: 'center' }}>
                 <MaterialIcons name="toll" size={60} color={theme.accent} style={{ marginBottom: 15 }} />
                 <Text style={[styles.mainStat, { color: theme.accent }]}>{userTokens}</Text>
@@ -92,6 +102,33 @@ export default function ImpactStatsModal({ visible, onClose, userProfile, userTr
                       </View>
                     ))
                   )}
+                </View>
+              </View>
+            ) : (
+              <View style={{ alignItems: 'center' }}>
+                <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={60} color={theme.secondary} style={{ marginBottom: 15 }} />
+                <Text style={[styles.mainStat, { color: theme.secondary }]}>{stepsToday}</Text>
+                <Text style={styles.statLabel}>{isAccessibleMode ? 'Spinte' : 'Passi'} Registrati Oggi</Text>
+                
+                <View style={{ width: '100%', marginTop: 30 }}>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>DETTAGLIO SINCRO-AVVENTURA</Text>
+                  <View style={{ backgroundColor: theme.surface, padding: 15, borderRadius: 15, marginTop: 10 }}>
+                    <Text style={{ fontSize: 14, color: theme.textMuted, lineHeight: 22, textAlign: 'center' }}>
+                      Stiamo utilizzando il sensore di movimento locale per tracciare i tuoi spostamenti a zero impatto. 
+                      Ogni km percorso a piedi o in carrozzina evita {isAccessibleMode ? 'emissioni nocive' : 'l\'utilizzo di mezzi inquinanti'} e genera CO₂ per la comunità.
+                    </Text>
+                    
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, paddingTop: 15, borderTopWidth: 1, borderTopColor: theme.border }}>
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.secondary }}>{((stepsToday * 0.75) / 1000).toFixed(2)}</Text>
+                        <Text style={{ fontSize: 12, color: theme.textMuted }}>KM STIMATI</Text>
+                      </View>
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.primary }}>{(((stepsToday * 0.75) / 1000) * 0.12).toFixed(2)}</Text>
+                        <Text style={{ fontSize: 12, color: theme.textMuted }}>KG CO₂</Text>
+                      </View>
+                    </View>
+                  </View>
                 </View>
               </View>
             )}

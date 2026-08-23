@@ -28,6 +28,7 @@ import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
+import { Pedometer } from 'expo-sensors';
 import { useScanner } from './_layout';
 const { width, height } = Dimensions.get('window');
 
@@ -127,8 +128,9 @@ export default function VetrinaScreen() {
   const { theme, isElite } = useTheme();
   const { currentCity, setCurrentCity } = useCity();
   const styles = getStyles(theme);
-  const { mobilityType, forceReopenWizard, saveMobilityChoice } = useMobility();
+  const { mobilityType, forceReopenWizard, saveMobilityChoice, isAccessibleMode } = useMobility();
   const [pois, setPois] = useState<any[]>([]);
+  const [publicEvents, setPublicEvents] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [loading, setLoading] = useState(true);
@@ -197,6 +199,39 @@ export default function VetrinaScreen() {
   
   // STATI SPRINT B (Bottom Sheet e Accordion)
   const [selectedPoi, setSelectedPoi] = useState<any | null>(null);
+  const [activeVaultPoiId, setActiveVaultPoiId] = useState<string | null>(null);
+
+  const [stepsToday, setStepsToday] = useState(0);
+
+  useEffect(() => {
+    let subscription: any;
+    const initPedometer = async () => {
+      try {
+        const isAvailable = await Pedometer.isAvailableAsync();
+        if (isAvailable) {
+          const end = new Date();
+          const start = new Date();
+          start.setHours(0, 0, 0, 0);
+          const result = await Pedometer.getStepCountAsync(start, end);
+          const initialSteps = result ? result.steps : 0;
+          setStepsToday(initialSteps);
+
+          subscription = Pedometer.watchStepCount(res => {
+            setStepsToday(initialSteps + res.steps);
+          });
+        }
+      } catch (err) {
+        console.log('[Pedometer] Errore:', err);
+      }
+    };
+    initPedometer();
+    return () => {
+      if (subscription && subscription.remove) {
+        subscription.remove();
+      }
+    };
+  }, []);
+
   const [isSheetVisible, setIsSheetVisible] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>('recommended');
 
@@ -289,6 +324,12 @@ export default function VetrinaScreen() {
       if (poiData) {
         fetchedPois = poiData;
         setPois(fetchedPois);
+      }
+
+      // Fetch Eventi Pubblici
+      const { data: evData } = await supabase.from('events').select('*').eq('event_type', 'web_public');
+      if (evData) {
+        setPublicEvents(evData);
       }
 
       let combinedItineraries: any[] = [];
@@ -537,6 +578,9 @@ export default function VetrinaScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsSheetVisible(false);
     
+    // Ricarica i dati per aggiornare UI (XP, Punti, ecc)
+    caricaDati();
+
     // Inoltra il POI reale selezionato al vero flusso NFC simulato
     setTimeout(() => {
       router.push(`/p/${poi.id}`);
@@ -609,7 +653,7 @@ export default function VetrinaScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
             <MaterialIcons name="eco" size={18} color="#BCA37F" />
             <Text style={{ fontFamily: 'Raleway_400Regular', fontSize: 18, color: '#6A5638', marginHorizontal: 12, letterSpacing: 1 }}>
-              {currentTenant?.name ? `Comune di ${currentTenant.name}` : 'Co - ExpErience Engine'}
+              Co - ExpErience Engine
             </Text>
             <MaterialIcons name="eco" size={18} color="#BCA37F" />
           </View>
@@ -723,7 +767,7 @@ export default function VetrinaScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* 2. LOTO PTI + CO2 */}
+          {/* 2. LOTO PTI + CO2 + PASSI */}
           <TouchableOpacity 
             onPress={() => setIsImpactModalVisible(true)}
             activeOpacity={0.9} 
@@ -732,6 +776,12 @@ export default function VetrinaScreen() {
             <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Impatto & Punti</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                  <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={12} color="#FFF" style={{marginRight: 4}} />
+                  <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
+                    {isAccessibleMode ? `${stepsToday} spinte` : `${stepsToday} passi`}
+                  </Text>
+                </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                   <MaterialIcons name="eco" size={12} color="#2ECC71" style={{marginRight: 4}} />
                   <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
@@ -800,7 +850,6 @@ export default function VetrinaScreen() {
   };
 
   // Rimossa BreathingLeaf iniziale come richiesto
-
   const userTokens = userProfile?.total_tokens ?? 0;
   // OFFLINE FALLBACK: Scegliamo il valore più alto tra il DB (se esiste) e la memoria locale
   const userXp = Math.max(userProfile?.total_xp ?? 0, localXpFallback);
@@ -817,10 +866,11 @@ export default function VetrinaScreen() {
 
     return [
       { id: 'recommended', title: 'Mete Consigliate ✨', data: sorted.filter(p => p.is_recommended) },
-      { id: 'free', title: 'Culturali 🏛️', data: sorted.filter(p => p.category === 'free' && !p.is_recommended) },
+      { id: 'free', title: 'Culturali 🏛️', data: sorted.filter(p => (p.category === 'free' || p.category === 'museum' || p.category === 'attraction' || p.category === 'monument' || p.category === 'park') && !p.is_recommended) },
       { id: 'partner', title: 'Boutique & Partner 🛍️', data: sorted.filter(p => p.category === 'partner') },
-      { id: 'secret', title: 'Mete Segrete 🤫', data: sorted.filter(p => p.category === 'secret') }
-    ].filter(s => s.data.length > 0);
+      { id: 'secret', title: 'Mete Segrete 🤫', data: sorted.filter(p => p.category === 'secret') },
+
+    ];
   };
 
   const renderShelf = ({ item }: { item: any }) => {
@@ -859,6 +909,41 @@ export default function VetrinaScreen() {
               />
             </View>
           )}
+          ListEmptyComponent={
+            <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
+               <Text style={{ color: theme.textMuted, fontStyle: 'italic' }}>Nessuna meta disponibile in questa categoria.</Text>
+            </View>
+          }
+          contentContainerStyle={{ paddingLeft: 10, paddingRight: 20 }}
+        />
+      </View>
+    );
+  };
+
+
+  const renderEventsFooter = () => {
+    if (!publicEvents || publicEvents.length === 0) return null;
+    return (
+      <View style={{ marginBottom: 40, marginTop: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, paddingHorizontal: 20 }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold', color: theme.text }}>
+            Eventi Pubblici 🗓️
+          </Text>
+        </View>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={publicEvents}
+          keyExtractor={ev => ev.id}
+          renderItem={({ item: ev }) => (
+            <View style={{ width: 280, marginRight: -5 }}>
+              <View style={{ backgroundColor: theme.surface, padding: 20, borderRadius: 15, marginHorizontal: 10, borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 16, color: theme.text }}>{ev.title}</Text>
+                <Text style={{ fontSize: 12, color: theme.primary, marginTop: 5, fontWeight: 'bold' }}>{new Date(ev.start_time).toLocaleDateString()}</Text>
+                <Text style={{ fontSize: 13, color: theme.text, marginTop: 10, lineHeight: 20 }} numberOfLines={4}>{ev.description}</Text>
+              </View>
+            </View>
+          )}
           contentContainerStyle={{ paddingLeft: 10, paddingRight: 20 }}
         />
       </View>
@@ -879,6 +964,7 @@ export default function VetrinaScreen() {
           contentContainerStyle={{ paddingBottom: 180 }}
           renderItem={renderShelf}
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={renderEventsFooter}
         />
 
         {isMotorized && (
@@ -904,10 +990,12 @@ export default function VetrinaScreen() {
           onDeleteItinerary={async (id) => {
             const localItinStr = await AsyncStorage.getItem('loto_diary');
             if (localItinStr) {
-              const localItin = JSON.parse(localItinStr).filter((i: any) => i.id !== id);
-              await AsyncStorage.setItem('loto_diary', JSON.stringify(localItin));
+              const current = JSON.parse(localItinStr);
+              const updated = current.filter((it: any) => it.id !== id);
+              await AsyncStorage.setItem('loto_diary', JSON.stringify(updated));
+              // Trigger reload
+              caricaDati();
             }
-            setUserItineraries(prev => prev.filter(i => i.id !== id));
           }}
         />
 
@@ -919,6 +1007,8 @@ export default function VetrinaScreen() {
           userTransactions={userTransactions}
           userTokens={Math.max(userProfile?.total_tokens || 0, localTokensFallback)}
           theme={theme}
+          stepsToday={stepsToday}
+          isAccessibleMode={isAccessibleMode}
         />
 
         <VaultModal

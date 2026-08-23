@@ -8,9 +8,11 @@ interface MobilityContextType {
   mobilityType: MobilityType;
   mobilityRadius: MobilityRadius;
   lastWizardDate: string | null;
+  isAccessibleMode: boolean;
   saveMobilityChoice: (type: MobilityType, radius: MobilityRadius) => Promise<void>;
   resetMobilityChoice: () => Promise<void>;
   forceReopenWizard: () => void;
+  toggleAccessibleMode: () => void;
   loading: boolean;
 }
 
@@ -33,12 +35,14 @@ const STORAGE_KEYS = {
   TYPE: 'loto_mobility_type',
   RADIUS: 'loto_mobility_radius',
   DATE: 'loto_mobility_last_date',
+  ACCESSIBLE: 'loto_mobility_accessible',
 };
 
 export function MobilityProvider({ children }: MobilityProviderProps) {
   const [mobilityType, setMobilityType] = useState<MobilityType>('dolce');
   const [mobilityRadius, setMobilityRadius] = useState<MobilityRadius>(2);
   const [lastWizardDate, setLastWizardDate] = useState<string | null>(null);
+  const [isAccessibleMode, setIsAccessibleMode] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Recupera lo stato salvato all'avvio dell'applicazione
@@ -74,6 +78,11 @@ export function MobilityProvider({ children }: MobilityProviderProps) {
           console.log('[MobilityContext] Data assente o diversa da oggi. Reset a dolce.');
           setMobilityType('dolce');
           setLastWizardDate(savedDate);
+        }
+
+        const savedAccessible = await AsyncStorage.getItem(STORAGE_KEYS.ACCESSIBLE);
+        if (savedAccessible === 'true') {
+          setIsAccessibleMode(true);
         }
       } catch (error) {
         console.error('[MobilityContext] Errore nel caricamento dello stato della mobilità:', error);
@@ -111,6 +120,16 @@ export function MobilityProvider({ children }: MobilityProviderProps) {
     }
   };
 
+  const toggleAccessibleMode = async () => {
+    try {
+      const newMode = !isAccessibleMode;
+      setIsAccessibleMode(newMode);
+      await AsyncStorage.setItem(STORAGE_KEYS.ACCESSIBLE, newMode ? 'true' : 'false');
+    } catch (error) {
+      console.error('[MobilityContext] Errore durante il salvataggio modalità accessibile:', error);
+    }
+  };
+
   const resetMobilityChoice = async () => {
     try {
       await AsyncStorage.removeItem(STORAGE_KEYS.TYPE);
@@ -132,9 +151,11 @@ export function MobilityProvider({ children }: MobilityProviderProps) {
         mobilityType,
         mobilityRadius,
         lastWizardDate,
+        isAccessibleMode,
         saveMobilityChoice,
         resetMobilityChoice,
         forceReopenWizard,
+        toggleAccessibleMode,
         loading,
       }}
     >

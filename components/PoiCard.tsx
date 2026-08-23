@@ -42,8 +42,6 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
   }
 
   const hasWater = item.amenities?.includes('water');
-  const userTokens = userProfile?.total_tokens || 0;
-  const canUnlockStory = userTokens >= 100 && item.category !== 'partner';
   
   const isAccessibleUser = userProfile?.accessibility_mode === true;
   const isDifficult = (item.difficulty_score || (item.name?.includes('Castello') ? 80 : 20)) > 70;
@@ -117,11 +115,11 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.btnActionHarmonious, { backgroundColor: item.category === 'partner' ? '#0056D2' : (canUnlockStory ? theme.accent : theme.primary) }]}
+                style={[styles.btnActionHarmonious, { backgroundColor: item.category === 'partner' ? '#0056D2' : theme.primary }]}
                 onPress={() => onAction(item)}
               >
                 <Text style={styles.btnActionTextHarmonious}>
-                  {item.category === 'partner' ? 'Tocca l\'Indizio' : 'Scopri & Sblocca'}
+                  {item.category === 'partner' ? 'Scopri il Custode' : 'Scopri & Sblocca'}
                 </Text>
               </TouchableOpacity>
             </View>

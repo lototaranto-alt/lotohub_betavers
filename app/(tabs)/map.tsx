@@ -36,7 +36,7 @@ export default function MapScreen() {
   const [isLoading, setIsLoading] = useState(true);
   
   // Local toggles that were in the original map sidebar
-  const [accessibilityOn, setAccessibilityOn] = useState(false);
+  const { isAccessibleMode: accessibilityOn, toggleAccessibleMode: setAccessibilityOn } = useMobility();
   const [heatmapOn, setHeatmapOn] = useState(true);
   
   // Eventi Community

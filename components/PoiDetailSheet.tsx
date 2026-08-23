@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, ScrollView, Alert, Linking, Dimensions, ActivityIndicator } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import * as Location from 'expo-location';
+import { calculateDistanceRaw } from '../utils/haversine';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../utils/supabase';
@@ -47,13 +49,108 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
   const [vaultMedia, setVaultMedia] = useState<any[]>([]);
   const [mediaStatus, setMediaStatus] = useState<{[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'}>({});
   const [premiumPreviewVisible, setPremiumMockVisible] = useState(false);
+  
+  const [gpsDistance, setGpsDistance] = useState<number | null>(null);
+  const [checkinStartTime, setCheckinStartTime] = useState<number | null>(null);
+  const [timerLeft, setTimerLeft] = useState<number>(0);
+  const [isGpsValidating, setIsGpsValidating] = useState(false);
+
+  const [poiWhispers, setPoiWhispers] = useState<any[]>([]);
+  const [poiEvents, setPoiEvents] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'media' | 'info' | 'events'>('media');
+
+  
+  // Tracker Location per abilitare pulsante GPS
+  useEffect(() => {
+    let sub: any;
+    if (visible && poi) {
+      (async () => {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        
+        // Controlla se c'è un timer in corso in AsyncStorage
+        const savedTime = await AsyncStorage.getItem(`@checkin_start_${poi.id}`);
+        if (savedTime) {
+           setCheckinStartTime(parseInt(savedTime));
+        }
+
+        sub = await Location.watchPositionAsync({ distanceInterval: 10 }, (loc) => {
+           if (poi.lat && poi.lng) {
+              const dist = calculateDistanceRaw(loc.coords.latitude, loc.coords.longitude, poi.lat, poi.lng);
+              setGpsDistance(dist); // già in metri
+           }
+        });
+      })();
+    }
+    return () => { if (sub) sub.remove(); };
+  }, [visible, poi]);
+
+  // Timer Tick
+  useEffect(() => {
+    let interval: any;
+    if (checkinStartTime) {
+      interval = setInterval(() => {
+        const elapsed = Date.now() - checkinStartTime;
+        const remaining = (10 * 60 * 1000) - elapsed;
+        if (remaining <= 0) {
+          setTimerLeft(0);
+          clearInterval(interval);
+        } else {
+          setTimerLeft(Math.floor(remaining / 1000));
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [checkinStartTime]);
+
+  const handleStartVisitaGPS = async () => {
+     const now = Date.now();
+     await AsyncStorage.setItem(`@checkin_start_${poi.id}`, now.toString());
+     setCheckinStartTime(now);
+     setTimerLeft(10 * 60);
+  };
+
+  const handleRiscattaVisitaGPS = async () => {
+     setIsGpsValidating(true);
+     try {
+       const loc = await Location.getCurrentPositionAsync({});
+       const { data, error } = await supabase.rpc('scan_poi_gps', { 
+         p_poi_id: poi.id,
+         p_lat: loc.coords.latitude,
+         p_lng: loc.coords.longitude
+       });
+       
+       if (error) throw error;
+       Alert.alert('Ottimo!', `Hai ottenuto i punti di questo POI. I tuoi XP sono ora ${data.new_total_xp}.`);
+       await AsyncStorage.removeItem(`@checkin_start_${poi.id}`);
+       setCheckinStartTime(null);
+       onCheckIn(poi);
+     } catch (e: any) {
+       Alert.alert('Errore GPS', e.message);
+     } finally {
+       setIsGpsValidating(false);
+     }
+  };
 
   useEffect(() => {
     if (visible && poi) {
       caricaMediaVault();
+      caricaEventi();
     }
   }, [visible, poi]);
+
+  const caricaEventi = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('poi_id', poi.id)
+        .order('start_time', { ascending: true });
+      if (data) setPoiEvents(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const caricaMediaVault = async () => {
     try {
@@ -72,13 +169,23 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
 
       let finalData = data ? [...data] : [];
       // --- MOCK INJECTION BINDING ---
-      if (poi.media && poi.media.length > 0) {
-        const mockMediaIds = poi.media.map((m: any) => m.id);
-        finalData = finalData.filter((d: any) => !mockMediaIds.includes(d.id));
-        finalData = [...finalData, ...poi.media];
-      }
+      // RIMOSSO: ci affidiamo solo a media_vault
       
       setVaultMedia(finalData);
+
+      // Fetch whispers for this POI
+      const { data: whisperData, error: whisperError } = await supabase
+        .from('whispers')
+        .select('*')
+        .eq('poi_id', poi.id)
+        .order('rarity', { ascending: true });
+        
+      if (whisperError) {
+        console.log('[PoiDetailSheet] Errore lettura whispers:', whisperError.message);
+        setPoiWhispers([{ id: 'err', title: 'ERRORE DB', content: whisperError.message, rarity: 1 }]);
+      } else if (whisperData) {
+        setPoiWhispers(whisperData);
+      }
       
       const statusMap: {[key: string]: 'locked' | 'downloading' | 'ready' | 'queued'} = {};
         const { data: { user } } = await supabase.auth.getUser();
@@ -359,19 +466,75 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                 )}
               </View>
 
-              {/* NFC SCAN BUTTON MOVED TO TOP */}
-              <TouchableOpacity 
-                style={[styles.mainBtn, { backgroundColor: theme.text, elevation: 4, shadowColor: theme.text, marginTop: 15 }]}
-                onPress={() => setIsScannerVisible(true)}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <MaterialIcons name="nfc" size={20} color={theme.background} style={{ marginRight: 8 }} />
-                  <Text style={[styles.mainBtnText, { color: theme.background }]}>Acquisisci POI (NFC/QR)</Text>
-                </View>
-              </TouchableOpacity>
-              <Text style={{ textAlign: 'center', fontSize: 11, color: theme.textMuted, marginTop: 6 }}>
-                Avvicina lo smartphone al sensore oppure inquadra il QR
-              </Text>
+
+              {/* PULSANTE ACQUISIZIONE (NFC per Partner, GPS-Soft per Culturali) */}
+              {poi.category === 'partner' ? (
+                <>
+                  <TouchableOpacity 
+                    style={[styles.mainBtn, { backgroundColor: theme.text, elevation: 4, shadowColor: theme.text, marginTop: 15 }]}
+                    onPress={() => setIsScannerVisible(true)}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <MaterialIcons name="nfc" size={20} color={theme.background} style={{ marginRight: 8 }} />
+                      <Text style={[styles.mainBtnText, { color: theme.background }]}>Acquisisci POI (NFC/QR)</Text>
+                    </View>
+                  </TouchableOpacity>
+                  <Text style={{ textAlign: 'center', fontSize: 11, color: theme.textMuted, marginTop: 6 }}>
+                    Avvicina lo smartphone al sensore Partner
+                  </Text>
+                </>
+              ) : (
+                <>
+                  {checkinStartTime ? (
+                    timerLeft > 0 ? (
+                      <View style={[styles.mainBtn, { backgroundColor: '#F59E0B', marginTop: 15 }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <MaterialIcons name="timer" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                          <Text style={[styles.mainBtnText, { color: '#FFF' }]}>
+                            Visita in corso... {Math.floor(timerLeft / 60)}:{(timerLeft % 60).toString().padStart(2, '0')}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <TouchableOpacity 
+                        style={[styles.mainBtn, { backgroundColor: '#10B981', elevation: 4, marginTop: 15 }]}
+                        onPress={handleRiscattaVisitaGPS}
+                        disabled={isGpsValidating}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          {isGpsValidating ? <ActivityIndicator color="#FFF" /> : <MaterialIcons name="check-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />}
+                          <Text style={[styles.mainBtnText, { color: '#FFF', marginLeft: isGpsValidating ? 8 : 0 }]}>Riscatta Visita</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )
+                  ) : (
+                    <TouchableOpacity 
+                      style={[styles.mainBtn, { 
+                        backgroundColor: (gpsDistance !== null && gpsDistance < 80) ? theme.primary : '#E2E8F0', 
+                        elevation: 4, 
+                        marginTop: 15 
+                      }]}
+                      onPress={handleStartVisitaGPS}
+                      disabled={gpsDistance === null || gpsDistance >= 80}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <MaterialIcons name="gps-fixed" size={20} color={(gpsDistance !== null && gpsDistance < 80) ? '#FFF' : '#94A3B8'} style={{ marginRight: 8 }} />
+                        <Text style={[styles.mainBtnText, { color: (gpsDistance !== null && gpsDistance < 80) ? '#FFF' : '#94A3B8' }]}>
+                          Inizia Visita (GPS)
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  <Text style={{ textAlign: 'center', fontSize: 11, color: theme.textMuted, marginTop: 6 }}>
+                    {gpsDistance === null 
+                      ? "Calcolo posizione in corso..." 
+                      : gpsDistance < 80 
+                        ? "Sei nel raggio del monumento! Puoi iniziare la visita."
+                        : `Avvicinati a meno di 80m. (Distanza: ${Math.round(gpsDistance)}m)`}
+                  </Text>
+                </>
+              )}
+
             </View>
 
             <PoiScannerModal 
@@ -401,7 +564,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                  setIsEventSheetVisible(false);
                  Alert.alert(
                    '✨ Evento Completato!', 
-                   'Hai confermato la presenza alla Raccolta Rifiuti al Lido Azzurro. Ti è stato conferito il badge "Sentinella"!'
+                   'Hai confermato la presenza alla Raccolta Rifiuti al Lido Azzurro. Ti è stato conferito il badge \"Sentinella\"!'
                  );
                  onCheckIn(poi); // Aggiorna la Home
                }}
@@ -419,10 +582,52 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                 <Text style={[styles.tabBtnText, { color: activeTab === 'events' ? theme.primary : theme.textMuted }]}>EVENTI</Text>
               </TouchableOpacity>
             </View>
-
             {/* CONTENUTO TAB: DIGITALE */}
             {activeTab === 'media' && (
               <View style={styles.tabContent}>
+            
+              <Text style={{color: 'red', fontSize: 10}}>DEBUG WHISPERS COUNT: {poiWhispers.length} POI_ID: {poi.id}</Text>
+
+            {poiWhispers.length > 0 && (
+              <View style={[styles.vaultSection, { borderBottomColor: theme.border }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>🤫 MISTERI E WHISPERS</Text>
+                {poiWhispers.map(whisper => {
+                   const isUnlocked = inRoute; // Qui assumiamo che se fa checkin (o mockato con inRoute) li veda
+                   // Idealmente dovremmo controllare esg_raw_logs o se l'utente l'ha sbloccato.
+                   // Per l'alpha, se ha fatto check-in (e quindi ha punti/is_visited = true) lo sbloccamo.
+                   // Usiamo un controllo grezzo per ora:
+                   const isReallyUnlocked = (poi.is_visited || inRoute || false);
+                   return (
+                    <View key={whisper.id} style={[styles.mediaRow, { backgroundColor: isReallyUnlocked ? '#FEF3C7' : theme.background, borderColor: isReallyUnlocked ? '#F59E0B' : theme.border, flexDirection: 'column', alignItems: 'stretch' }]}>
+                      <View style={[styles.mediaInfo, { marginBottom: 10 }]}>
+                        <MaterialIcons 
+                          name={isReallyUnlocked ? "lock-open" : "lock"} 
+                          size={24} 
+                          color={isReallyUnlocked ? '#D97706' : theme.textMuted} 
+                        />
+                        <View style={{ marginLeft: 12, flex: 1 }}>
+                          <Text style={[styles.mediaTitle, { color: theme.text }]}>{whisper.title}</Text>
+                          <Text style={[styles.mediaTypeLabel, { color: theme.textMuted }]}>
+                            {isReallyUnlocked ? 'Whisper Sbloccato' : 'Segreto bloccato (Fai Check-in per leggere)'}
+                          </Text>
+                        </View>
+                      </View>
+                      {isReallyUnlocked ? (
+                         <Text style={{color: theme.text, fontSize: 13, fontStyle: 'italic', marginTop: 10, padding: 10, backgroundColor: 'rgba(255,255,255,0.5)', borderRadius: 8}}>
+                           "{whisper.content}"
+                         </Text>
+                      ) : (
+                         <View style={{padding: 10, backgroundColor: theme.surface, borderRadius: 8, marginTop: 10, alignItems: 'center'}}>
+                            <MaterialIcons name="vpn-key" size={16} color={theme.textMuted} />
+                            <Text style={{color: theme.textMuted, fontSize: 11, marginTop: 4}}>La storia si rivelerà solo quando sarai sul posto.</Text>
+                         </View>
+                      )}
+                    </View>
+                   );
+                })}
+              </View>
+            )}
+            
             {vaultMedia.length > 0 && (
               <View style={[styles.vaultSection, { borderBottomColor: theme.border }]}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>🎒 RISORSE ESCLUSIVE</Text>
@@ -496,14 +701,20 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
             {/* CONTENUTO TAB: EVENTI */}
             {activeTab === 'events' && (
               <View style={styles.tabContent}>
-                {poi.events && poi.events.length > 0 ? (
+                {poiEvents && poiEvents.length > 0 ? (
                   <View style={[styles.vaultSection, { borderBottomColor: theme.border, marginTop: 15 }]}>
                     <Text style={[styles.sectionTitle, { color: theme.text }]}>📅 PROSSIMI EVENTI</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
-                      {poi.events.map((ev: any) => (
+                      {poiEvents.map((ev: any) => (
                         <View key={ev.id} style={{ backgroundColor: theme.background, padding: 15, borderRadius: 15, marginRight: 15, width: 200, borderWidth: 1, borderColor: theme.border }}>
                           <Text style={{ fontWeight: 'bold', fontSize: 14, color: theme.text }}>{ev.title}</Text>
-                          <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 5 }}>{new Date(ev.date).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
+                          <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 5 }}>{new Date(ev.start_time).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
+                          {ev.is_premium && (
+                             <View style={{ marginTop: 8, padding: 4, backgroundColor: '#D4AF37', borderRadius: 4, alignSelf: 'flex-start' }}>
+                               <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#FFF' }}>PREMIUM</Text>
+                             </View>
+                          )}
+                          <Text style={{ fontSize: 12, color: theme.text, marginTop: 10 }} numberOfLines={3}>{ev.description}</Text>
                           <TouchableOpacity 
                             style={{ marginTop: 10, backgroundColor: ev.is_premium ? theme.accent : theme.primary, paddingVertical: 8, borderRadius: 10, alignItems: 'center' }}
                             onPress={() => ev.is_premium && !isElite ? router.push('/upgrade') : Alert.alert('Iscritto!', 'Sei in lista per questo evento.')}

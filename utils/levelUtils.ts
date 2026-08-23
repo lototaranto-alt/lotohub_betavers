@@ -19,6 +19,16 @@ export const LEVEL_THRESHOLDS: LevelThreshold[] = [
   { level: 8, minXp: 360, nextXp: 450, title: "CITTADINO ATTIVO", stemma: 'auto-awesome', gemColor: '#F4A261', gemName: 'Opale del Golfo' },
   { level: 9, minXp: 450, nextXp: 550, title: "CUSTODE URBANO", stemma: 'workspace-premium', gemColor: '#D4AF37', gemName: 'Diamante Ellenico' },
   { level: 10, minXp: 550, nextXp: 700, title: "CUSTODE URBANO", stemma: 'stars', gemColor: '#E0A96D', gemName: 'Tridente Cosmico' },
+  { level: 11, minXp: 700, nextXp: 900, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#C0C0C0', gemName: 'Argento Antico' },
+  { level: 12, minXp: 900, nextXp: 1150, title: "CUSTODE URBANO", stemma: 'gavel', gemColor: '#808080', gemName: 'Ferro Ossidato' },
+  { level: 13, minXp: 1150, nextXp: 1450, title: "EROE JONICO", stemma: 'bolt', gemColor: '#FFD700', gemName: 'Oro di Taras' },
+  { level: 14, minXp: 1450, nextXp: 1800, title: "EROE JONICO", stemma: 'waves', gemColor: '#00CED1', gemName: 'Cristallo di Mare' },
+  { level: 15, minXp: 1800, nextXp: 2200, title: "EROE JONICO", stemma: 'anchor', gemColor: '#4682B4', gemName: 'Acciaio Navale' },
+  { level: 16, minXp: 2200, nextXp: 2650, title: "EROE JONICO", stemma: 'flag', gemColor: '#B22222', gemName: 'Porpora Reale' },
+  { level: 17, minXp: 2650, nextXp: 3150, title: "LEGGENDA L.O.T.O.", stemma: 'local-florist', gemColor: '#FF69B4', gemName: 'Loto Rosa' },
+  { level: 18, minXp: 3150, nextXp: 3700, title: "LEGGENDA L.O.T.O.", stemma: 'whatshot', gemColor: '#FF4500', gemName: 'Fuoco Eterno' },
+  { level: 19, minXp: 3700, nextXp: 4300, title: "LEGGENDA L.O.T.O.", stemma: 'diamond', gemColor: '#E0FFFF', gemName: 'Diamante Puro' },
+  { level: 20, minXp: 4300, nextXp: 5000, title: "LEGGENDA L.O.T.O.", stemma: 'public', gemColor: '#00FF7F', gemName: 'Smeraldo Assoluto' },
 ];
 
 export const calculateLevel = (totalXp: number): number => {
@@ -41,11 +51,13 @@ export const getRankInfo = (lvl: number): RankInfo => {
   if (lvl <= 4) {
     return { rankName: 'TURISTA CURIOSO', nextRank: 'CITTADINO ATTIVO', color: '#8D6E63', requiredLvl: 5 };
   } else if (lvl <= 8) {
-    return { rankName: 'CITTADINO ATTIVO', nextRank: 'CUSTODE URBANO', color: '#BCA37F', requiredLvl: 9 };
+    return { rankName: 'CITTADINO ATTIVO', nextRank: 'CUSTODE URBANO', color: '#2A9D8F', requiredLvl: 9 };
   } else if (lvl <= 12) {
     return { rankName: 'CUSTODE URBANO', nextRank: 'EROE JONICO', color: '#D4AF37', requiredLvl: 13 };
+  } else if (lvl <= 16) {
+    return { rankName: 'EROE JONICO', nextRank: 'LEGGENDA L.O.T.O.', color: '#00CED1', requiredLvl: 17 };
   } else {
-    return { rankName: 'EROE JONICO', nextRank: 'MAX', color: '#9B5DE5', requiredLvl: 99 };
+    return { rankName: 'LEGGENDA L.O.T.O.', nextRank: 'MAX', color: '#FF69B4', requiredLvl: 99 };
   }
 };
 

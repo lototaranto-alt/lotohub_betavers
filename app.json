@@ -16,7 +16,8 @@
           "location",
           "fetch"
         ],
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Serve la posizione in background per permettere all'app Camaleonte di aggiornarsi automaticamente senza consumare batteria in primo piano."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Serve la posizione in background per permettere all'app Camaleonte di aggiornarsi automaticamente senza consumare batteria in primo piano.",
+        "NSMotionUsageDescription": "L'app usa il contapassi per calcolare i km percorsi in mobilità dolce e le emissioni di CO2 risparmiate per la tua gamification ecologica."
       }
     },
     "android": {
@@ -35,7 +36,8 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_LOCATION"
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.ACTIVITY_RECOGNITION"
       ]
     },
     "web": {
