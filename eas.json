@@ -15,9 +15,6 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "MAPBOX_DOWNLOADS_TOKEN": "sk.eyJ1IjoibG90b2h1YiIsImEiOiJjbXM1bm83dnUwNzVpMnlzZHE1ZThiY2RyIn0.ranHqBAYAS-SrUB2sRNwzg"
       }
     },
     "production": {
