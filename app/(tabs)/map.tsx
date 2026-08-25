@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, SafeAreaView, Dimensions, Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, SafeAreaView, Dimensions, Text, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
+import * as Location from 'expo-location';
+import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../utils/supabase';
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import { useFocusEffect } from 'expo-router';
 import UserAvatar from '../../components/MapCursor';
+import Constants from 'expo-constants';
 
 // Inizializza Mapbox con la chiave pubblica
 Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_KEY || 'pk.eyJ1IjoibG90b2h1YiIsImEiOiJjbW5yOGY4bXYwMTliMnNzNG84c2YwbXFqIn0.wUjhbriAWqmuGh0tn-zHtw');
@@ -21,6 +24,18 @@ export default function MapScreen() {
   const [pois, setPois] = useState<any[]>([]);
   const [selectedPoi, setSelectedPoi] = useState<any>(null);
   const [heatScores, setHeatScores] = useState<Record<string, number>>({});
+  
+  // UI States
+  const [accessibilityOn, setAccessibilityOn] = useState(false);
+  const [routePois, setRoutePois] = useState<any[]>([]);
+  const [activeLayer, setActiveLayer] = useState('tutti');
+  const [heatmapOn, setHeatmapOn] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      await Location.requestForegroundPermissionsAsync();
+    })();
+  }, []);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -150,8 +165,62 @@ export default function MapScreen() {
         </Mapbox.ShapeSource>
       </Mapbox.MapView>
 
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>LIVE MAP</Text>
+      {/* TOP FILTERS (Floating Bar) */}
+      <View style={styles.floatingBarWrapper}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.floatingBarScroll}>
+          
+          <TouchableOpacity 
+            style={[styles.pillBtn, { borderColor: heatmapOn ? '#E63946' : theme.border, backgroundColor: heatmapOn ? 'rgba(230, 57, 70, 0.1)' : 'transparent', paddingHorizontal: 12 }]}
+            onPress={() => setHeatmapOn(!heatmapOn)}
+          >
+            <MaterialIcons name="local-fire-department" size={16} color={heatmapOn ? '#E63946' : theme.primary} />
+            <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text }]} numberOfLines={1}>Densità</Text>
+          </TouchableOpacity>
+          
+          <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 8 }} />
+
+          <TouchableOpacity 
+            style={[styles.pillBtn, { borderColor: theme.border, paddingHorizontal: 12 }]}
+            onPress={() => setActiveLayer(activeLayer === 'tutti' ? 'culturali' : 'tutti')}
+          >
+            <MaterialIcons name="place" size={14} color={theme.primary} />
+            <Text style={[styles.pillText, { color: theme.text }]} numberOfLines={1}>
+              {activeLayer === 'tutti' ? 'Tutti i P.O.I.' : 'Culturali'}
+            </Text>
+          </TouchableOpacity>
+
+        </ScrollView>
+      </View>
+
+      {/* FAB GROUP (Bottom Right) */}
+      <View style={{ position: 'absolute', bottom: 25, right: 20, alignItems: 'flex-end' }}>
+        
+        {/* FAB 1: Accessibilità */}
+        <TouchableOpacity 
+          style={[styles.fabCircle, accessibilityOn && { backgroundColor: theme.primary }]}
+          onPress={() => setAccessibilityOn(!accessibilityOn)}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="accessible" size={20} color={accessibilityOn ? theme.background : theme.text} />
+        </TouchableOpacity>
+
+        {/* FAB 3: Crea Percorso / Itinerario */}
+        <TouchableOpacity 
+          style={[styles.fabCircle, { backgroundColor: routePois.length > 0 ? theme.primary : theme.surface }]}
+          onPress={() => {
+            // Qui andrà la logica per aprire la bottom sheet dell'itinerario
+            console.log('Apri Itinerario');
+          }}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="explore" size={20} color={routePois.length > 0 ? '#FFF' : theme.text} />
+          {routePois.length > 0 && (
+            <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: theme.accent, borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold' }}>{routePois.length}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
       </View>
 
       <PoiDetailSheet
@@ -167,12 +236,45 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   map: { flex: 1 },
-  header: {
-    position: 'absolute', top: 50, left: 20, right: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)', padding: 15,
-    borderRadius: 20, alignItems: 'center', shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1,
-    shadowRadius: 10, elevation: 5,
+  floatingBarWrapper: { 
+    position: 'absolute', 
+    top: Constants.statusBarHeight + 10, 
+    left: 10, 
+    right: 10, 
+    paddingBottom: 10, 
+    paddingHorizontal: 10, 
+    zIndex: 10, 
+    elevation: 5 
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', fontFamily: 'serif' },
+  floatingBarScroll: { paddingRight: 20, alignItems: 'center' },
+  pillBtn: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingVertical: 8, 
+    borderRadius: 20, 
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3
+  },
+  pillText: { fontSize: 13, fontWeight: 'bold', marginLeft: 4 },
+  fabCircle: { 
+    backgroundColor: '#FFF', 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    elevation: 5, 
+    shadowColor: '#000', 
+    shadowOffset: {width: 0, height: 3}, 
+    shadowOpacity: 0.2, 
+    shadowRadius: 5, 
+    marginBottom: 15, 
+    borderWidth: 1, 
+    borderColor: 'rgba(0,0,0,0.05)' 
+  }
 });
