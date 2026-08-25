@@ -13,14 +13,18 @@
         "NFCReaderUsageDescription": "L.O.T.O. HUB ha bisogno del lettore NFC per scansionare i tag fisici (Zero-IoT) e sbloccare i check-in e le conversioni B2B.",
         "com.apple.developer.nfc.readersession.formats": [
           "NDEF",
+          "TAG",
+          "NDEF",
           "TAG"
         ],
         "UIBackgroundModes": [
           "location",
+          "fetch",
+          "location",
           "fetch"
         ],
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Serve la posizione in background per permettere all'app Camaleonte di aggiornarsi automaticamente senza consumare batteria in primo piano.",
-        "NSMotionUsageDescription": "L'app usa il contapassi per calcolare i km percorsi in mobilit\u00c3\u00a0 dolce e le emissioni di CO2 risparmiate per la tua gamification ecologica."
+        "NSMotionUsageDescription": "L'app usa il contapassi per calcolare i km percorsi in mobilitÃ  dolce e le emissioni di CO2 risparmiate per la tua gamification ecologica."
       }
     },
     "android": {
@@ -34,6 +38,13 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.lotohub.app",
       "permissions": [
+        "android.permission.NFC",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.NFC",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
@@ -97,6 +108,12 @@
       "eas": {
         "projectId": "51c54ab9-735a-43a2-9563-5247f7aaa902"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/51c54ab9-735a-43a2-9563-5247f7aaa902"
     }
   }
 }
