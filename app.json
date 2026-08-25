@@ -11,13 +11,16 @@
       "supportsTablet": true,
       "infoPlist": {
         "NFCReaderUsageDescription": "L.O.T.O. HUB ha bisogno del lettore NFC per scansionare i tag fisici (Zero-IoT) e sbloccare i check-in e le conversioni B2B.",
-        "com.apple.developer.nfc.readersession.formats": ["NDEF", "TAG"],
+        "com.apple.developer.nfc.readersession.formats": [
+          "NDEF",
+          "TAG"
+        ],
         "UIBackgroundModes": [
           "location",
           "fetch"
         ],
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Serve la posizione in background per permettere all'app Camaleonte di aggiornarsi automaticamente senza consumare batteria in primo piano.",
-        "NSMotionUsageDescription": "L'app usa il contapassi per calcolare i km percorsi in mobilità dolce e le emissioni di CO2 risparmiate per la tua gamification ecologica."
+        "NSMotionUsageDescription": "L'app usa il contapassi per calcolare i km percorsi in mobilit\u00c3\u00a0 dolce e le emissioni di CO2 risparmiate per la tua gamification ecologica."
       }
     },
     "android": {
@@ -61,7 +64,17 @@
       [
         "@rnmapbox/maps",
         {
-          "RNMapboxMapsImpl": "mapbox"
+          "RNMapboxMapsImpl": "mapbox",
+          "RNMapboxMapsUseV11": true,
+          "RNMapboxMapsDownloadToken": "sk.eyJ1IjoibG90b2h1YiIsImEiOiJjbXM1bm83dnUwNzVpMnlzZHE1ZThiY2RyIn0.ranHqBAYAS-SrUB2sRNwzg"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
         }
       ],
       [

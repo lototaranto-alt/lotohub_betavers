@@ -1,0 +1,2 @@
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Ecomuseo Palude la Vela e del Mar Piccolo', 'park', 'layer-park', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.3216093, 40.4752115), 4326));
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Oasi regionale WWF palude la vela', 'park', 'layer-park', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.321898, 40.4790239), 4326));

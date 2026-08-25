@@ -1,0 +1,51 @@
+diff --git a/node_modules/@rnmapbox/maps/android/build.gradle b/node_modules/@rnmapbox/maps/android/build.gradle
+index 7de0f2f..12f5b3e 100644
+--- a/node_modules/@rnmapbox/maps/android/build.gradle
++++ b/node_modules/@rnmapbox/maps/android/build.gradle
+@@ -83,7 +83,9 @@ Please upgrade to Mapbox v11.x or use @rnmapbox/maps 10.2.x
+             main {
+                 java.srcDirs = ['src/main/java']
+                 java.srcDirs += 'src/main/mapbox-v11-compat/v11'
++                kotlin.srcDir 'src/main/mapbox-v11-compat/v11'
+                 java.srcDirs += 'src/main/rn-compat/rn75'
++                kotlin.srcDir 'src/main/rn-compat/rn75'
+ 
+                 // Adapted from react-native-screens for consistency
+                 // https://github.com/software-mansion/react-native-screens/blob/main/android/build.gradle
+@@ -172,9 +174,11 @@ Please upgrade to Mapbox v11.x or use @rnmapbox/maps 10.2.x
+                 if (lifecycleCompat == "v25" || lifecycleCompat == "old") {
+                     logger.info("@rnmapbox/maps: Using v25 lifecycle compatibility (ViewTreeLifecycleOwner.set) - user override")
+                     java.srcDirs += 'src/main/lifecycle-compat/v25'
++                kotlin.srcDir 'src/main/lifecycle-compat/v25'
+                 } else if (lifecycleCompat == "v26" || lifecycleCompat == "new") {
+                     logger.info("@rnmapbox/maps: Using v26 lifecycle compatibility (setViewTreeLifecycleOwner) - user override")
+                     java.srcDirs += 'src/main/lifecycle-compat/v26'
++                kotlin.srcDir 'src/main/lifecycle-compat/v26'
+                 } else {
+                     // Auto-detect based on React Native version
+                     def rnVersion = null
+@@ -194,13 +198,16 @@ Please upgrade to Mapbox v11.x or use @rnmapbox/maps 10.2.x
+                             if (majorVersion == 0 && minorVersion < 77) {
+                                 logger.info("@rnmapbox/maps: Detected React Native ${rnVersion} - using v25 lifecycle compatibility (old API)")
+                                 java.srcDirs += 'src/main/lifecycle-compat/v25'
++                kotlin.srcDir 'src/main/lifecycle-compat/v25'
+                             } else {
+                                 logger.info("@rnmapbox/maps: Detected React Native ${rnVersion} - using v26 lifecycle compatibility (new API)")
+                                 java.srcDirs += 'src/main/lifecycle-compat/v26'
++                kotlin.srcDir 'src/main/lifecycle-compat/v26'
+                             }
+                         } catch (Exception e) {
+                             logger.warn("@rnmapbox/maps: Failed to parse React Native version '${rnVersion}', defaulting to v26 compatibility")
+                             java.srcDirs += 'src/main/lifecycle-compat/v26'
++                kotlin.srcDir 'src/main/lifecycle-compat/v26'
+                         }
+                     } else {
+                         // Cannot detect RN version, default to new API (v26) for future compatibility
+@@ -208,6 +215,7 @@ Please upgrade to Mapbox v11.x or use @rnmapbox/maps 10.2.x
+                         logger.info("@rnmapbox/maps: Unable to detect React Native version, using v26 lifecycle compatibility (new API, targetSdk=${targetSdk})")
+                         logger.info("@rnmapbox/maps: If you encounter issues with RN < 0.78, set RNMapboxMapsLifecycleCompat='v25' in your app's android/build.gradle ext block")
+                         java.srcDirs += 'src/main/lifecycle-compat/v26'
++                kotlin.srcDir 'src/main/lifecycle-compat/v26'
+                     }
+                 }
+ 

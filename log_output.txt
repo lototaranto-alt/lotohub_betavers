@@ -1,0 +1,1050 @@
+User:
+Revenue per Associazione (Incentivo alla partecipazione) questa parte ok ma sarebbe meglio più avendo per ora manteniamo una revenue base. - 🏗️ ARCHITETTURA DEL FLUSSO ECONOMICO. Per quasi i punti dovrebbero essere gestiti per gruppi immagino utenti che partecipano ad un evento dovrà dare più punti ai progetto obiettivi civico della suddetta associazioni se lo hanno e un piccola parte assegnato e aggregato agli altri punti. Così come le semplici azioni di sistema calcolati fuori da luogo eventi fatte da utenti sarà calcolatema e ripartita nei vari obiettivi civici
+Kimi:
+Perfetto. Togliamo la revenue variabile per associazione.
+ 
+Troppo complesso, troppo presto.
+ 
+Manteniamo una revenue base per LOTO e costruiamo una
+ 
+economia dei punti (PTI) che sia credibile e giusta
+.
+Ecco la versione semplificata ma solida.
+🎯 NUOVA ECONOMIA PTI: 3 Livelli
+Ogni azione utente genera PTI. Ma
+ 
+dove vanno
+ 
+dipende dal contesto.
+Livello
+Cosa genera
+Dove va
+Perché
+PTI Evento
+Tap durante un evento organizzato da Associazione X
+70%
+ 
+all’obiettivo civico di X
+20%
+ 
+agli altri obiettivi attivi (cross)
+10%
+ 
+fondo comunità generale
+Chi organizza viene premiato di più, ma la comunità intera cresce
+PTI Sistema
+Tap fuori evento, generico, esplorazione
+40%
+ 
+all’obiettivo civico più vicino geograficamente
+40%
+ 
+distribuito equamente tra tutti gli obiettivi attivi
+20%
+ 
+fondo comunità
+Il territorio genera valore diffuso, non solo per chi ha l’evento
+PTI Cross (Fondo)
+La quota
+ 
+“
+cross
+”
+ 
+di ogni azione
+Accumulato in un wallet comune. Distribuito mensilmente agli obiettivi che stanno più indietro (auto-bilanciamento)
+Nessun obiettivo rimane indietro per sempre
+🧮 FORMULA MATEMATICA
+Variabili
+Simbolo
+Significato
+E
+PTI generati in un Evento
+S
+PTI generati fuori evento (Sistema)
+O_i
+Obiettivo civico
+ 
+i
+ 
+(es.
+ 
+“
+10 panchine
+”
+ 
+di Associazione A)
+O_j
+Altri obiettivi attivi
+F
+Fondo comunità cross
+D_i
+Distanza utente-POI dell’obiettivo
+ 
+i
+Evento: Tap durante evento di Associazione X
+PTI_total = E  (es. 50 PTI per tap all'evento)
+Distribuzione:
+├── PTI_Ox   = 0.70 × E   → Obiettivo dell'associazione X (host)
+├── PTI_Oj   = 0.20 × E   → Diviso tra gli altri obiettivi attivi
+│                            (proporzionale alla loro "fame": più indietro = più prende)
+└── PTI_F    = 0.10 × E   → Fondo comunità cross
+Sistema: Tap fuori evento, POI generico
+PTI_total = S  (es. 15 PTI per tap normale)
+Distribuzione:
+├── PTI_Onearest = 0.40 × S   → Obiettivo civico più vicino (entro 500m dal tap)
+├── PTI_Oall     = 0.40 × S   → Diviso equamente tra TUTTI gli obiettivi attivi
+└── PTI_F        = 0.20 × S   → Fondo comunità cross
+Fondo Comunità: Distribuzione mensile
+Fondo_F = somma di tutti i PTI_F del mese
+Distribuzione a fine mese:
+├── 60% → Obiettivo più indietro (% completamento minore)
+├── 30% → Obiettivo secondo più indietro
+└── 10% → Riserva per emergenze / nuovi obiettivi
+Perché:
+ 
+Se un’associazione è piccola e non genera eventi, il fondo cross la aiuta a non morire. Se è grande e genera eventi, prende comunque il 70% diretto.
+ 
+Equità senza egualitarismo.
+🗄️ SCHEMA SQL AGGIORNATO
+Tabella
+ 
+pti_distribution_rules
+ 
+(Configurabile)
+CREATE
+ 
+TABLE
+ 
+public
+.pti_rules (
+    
+id
+ UUID 
+PRIMARY
+ 
+KEY
+ 
+DEFAULT
+ gen_random_uuid(),
+    rule_name TEXT 
+NOT
+ 
+NULL
+,
+    
+context
+ TEXT 
+NOT
+ 
+NULL
+ 
+CHECK
+ (
+context
+ 
+IN
+ (
+'event'
+, 
+'system'
+)),
+    target_type TEXT 
+NOT
+ 
+NULL
+ 
+CHECK
+ (target_type 
+IN
+ (
+'host_objective'
+, 
+'nearest_objective'
+, 
+'all_objectives'
+, 
+'community_fund'
+)),
+    percentage 
+DECIMAL
+(
+5
+,
+2
+) 
+NOT
+ 
+NULL
+ 
+CHECK
+ (percentage 
+>=
+ 
+0
+ 
+AND
+ percentage 
+<=
+ 
+100
+),
+    priority 
+INT
+ 
+DEFAULT
+ 
+1
+,
+    active 
+BOOLEAN
+ 
+DEFAULT
+ 
+TRUE
+);
+-- Inserimento regole di default
+INSERT
+ 
+INTO
+ 
+public
+.pti_rules (rule_name, 
+context
+, target_type, percentage) 
+VALUES
+(
+'Evento - Host Objective'
+, 
+'event'
+, 
+'host_objective'
+, 
+70
+),
+(
+'Evento - Cross Others'
+, 
+'event'
+, 
+'all_objectives'
+, 
+20
+),
+(
+'Evento - Fondo Comunità'
+, 
+'event'
+, 
+'community_fund'
+, 
+10
+),
+(
+'Sistema - Nearest Objective'
+, 
+'system'
+, 
+'nearest_objective'
+, 
+40
+),
+(
+'Sistema - All Objectives'
+, 
+'system'
+, 
+'all_objectives'
+, 
+40
+),
+(
+'Sistema - Fondo Comunità'
+, 
+'system'
+, 
+'community_fund'
+, 
+20
+);
+Tabella
+ 
+impact_transactions
+ 
+(Aggiornata)
+CREATE
+ 
+TABLE
+ 
+public
+.impact_transactions (
+    
+id
+ UUID 
+PRIMARY
+ 
+KEY
+ 
+DEFAULT
+ gen_random_uuid(),
+    profile_id UUID 
+REFERENCES
+ 
+public
+.profiles(
+id
+),
+    poi_id UUID 
+REFERENCES
+ 
+public
+.pois(
+id
+),
+    event_id UUID 
+REFERENCES
+ 
+public
+.
+events
+(
+id
+), 
+-- NULL se tap fuori evento
+    
+    
+-- PTI grezzi generati
+    pti_generated 
+INT
+ 
+NOT
+ 
+NULL
+,
+    
+    
+-- Distribuzione
+    pti_to_host_objective 
+INT
+ 
+DEFAULT
+ 
+0
+,
+    pti_to_nearest_objective 
+INT
+ 
+DEFAULT
+ 
+0
+,
+    pti_to_all_objectives 
+INT
+ 
+DEFAULT
+ 
+0
+,
+    pti_to_community_fund 
+INT
+ 
+DEFAULT
+ 
+0
+,
+    
+    
+-- Metadati
+    
+context
+ TEXT 
+CHECK
+ (
+context
+ 
+IN
+ (
+'event'
+, 
+'system'
+)),
+    distance_to_nearest_objective_m 
+INT
+, 
+-- solo per system
+    created_at 
+TIMESTAMP
+ 
+WITH
+ 
+TIME
+ 
+ZONE
+ 
+DEFAULT
+ NOW()
+);
+Tabella
+ 
+community_fund
+ 
+(Fondo Cross)
+CREATE
+ 
+TABLE
+ 
+public
+.community_fund (
+    
+id
+ UUID 
+PRIMARY
+ 
+KEY
+ 
+DEFAULT
+ gen_random_uuid(),
+    
+month
+ 
+DATE
+ 
+NOT
+ 
+NULL
+,
+    pti_incoming 
+INT
+ 
+DEFAULT
+ 
+0
+,
+    pti_distributed 
+INT
+ 
+DEFAULT
+ 
+0
+,
+    pti_reserve 
+INT
+ 
+DEFAULT
+ 
+0
+,
+    
+distributed
+ 
+BOOLEAN
+ 
+DEFAULT
+ 
+FALSE
+,
+    created_at 
+TIMESTAMP
+ 
+WITH
+ 
+TIME
+ 
+ZONE
+ 
+DEFAULT
+ NOW()
+);
+Edge Function: Calcolo Distribuzione PTI (Pseudocodice)
+// Supabase Edge Function: calculate-pti-distribution
+// Trigger: dopo ogni scan validato
+export
+ 
+async
+ 
+function
+ 
+calculatePTI
+(scanData) {
+  
+const
+ { profile_id
+,
+ poi_id
+,
+ event_id
+,
+ lat
+,
+ lng
+,
+ pti_base } 
+=
+ scanData
+;
+  
+  
+let
+ distribution 
+=
+ {
+    host_objective
+:
+ 
+0
+,
+    nearest_objective
+:
+ 
+0
+,
+    all_objectives
+:
+ 
+0
+,
+    community_fund
+:
+ 
+0
+  }
+;
+  
+  
+if
+ (event_id) {
+    
+// ─── CONTESTO EVENTO ───
+    
+const
+ 
+event
+ 
+=
+ 
+await
+ 
+getEvent
+(event_id)
+;
+    
+const
+ hostObjective 
+=
+ 
+await
+ 
+getObjectiveByAssociation
+(
+event
+.
+host_association_id
+)
+;
+    
+    distribution
+.
+host_objective
+ 
+=
+ 
+Math
+.
+floor
+(pti_base 
+*
+ 
+0.70
+)
+;
+    distribution
+.
+all_objectives
+ 
+=
+ 
+Math
+.
+floor
+(pti_base 
+*
+ 
+0.20
+)
+;
+    distribution
+.
+community_fund
+ 
+=
+ 
+Math
+.
+floor
+(pti_base 
+*
+ 
+0.10
+)
+;
+    
+    
+// Scrivi su impact_transactions
+    
+await
+ db
+.
+insert
+(
+'impact_transactions'
+,
+ {
+      
+...
+scanData
+,
+      context
+:
+ 
+'event'
+,
+      pti_to_host_objective
+:
+ distribution
+.
+host_objective
+,
+      pti_to_all_objectives
+:
+ distribution
+.
+all_objectives
+,
+      pti_to_community_fund
+:
+ distribution
+.
+community_fund
+    })
+;
+    
+    
+// Aggiorna obiettivo host
+    
+await
+ db
+.
+rpc
+(
+'increment_objective_pti'
+,
+ {
+      objective_id
+:
+ hostObjective
+.
+id
+,
+      amount
+:
+ distribution
+.
+host_objective
+    })
+;
+    
+  } 
+else
+ {
+    
+// ─── CONTESTO SISTEMA ───
+    
+const
+ nearestObj 
+=
+ 
+await
+ 
+getNearestObjective
+(lat
+,
+ lng
+,
+ 
+500
+)
+;
+ 
+// entro 500m
+    
+    distribution
+.
+nearest_objective
+ 
+=
+ 
+Math
+.
+floor
+(pti_base 
+*
+ 
+0.40
+)
+;
+    distribution
+.
+all_objectives
+ 
+=
+ 
+Math
+.
+floor
+(pti_base 
+*
+ 
+0.40
+)
+;
+    distribution
+.
+community_fund
+ 
+=
+ 
+Math
+.
+floor
+(pti_base 
+*
+ 
+0.20
+)
+;
+    
+    
+await
+ db
+.
+insert
+(
+'impact_transactions'
+,
+ {
+      
+...
+scanData
+,
+      context
+:
+ 
+'system'
+,
+      pti_to_nearest_objective
+:
+ distribution
+.
+nearest_objective
+,
+      pti_to_all_objectives
+:
+ distribution
+.
+all_objectives
+,
+      pti_to_community_fund
+:
+ distribution
+.
+community_fund
+,
+      distance_to_nearest_objective_m
+:
+ nearestObj
+?.
+distance
+ 
+||
+ 
+null
+    })
+;
+    
+    
+if
+ (nearestObj) {
+      
+await
+ db
+.
+rpc
+(
+'increment_objective_pti'
+,
+ {
+        objective_id
+:
+ nearestObj
+.
+id
+,
+        amount
+:
+ distribution
+.
+nearest_objective
+      })
+;
+    }
+  }
+  
+  
+// Aggiorna fondo comunità
+  
+await
+ db
+.
+rpc
+(
+'increment_community_fund'
+,
+ {
+    amount
+:
+ distribution
+.
+community_fund
+  })
+;
+  
+  
+// Distribuisci la quota "all_objectives" tra gli obiettivi attivi
+  
+const
+ activeObjectives 
+=
+ 
+await
+ 
+getActiveObjectives
+()
+;
+  
+if
+ (activeObjectives
+.
+length
+ 
+>
+ 
+0
+) {
+    
+const
+ sharePerObjective 
+=
+ 
+Math
+.
+floor
+(distribution
+.
+all_objectives
+ 
+/
+ activeObjectives
+.
+length
+)
+;
+    
+for
+ (
+const
+ obj 
+of
+ activeObjectives) {
+      
+await
+ db
+.
+rpc
+(
+'increment_objective_pti'
+,
+ {
+        objective_id
+:
+ obj
+.
+id
+,
+        amount
+:
+ sharePerObjective
+      })
+;
+    }
+  }
+}
+📊 ESEMPIO NUMERICO CONCRETO
+Scenario:
+ 
+3 obiettivi civici attivi a Taranto
+Obiettivo
+Associazione
+Target PTI
+Stato
+O1: 10 panchine
+Plasticaqquà
+1.000
+Attivo
+O2: 3 cestini spiaggia
+Diseducation
+500
+Attivo
+O3: Murales accessibile
+TGT
+800
+Attivo
+Azioni della settimana:
+Azione
+Utente
+PTI Base
+Contesto
+Calcolo
+Tap a evento
+ 
+“
+Pulizia costa
+”
+ 
+di Plasticaqquà
+Marco
+50
+Evento
+O1: 35, O2+O3: 10 (5 ciascuno), Fondo: 5
+Tap a evento
+ 
+“
+Pulizia costa
+”
+Luca
+50
+Evento
+O1: 35, O2+O3: 10, Fondo: 5
+Tap generico Castello Aragonese
+Anna
+15
+Sistema
+O3 (più vicino): 6, O1+O2+O3: 6 (2 ciascuno), Fondo: 3
+Tap generico Spiaggia
+Giulia
+15
+Sistema
+O2 (più vicino): 6, O1+O2+O3: 6, Fondo: 3
+Totale settimana:
+Obiettivo
+PTI da Eventi
+PTI da Sistema (nearest)
+PTI da Sistema (all)
+PTI da Fondo
+TOTALE
+O1 Plasticaqquà
+70
+0
+4
+?
+74 + fondo
+O2 Diseducation
+0
+6
+4
+?
+10 + fondo
+O3 TGT
+0
+6
+4
+?
+10 + fondo
+Fondo Cross
+10
+6
+-
+-
+16
+A fine mese:
+ 
+Il fondo di 16 PTI (più tutti gli altri fondi del mese) viene distribuito:
+ 
+- 60% all’obiettivo più indietro (es. O3 se è al 5% vs O1 al 20%)
+ 
+- 30% al secondo
+ 
+- 10% riserva
+💰 REVENUE BASE (Semplificata)
+Per ora,
+ 
+niente split revenue alle associazioni.
+ 
+La revenue va tutta a LOTO.
+Revenue DaaS mensile: R (es. €1.000)
+├── 60% → Costi operativi LOTO (tu, Walter, hosting)
+├── 25% → Margine / Cash flow
+└── 15% → Fondo Obiettivi Civici (in €, non in PTI)
+          └── Questo fondo in € viene trasformato in "budget" per gli obiettivi
+              quando raggiungono il target PTI.
+La regola:
+ 
+Gli obiettivi civici si sbloccano con i
+ 
+PTI
+ 
+(lavoro della comunità). Ma il
+ 
+finanziamento
+ 
+in euro arriva dalla revenue DaaS. I PTI dimostrano che la comunità vuole quell’obiettivo. I soldi lo realizzano.
+✅ CHECKLIST IMPLEMENTAZIONE
+☐ Creare tabella
+ 
+pti_rules
+ 
+e popolarla con i default 70/20/10 e 40/40/20
+☐ Aggiornare
+ 
+impact_transactions
+ 
+con i campi split
+☐ Creare tabella
+ 
+community_fund
+☐ Scrivere Edge Function
+ 
+calculate-pti-distribution
+☐ Aggiungere campo
+ 
+host_association_id
+ 
+alla tabella
+ 
+events
+☐ Testare: 1 evento fittizio + 3 tap generici → verificare che i conti tornino
+☐ Dashboard: mostrare a ogni associazione solo il loro obiettivo + il fondo cross
+❓ Domanda per Chiudere
+Vuoi che scriva il codice SQL completo
+ 
+(trigger + function) per il calcolo automatico dello split PTI ad ogni tap?
+Vuoi che prepari la dashboard visiva
+ 
+per l’associazione:
+ 
+“
+Il tuo obiettivo: X/1000 PTI. Il fondo comunità: Y PTI. Stima sblocco: Z giorni
+”
+?
+O vuoi procedere con il questionario per le agenzie incoming
+, ora che l’economia interna è chiusa?
+Dimmi quale aprire.

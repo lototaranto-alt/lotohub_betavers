@@ -48,3 +48,4 @@ app-example
 
 .env
 temp_backup_2/.env
+.vercel

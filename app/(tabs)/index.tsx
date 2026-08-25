@@ -18,6 +18,7 @@ import GameAchievementsSheet from '../../components/GameAchievementsSheet';
 import ScannedPoisSheet from '../../components/ScannedPoisSheet';
 import SingleBadgeSheet from '../../components/SingleBadgeSheet';
 import TouristBaptismModal from '../../components/TouristBaptismModal';
+import { triggerStepMilestoneNotification } from '../../utils/notifications';
 import XpToast from '../../components/XpToast';
 import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
 import PoiCard from '../../components/PoiCard';
@@ -202,6 +203,7 @@ export default function VetrinaScreen() {
   const [activeVaultPoiId, setActiveVaultPoiId] = useState<string | null>(null);
 
   const [stepsToday, setStepsToday] = useState(0);
+  const lastNotifiedSteps = useRef(0);
 
   useEffect(() => {
     let subscription: any;
@@ -215,9 +217,18 @@ export default function VetrinaScreen() {
           const result = await Pedometer.getStepCountAsync(start, end);
           const initialSteps = result ? result.steps : 0;
           setStepsToday(initialSteps);
+          lastNotifiedSteps.current = initialSteps;
 
           subscription = Pedometer.watchStepCount(res => {
-            setStepsToday(initialSteps + res.steps);
+            const currentSteps = initialSteps + res.steps;
+            setStepsToday(currentSteps);
+
+            // Logica Gamification Locale: Notifica ogni 2000 passi (~1.4km)
+            if (currentSteps - lastNotifiedSteps.current >= 2000) {
+              lastNotifiedSteps.current = currentSteps;
+              const km = (currentSteps * 0.7) / 1000;
+              triggerStepMilestoneNotification(km);
+            }
           });
         }
       } catch (err) {

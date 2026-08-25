@@ -52,11 +52,13 @@ export default function CommunityScreen() {
   const { theme } = useTheme();
   
   const [nodoEvents, setNodoEvents] = useState<any[]>([]);
+  const [activeNodes, setActiveNodes] = useState<any[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   
   const [impactStats, setImpactStats] = useState({
     checkins: 0,
-    co2: 0
+    co2: 0,
+    reports: 0
   });
 
   const [isReportSheetVisible, setIsReportSheetVisible] = useState(false);
@@ -78,16 +80,33 @@ export default function CommunityScreen() {
         setNodoEvents(evData);
       }
 
-      // Fetch Dati Cooperativi (Simulati aggregando i check-in per MVP)
-      // In futuro avremo una View SQL dedicata "vw_collective_impact"
+      // Fetch Nodi Civici (POI con layer 'nodo_civico' o 'partner')
+      const { data: nodiData, error: nodiErr } = await supabase
+        .from('pois')
+        .select('*')
+        .in('layer_name', ['nodo_civico', 'partner', 'layer-partner'])
+        .eq('is_active', true)
+        .limit(5);
+
+      if (!nodiErr && nodiData) {
+        setActiveNodes(nodiData);
+      }
+
+      // Fetch Dati Cooperativi (Check-in totali)
       const { count: checkinCount, error: chErr } = await supabase
         .from('user_pois')
+        .select('*', { count: 'exact', head: true });
+        
+      // Fetch Segnalazioni Civiche Totali
+      const { count: reportCount, error: repErr } = await supabase
+        .from('civic_reports')
         .select('*', { count: 'exact', head: true });
         
       if (!chErr && checkinCount !== null) {
         setImpactStats({
           checkins: checkinCount,
-          co2: parseFloat((checkinCount * 0.5).toFixed(1)) // 0.5kg stimati per viaggio a piedi
+          co2: parseFloat((checkinCount * 0.5).toFixed(1)), // 0.5kg stimati per viaggio a piedi
+          reports: (!repErr && reportCount !== null) ? reportCount : 0
         });
       }
 
@@ -145,26 +164,119 @@ export default function CommunityScreen() {
 
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           
-          <HorizontalShelf 
-            title="Eventi dei Nodi" 
-            data={nodoEvents} 
-            loading={loadingEvents}
-            renderItem={renderEvento} 
-            theme={theme} 
-          />
-          
-          {/* Dashboard Impatto Cooperativo (Gamification Asimmetrica) */}
-          <View style={[styles.shelfContainer, { marginBottom: 20, marginTop: 15 }]}>
-             <View style={[styles.shelfHeader, { borderBottomWidth: 0, paddingBottom: 5 }]}>
-               <Text style={[styles.shelfTitle, { color: theme.text }]}>Impatto Globale della Città</Text>
-             </View>
-             <Text style={{ paddingHorizontal: 20, fontSize: 12, color: theme.textMuted, marginBottom: 15, fontStyle: 'italic' }}>
-               L.O.T.O. non usa classifiche competitive. Ogni check-in unisce le forze della community.
-             </Text>
-             <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15 }}>
-               {renderImpactStat("Check-in Totali", impactStats.checkins.toString(), "check-circle", "#4CAF50", 1)}
-               {renderImpactStat("CO2 Evitata (kg)", impactStats.co2.toString(), "eco", "#8BC34A", 2)}
-             </View>
+          {/* SEZIONE EVENTI: CALENDARIO + LISTA */}
+          <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
+            <Text style={[styles.shelfTitle, { color: theme.text, marginBottom: 15 }]}>Agenda Eventi</Text>
+            
+            {/* Componente Calendario Orizzontale (Mockup UI) */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
+              {[1, 2, 3, 4, 5].map((day, idx) => (
+                <TouchableOpacity key={idx} style={{ 
+                  width: 55, 
+                  height: 70, 
+                  backgroundColor: idx === 1 ? theme.primary : theme.surface, 
+                  borderRadius: 16, 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: idx === 1 ? theme.primary : theme.border,
+                  elevation: idx === 1 ? 4 : 0,
+                  shadowColor: theme.primary,
+                  shadowOpacity: idx === 1 ? 0.3 : 0,
+                  shadowRadius: 5
+                }}>
+                  <Text style={{ fontSize: 10, color: idx === 1 ? '#FFF' : theme.textMuted, textTransform: 'uppercase', marginBottom: 5 }}>LUN</Text>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: idx === 1 ? '#FFF' : theme.text }}>{12 + idx}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Lista Eventi del Giorno Selezionato */}
+            <HorizontalShelf 
+              title="In programmazione" 
+              data={nodoEvents} 
+              renderItem={renderEvento} 
+              theme={theme} 
+              loading={loadingEvents}
+            />
+          </View>
+
+          {/* Dashboard Impatto Cooperativo (Gamification Asimmetrica) - 2x2 Grid */}
+          <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
+            <Text style={[styles.shelfTitle, { color: theme.text, marginBottom: 5 }]}>Impatto Collettivo</Text>
+            <Text style={{ fontSize: 12, color: theme.textMuted, marginBottom: 15, fontStyle: 'italic' }}>
+              L.O.T.O. non usa classifiche competitive. Ogni check-in unisce le forze della community.
+            </Text>
+            
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+              <View style={{ width: '48%' }}>
+                {renderImpactStat("Check-in Totali", impactStats.checkins.toString(), "check-circle", "#4CAF50", 1)}
+              </View>
+              <View style={{ width: '48%' }}>
+                {renderImpactStat("CO₂ Evitata (kg)", impactStats.co2.toString(), "eco", "#8BC34A", 2)}
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={{ width: '48%' }}>
+                {renderImpactStat("KM Esplorati", (impactStats.co2 / 0.12).toFixed(1), "directions-walk", theme.secondary, 3)}
+              </View>
+              <View style={{ width: '48%' }}>
+                {renderImpactStat("Segnalazioni", impactStats.reports.toString(), "add-alert", "#D6734E", 4)}
+              </View>
+            </View>
+          </View>
+
+          {/* Test UI: Lista Nodi Civici in Container Moderno (Glassmorphism/Card) */}
+          <View style={{ marginTop: 25, paddingHorizontal: 20 }}>
+            
+            <View style={{ 
+              backgroundColor: theme.surface, 
+              borderRadius: 24, 
+              padding: 20, 
+              borderWidth: 1, 
+              borderColor: 'rgba(255,255,255,0.05)',
+              elevation: 8,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 15,
+            }}>
+              
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <Text style={{ fontSize: 18, fontFamily: 'serif', fontWeight: 'bold', color: theme.text }}>Nodi Civici Attivi</Text>
+                <TouchableOpacity style={{ backgroundColor: theme.primary + '20', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
+                  <Text style={{ fontSize: 10, fontWeight: 'bold', color: theme.primary }}>VEDI MAPPA</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ gap: 15 }}>
+                {activeNodes.length > 0 ? (
+                  activeNodes.map((nodo, index) => (
+                    <React.Fragment key={nodo.id}>
+                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: theme.secondary + '20', justifyContent: 'center', alignItems: 'center', marginRight: 15 }}>
+                          <MaterialIcons name="volunteer-activism" size={24} color={theme.secondary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text }}>{nodo.name}</Text>
+                          <Text style={{ fontSize: 12, color: theme.textMuted }}>
+                            {nodo.layer_name === 'partner' ? 'Partner Ufficiale' : 'Presidio Civico'}
+                          </Text>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={24} color={theme.textMuted} />
+                      </TouchableOpacity>
+                      {index < activeNodes.length - 1 && (
+                        <View style={{ height: 1, backgroundColor: theme.border, opacity: 0.5 }} />
+                      )}
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <Text style={{ fontSize: 14, color: theme.textMuted, fontStyle: 'italic', textAlign: 'center', marginVertical: 10 }}>
+                    Nessun nodo attivo al momento.
+                  </Text>
+                )}
+              </View>
+            </View>
           </View>
           
         </ScrollView>

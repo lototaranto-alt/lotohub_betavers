@@ -1,0 +1,12 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="haloPulseAcc" cx="50%" cy="50%" r="50%">
+      <stop offset="55%" stop-color="#00CED1" stop-opacity="0" />
+      <stop offset="85%" stop-color="#00CED1" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#00CED1" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Anello Turchese per massima leggibilità su mappe accessibili -->
+  <circle cx="100" cy="100" r="95" fill="url(#haloPulseAcc)" />
+</svg>

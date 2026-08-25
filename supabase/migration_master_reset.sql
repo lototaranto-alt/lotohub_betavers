@@ -462,3 +462,96 @@ CREATE VIEW civic_reports_pending AS
 SELECT cr.*, p.nickname, p.total_tokens
 FROM civic_reports cr JOIN profiles p ON cr.user_id = p.id
 WHERE cr.status = 'pending_match' ORDER BY cr.created_at DESC;
+-- 1. Ripariamo il Trigger (Rimuovendo le colonne inesistenti)
+CREATE OR REPLACE FUNCTION public.create_profile_for_new_user_fn()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, total_tokens, total_xp)
+  VALUES (NEW.id, 0, 0);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. Sblocchiamo l'RLS per i Profili
+CREATE POLICY "Users can view their own profile." ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update their own profile." ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert their own profile." ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+
+-- P.O.I. MUSEI, CASTELLI E ATTRAZIONI
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Tempio Dorico', 'attraction', 'layer-attraction', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2330416, 40.4737866), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Cantiere Luparelli', 'attraction', 'layer-attraction', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2413093, 40.430523), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Cantieri Greco', 'attraction', 'layer-attraction', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2384133, 40.4293647), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Chiostro del convento di San Domenico', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2267511, 40.4771923), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Mudi Museo Diocesano di Taranto', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2275792, 40.4762135), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Museo di Storia Medioevale', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.231729, 40.474453), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Necropoli Magna Grecia', 'attraction', 'layer-attraction', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2546958, 40.4600831), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Necropolis Magna Grecia', 'attraction', 'layer-attraction', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2372445, 40.4722234), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Necropoli Magna Grecia', 'attraction', 'layer-attraction', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2563159, 40.4615932), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Tomb Magna Grecia', 'attraction', 'layer-attraction', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.258814, 40.4640682), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Parco archeologico di Collepasso', 'attraction', 'layer-attraction', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2757509, 40.466891), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Museo Ipogeo Spartano di Taranto', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2301432, 40.4746084), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Palazzo Carducci Artenisio', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2278522, 40.4766547), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Museo etnografico Alfredo Majorano', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2264134, 40.4780807), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Villa Pantaleo', 'attraction', 'layer-attraction', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.296809, 40.4650583), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'MUDIT -Museo degli Illustri', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2631428, 40.4653017), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'CRAC Puglia', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2261187, 40.4768163), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Palazzo Ulmo', 'attraction', 'layer-attraction', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2274131, 40.4768561), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Museo Meteorico - Sismico', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.23054, 40.4752274), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Palazzo Stola', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2311477, 40.4741787), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'MAR.TA Museo Archeologico Nazionale di Taranto', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2385002, 40.4736178), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Istituto Talassografico', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2394629, 40.4745589), 4326)); INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Cripta del Redentore', 'museum', 'layer-museum', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2629826, 40.4643775), 4326));
+
+-- ECCEZIONI E P.O.I. MANGIATI DA OSM
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Ecomuseo Palude la Vela', 'park', 'layer-park', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.3216093, 40.4752115), 4326));
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Parco delle Mura Greche', 'park', 'layer-park', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.264789, 40.463133), 4326));
+
+
+-- FIX RLS PER MEDIA_VAULT (Accesso Anonimo)
+ALTER TABLE public.media_vault ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated read on media_vault" ON public.media_vault;
+DROP POLICY IF EXISTS "Allow anon read on media_vault" ON public.media_vault;
+CREATE POLICY "Allow anon read on media_vault" ON public.media_vault FOR SELECT USING (auth.uid() IS NOT NULL);
+
+
+-- POI DA WANDERLOG
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Piazza Ebalia', 'monument', 'layer-monument', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2427, 40.4697), 4326));
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Piazza Maria Immacolata', 'monument', 'layer-monument', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2431713, 40.4712523), 4326));
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Piazza Fontana', 'monument', 'layer-monument', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2277173, 40.4789375), 4326));
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Chiesetta Neogotica San Francesco da Paola', 'monument', 'layer-monument', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2382, 40.4705), 4326));
+
+
+-- 3. NUOVA RPC PER VALIDAZIONE GPS-SOFT (10 MINUTI)
+CREATE OR REPLACE FUNCTION public.scan_poi_gps(
+    p_poi_id UUID,
+    p_lat DOUBLE PRECISION,
+    p_lng DOUBLE PRECISION
+)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS 
+DECLARE
+    v_profile_id UUID;
+    v_poi_coords GEOMETRY;
+    v_user_coords GEOMETRY;
+    v_distance DOUBLE PRECISION;
+    v_xp_reward INT;
+    v_new_xp INT;
+BEGIN
+    v_profile_id := auth.uid();
+    IF v_profile_id IS NULL THEN
+        RAISE EXCEPTION 'Utente non autenticato';
+    END IF;
+
+    -- Ottieni coordinate e XP del POI
+    SELECT coords, xp_reward INTO v_poi_coords, v_xp_reward
+    FROM public.pois
+    WHERE id = p_poi_id;
+
+    IF v_poi_coords IS NULL THEN
+        RAISE EXCEPTION 'POI non trovato';
+    END IF;
+
+    -- Anti-cheat spaziale server-side (Distanza < 80 metri per tolleranza)
+    v_user_coords := ST_SetSRID(ST_MakePoint(p_lng, p_lat), 4326);
+    v_distance := ST_Distance(v_user_coords::geography, v_poi_coords::geography);
+
+    IF v_distance > 80 THEN
+        RAISE EXCEPTION 'Sei troppo distante dal POI per il check-in GPS (Distanza: % metri)', ROUND(v_distance::numeric, 2);
+    END IF;
+
+    -- Verifica se ha già visitato (nella tabella user_pois o simili, assumiamo user_pois)
+    -- Per semplicità, diamo solo XP e logghiamo
+    UPDATE public.profiles
+    SET total_xp = total_xp + COALESCE(v_xp_reward, 15)
+    WHERE id = v_profile_id
+    RETURNING total_xp INTO v_new_xp;
+
+    -- Inseriamo il log raw
+    INSERT INTO public.esg_raw_logs (profile_id, action_type, point_id, value)
+    VALUES (v_profile_id, 'gps_checkin', p_poi_id, v_xp_reward);
+
+    RETURN json_build_object('success', true, 'new_total_xp', v_new_xp, 'distance', v_distance);
+END;
+;
+

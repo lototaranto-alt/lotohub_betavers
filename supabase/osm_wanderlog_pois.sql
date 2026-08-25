@@ -1,0 +1,3 @@
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'B&B Piazza Ebalia', 'monument', 'layer-monument', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2428411, 40.4696205), 4326));
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Piazza Maria Immacolata', 'monument', 'layer-monument', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2431713, 40.4712523), 4326));
+INSERT INTO public.pois (id, name, category, layer_name, tenant_id, is_active, coords) VALUES (gen_random_uuid(), 'Piazza Fontana', 'monument', 'layer-monument', 'taranto', TRUE, ST_SetSRID(ST_MakePoint(17.2277173, 40.4789375), 4326));

@@ -1,10 +1,11 @@
 import Link from 'next/link'
-import { MapPin, Map, Calendar, MessageSquare, Users, Settings } from 'lucide-react'
+import { MapPin, Map, Calendar, MessageSquare, Users, Settings, Briefcase } from 'lucide-react'
 
 const navItems = [
   { name: 'Mete (POI)', href: '/pois', icon: MapPin },
   { name: 'Check-in', href: '/checkins', icon: Map },
   { name: 'Eventi', href: '/events', icon: Calendar },
+  { name: 'Partners', href: '/partners', icon: Briefcase },
   { name: 'Feedbacks', href: '/feedbacks', icon: MessageSquare },
   { name: 'Profili', href: '/profiles', icon: Users },
 ]
