@@ -13,6 +13,11 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://fsuolbwsvpgiglwcaffh.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzdW9sYndzdnBnaWdsd2NhZmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNzk0MDcsImV4cCI6MjA5MTY1NTQwN30.lGi42kbgti6hkO9jy_nYnQVLGZXpT6bnn_h9hRvs4dY",
+        "EXPO_PUBLIC_MAPBOX_KEY": "pk.eyJ1IjoibG90b2h1YiIsImEiOiJjbW5yOGY4bXYwMTliMnNzNG84c2YwbXFqIn0.wUjhbriAWqmuGh0tn-zHtw"
+      },
       "android": {
         "buildType": "apk"
       }
