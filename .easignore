@@ -3,3 +3,9 @@ node_modules/
 dist/
 android/
 ios/
+
+# Block heavy files
+admin-app/.next/
+admin-app/node_modules/
+*.pdf
+temp_backup*/

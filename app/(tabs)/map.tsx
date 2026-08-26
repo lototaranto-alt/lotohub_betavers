@@ -30,6 +30,15 @@ export default function MapScreen() {
   const [routePois, setRoutePois] = useState<any[]>([]);
   const [activeLayer, setActiveLayer] = useState('tutti');
   const [heatmapOn, setHeatmapOn] = useState(false);
+    const [isLayerDropdownOpen, setIsLayerDropdownOpen] = useState(false);
+  const [eventsEverToggled, setEventsEverToggled] = useState(false);
+
+  const layers = [
+    { id: 'tutti', title: 'Tutti', icon: 'layers' },
+    { id: 'culturali', title: 'Culturali', icon: 'museum' },
+    { id: 'ristoro', title: 'Ristoro', icon: 'restaurant' },
+    { id: 'servizi', title: 'Servizi', icon: 'local-convenience-store' }
+  ];
   const [eventsOn, setEventsOn] = useState(false);
 
   useEffect(() => {
@@ -118,7 +127,7 @@ export default function MapScreen() {
         styleURL={Mapbox.StyleURL.Light}
         logoEnabled={false}
         attributionEnabled={false}
-        onPress={() => setSelectedPoi(null)}
+        onPress={() => { setSelectedPoi(null); setIsLayerDropdownOpen(false); }}
       >
         <Mapbox.Camera
           zoomLevel={14.5}
@@ -142,6 +151,7 @@ export default function MapScreen() {
              const feature = e.features[0];
              const clickedPoi = pois.find(p => p.id === feature.properties.id);
              if (clickedPoi) setSelectedPoi(clickedPoi);
+             setIsLayerDropdownOpen(false);
           }}
         >
           {heatmapOn && (
@@ -176,12 +186,13 @@ export default function MapScreen() {
       </Mapbox.MapView>
 
       {/* TOP FILTERS (Floating Bar) */}
+      
       <View style={styles.floatingBarWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.floatingBarScroll}>
           
           <TouchableOpacity 
             style={[styles.pillBtn, { borderColor: heatmapOn ? '#E63946' : theme.border, backgroundColor: heatmapOn ? 'rgba(230, 57, 70, 0.1)' : 'transparent', paddingHorizontal: 12 }]}
-            onPress={() => setHeatmapOn(!heatmapOn)}
+            onPress={() => { setHeatmapOn(!heatmapOn); setIsLayerDropdownOpen(false); }}
           >
             <MaterialIcons name="local-fire-department" size={16} color={heatmapOn ? '#E63946' : theme.primary} />
             <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text }]} numberOfLines={1}>Densità</Text>
@@ -191,19 +202,20 @@ export default function MapScreen() {
 
           <TouchableOpacity 
             style={[styles.pillBtn, { borderColor: theme.border, paddingHorizontal: 12 }]}
-            onPress={() => setActiveLayer(activeLayer === 'tutti' ? 'culturali' : 'tutti')}
+            onPress={() => setIsLayerDropdownOpen(!isLayerDropdownOpen)}
           >
             <MaterialIcons name="place" size={14} color={theme.primary} />
             <Text style={[styles.pillText, { color: theme.text }]} numberOfLines={1}>
-              {activeLayer === 'tutti' ? 'Tutti i P.O.I.' : 'Culturali'}
+              {layers.find(l => l.id === activeLayer)?.title || 'Tutti i P.O.I.'}
             </Text>
+            <MaterialIcons name={isLayerDropdownOpen ? "arrow-drop-up" : "arrow-drop-down"} size={16} color={theme.text} />
           </TouchableOpacity>
 
           <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 8 }} />
 
           <TouchableOpacity 
             style={[styles.pillBtn, { borderColor: eventsOn ? '#10B981' : theme.border, backgroundColor: eventsOn ? 'rgba(16, 185, 129, 0.1)' : 'transparent', paddingHorizontal: 12 }]}
-            onPress={() => setEventsOn(!eventsOn)}
+            onPress={() => { setEventsOn(!eventsOn); setEventsEverToggled(true); setIsLayerDropdownOpen(false); }}
           >
             <MaterialIcons name="event" size={14} color={eventsOn ? '#10B981' : theme.primary} />
             <Text style={[styles.pillText, { color: eventsOn ? '#10B981' : theme.text }]} numberOfLines={1}>Eventi</Text>
@@ -211,6 +223,27 @@ export default function MapScreen() {
 
         </ScrollView>
       </View>
+
+      {/* DROPDOWN LAYER POI */}
+      {isLayerDropdownOpen && (
+        <View style={[styles.dropdownContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          {layers.map(layer => (
+            <TouchableOpacity 
+              key={layer.id} 
+              style={[styles.dropdownItem, activeLayer === layer.id && { backgroundColor: theme.primary + '1A' }]}
+              onPress={() => {
+                setActiveLayer(layer.id);
+                setIsLayerDropdownOpen(false);
+              }}
+            >
+              <MaterialIcons name={layer.icon as any} size={20} color={activeLayer === layer.id ? theme.primary : theme.text} />
+              <Text style={[styles.dropdownItemText, { color: activeLayer === layer.id ? theme.primary : theme.text }]}>{layer.title}</Text>
+              {activeLayer === layer.id && <MaterialIcons name="check" size={18} color={theme.primary} style={{ marginLeft: 'auto' }} />}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
 
       {/* FAB GROUP (Bottom Right) */}
       <View style={{ position: 'absolute', bottom: 25, right: 20, alignItems: 'flex-end' }}>
@@ -266,7 +299,34 @@ const styles = StyleSheet.create({
     zIndex: 10, 
     elevation: 5 
   },
+  
   floatingBarScroll: { paddingRight: 20, alignItems: 'center' },
+  dropdownContainer: {
+    position: 'absolute',
+    top: 55,
+    left: 10,
+    width: 200,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 5,
+    zIndex: 100,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+  },
+  dropdownItemText: {
+    marginLeft: 10,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
   pillBtn: { 
     flexDirection: 'row', 
     alignItems: 'center', 
