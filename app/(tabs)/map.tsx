@@ -35,9 +35,10 @@ export default function MapScreen() {
 
   const layers = [
     { id: 'tutti', title: 'Tutti', icon: 'layers' },
-    { id: 'culturali', title: 'Culturali', icon: 'museum' },
-    { id: 'ristoro', title: 'Ristoro', icon: 'restaurant' },
-    { id: 'servizi', title: 'Servizi', icon: 'local-convenience-store' }
+    { id: 'monument', title: 'Monumenti', icon: 'account-balance' },
+    { id: 'museum', title: 'Musei', icon: 'museum' },
+    { id: 'park', title: 'Parchi', icon: 'park' },
+    { id: 'attraction', title: 'Attrazioni', icon: 'local-activity' }
   ];
   const [eventsOn, setEventsOn] = useState(false);
 
