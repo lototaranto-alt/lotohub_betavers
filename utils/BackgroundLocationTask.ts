@@ -33,8 +33,9 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any): P
 export const startBackgroundLocationUpdates = async () => {
   const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
   if (foregroundStatus === 'granted') {
-    const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-    if (backgroundStatus === 'granted') {
+    // RICHIESTA BACKGROUND DISABILITATA PER MVP (Evita doppio popup di sistema e rifiuto automatico)
+    // const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+    if (true) {
       await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
         accuracy: Location.Accuracy.Balanced,
         timeInterval: 60000, // 60 secondi

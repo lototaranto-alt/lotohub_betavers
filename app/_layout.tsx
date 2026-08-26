@@ -18,6 +18,7 @@ import { RouteProvider } from '../context/RouteContext';
 import MobilityWizard from '../components/MobilityWizard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingCarousel from '../components/OnboardingCarousel';
+import { registerForPushNotificationsAsync } from '../utils/notifications';
 
 // Inizializzazione Globale Hardware NFC (Commentato per Expo Go Demo)
 // NfcManager.start().catch(e => console.warn('NFC non supportato in questo ambiente (es. Web/Simulatore)'));
@@ -50,12 +51,14 @@ export default function RootLayout() {
       if (session) {
         console.log('[Auth Success] Sessione esistente ripristinata');
         currentUserId = session.user.id;
+        registerForPushNotificationsAsync();
       } else {
         // Tentativo di login anonimo rigoroso
         const { data, error } = await supabase.auth.signInAnonymously();
         if (error) throw error;
         console.log('[Auth Success] Entrato come ospite anonimo');
         currentUserId = data.user?.id;
+        registerForPushNotificationsAsync();
       }
       
       // AUTO-HEALING TRAMITE REINCARNAZIONE

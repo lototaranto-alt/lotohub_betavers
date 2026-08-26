@@ -63,7 +63,7 @@ export default function MapScreen() {
           .select('*')
           .eq('tenant_id', currentTenant.slug)
           .eq('is_active', true)
-          .not('latitude', 'is', null)
+          .not('lat', 'is', null)
           .neq('layer_name', 'nodo_civico');
           
         if (isActive && poisData) {
@@ -116,7 +116,7 @@ export default function MapScreen() {
       },
       geometry: {
         type: 'Point',
-        coordinates: [poi.longitude, poi.latitude],
+        coordinates: [poi.lng, poi.lat],
       },
     })),
   };
@@ -137,13 +137,12 @@ export default function MapScreen() {
           animationDuration={2000}
         />
 
-        {/* Cursore Utente Personalizzato */}
-        <Mapbox.UserLocation visible={true} showsUserHeadingIndicator={false}>
-          <Mapbox.SymbolLayer id="user-hidden" style={{ iconOpacity: 0 }} />
-          <View style={{ width: 120, height: 120, alignItems: 'center', justifyContent: 'center' }}>
-             <UserAvatar mode="standard" />
-          </View>
-        </Mapbox.UserLocation>
+        {/* Cursore Utente (Modern v10 API) */}
+        <Mapbox.LocationPuck 
+          puckBearingEnabled 
+          puckBearing="heading" 
+          pulsing={{ isEnabled: true, color: theme.primary }}
+        />
 
         <Mapbox.ShapeSource 
           id="pois-source" 
@@ -304,9 +303,9 @@ const styles = StyleSheet.create({
   floatingBarScroll: { paddingRight: 20, alignItems: 'center' },
   dropdownContainer: {
     position: 'absolute',
-    top: 55,
+    top: Constants.statusBarHeight + 60,
     left: 10,
-    width: 200,
+    width: 220,
     borderRadius: 12,
     borderWidth: 1,
     paddingVertical: 5,

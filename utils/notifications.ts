@@ -1,7 +1,8 @@
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { supabase } from './supabase';
 
-// Configura il gestore notifiche globale (come comportarsi quando l'app è in foreground)
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -10,52 +11,62 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export const requestNotificationPermissions = async () => {
+export async function registerForPushNotificationsAsync() {
+  let token;
+
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('gamification', {
-      name: 'Ricompense ed Esplorazione',
-      importance: Notifications.AndroidImportance.HIGH,
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FFD700',
+      lightColor: '#5F713D',
     });
   }
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+  if (Platform.OS !== 'web') {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') {
+      console.log('Failed to get push token for push notification!');
+      return;
+    }
+    try {
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+      if (!projectId) {
+        throw new Error('Project ID not found');
+      }
+      token = (
+        await Notifications.getExpoPushTokenAsync({
+          projectId,
+        })
+      ).data;
+    } catch (e) {
+      console.log('Error getting push token', e);
+    }
+  } else {
+    console.log('Must use physical device for Push Notifications');
   }
 
-  return finalStatus === 'granted';
-};
+  if (token) {
+    // Save to Supabase
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        await supabase
+          .from('profiles')
+          .update({ expo_push_token: token })
+          .eq('id', session.user.id);
+        console.log('[Push] Token saved successfully!');
+      }
+    } catch (err) {
+      console.log('[Push] Error saving token to Supabase', err);
+    }
+  }
 
-/**
- * Pianifica una notifica locale istantanea (es. quando l'utente sblocca un traguardo camminando)
- */
-export const scheduleGamificationNotification = async (title: string, body: string, data = {}) => {
-  const hasPermission = await requestNotificationPermissions();
-  if (!hasPermission) return;
-
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-      data,
-      sound: true,
-    },
-    trigger: null, // trigger null = immediato
-  });
-};
-
-/**
- * Notifica motivazionale per i passi
- */
-export const triggerStepMilestoneNotification = async (km: number) => {
-  await scheduleGamificationNotification(
-    "🌍 Traguardo Sincro-Avventura!",
-    `Hai esplorato per ${km.toFixed(1)} km e abbattuto la CO2. Apri l'app per sincronizzare e ricevere punti XP!`,
-    { type: 'step_milestone', km }
-  );
-};
+  return token;
+}

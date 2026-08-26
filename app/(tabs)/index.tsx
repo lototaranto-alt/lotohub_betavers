@@ -517,7 +517,7 @@ export default function VetrinaScreen() {
       try {
         await startBackgroundLocationUpdates();
         setIsGeofenceActive(true);
-        Alert.alert("Sensori Attivati", "Ora guadagnerai LOTO PTI camminando!");
+        // Alert rimosso per evitare spam UI
       } catch (e) {
         console.log("Errore sensori", e);
         Alert.alert("Errore", "Impossibile attivare i sensori. Verifica i permessi.");
