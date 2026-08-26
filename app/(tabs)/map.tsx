@@ -30,10 +30,14 @@ export default function MapScreen() {
   const [routePois, setRoutePois] = useState<any[]>([]);
   const [activeLayer, setActiveLayer] = useState('tutti');
   const [heatmapOn, setHeatmapOn] = useState(false);
+  const [eventsOn, setEventsOn] = useState(false);
 
   useEffect(() => {
     (async () => {
-      await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        await Location.requestForegroundPermissionsAsync();
+      }
     })();
   }, []);
 
@@ -85,9 +89,14 @@ export default function MapScreen() {
     }, [currentTenant])
   );
 
+  const filteredPois = pois.filter(poi => {
+    if (activeLayer !== 'tutti' && poi.category !== activeLayer) return false;
+    return true;
+  });
+
   const poiGeoJSON = {
     type: 'FeatureCollection',
-    features: pois.map(poi => ({
+    features: filteredPois.map(poi => ({
       type: 'Feature',
       id: poi.id,
       properties: {
@@ -122,7 +131,6 @@ export default function MapScreen() {
         <Mapbox.UserLocation visible={true} showsUserHeadingIndicator={false}>
           <Mapbox.SymbolLayer id="user-hidden" style={{ iconOpacity: 0 }} />
           <View style={{ width: 120, height: 120, alignItems: 'center', justifyContent: 'center' }}>
-             {/* Import e utilizzo fatto inline per compatibilità o tramite componente esterno, qui lo facciamo tramite MarkerView al posto di SymbolLayer se necessario, ma UserLocation accetta children come views in Mapbox */}
              <UserAvatar mode="standard" />
           </View>
         </Mapbox.UserLocation>
@@ -136,23 +144,25 @@ export default function MapScreen() {
              if (clickedPoi) setSelectedPoi(clickedPoi);
           }}
         >
-          <Mapbox.CircleLayer
-            id="pois-heat-halo"
-            style={{
-              circleRadius: [
-                'interpolate', ['linear'], ['get', 'heat'],
-                10, 15,
-                100, 45 
-              ],
-              circleColor: theme.primary,
-              circleOpacity: [
-                'interpolate', ['linear'], ['get', 'heat'],
-                10, 0.2,
-                100, 0.6
-              ],
-              circlePitchAlignment: 'map',
-            }}
-          />
+          {heatmapOn && (
+            <Mapbox.CircleLayer
+              id="pois-heat-halo"
+              style={{
+                circleRadius: [
+                  'interpolate', ['linear'], ['get', 'heat'],
+                  10, 15,
+                  100, 45 
+                ],
+                circleColor: theme.primary,
+                circleOpacity: [
+                  'interpolate', ['linear'], ['get', 'heat'],
+                  10, 0.2,
+                  100, 0.6
+                ],
+                circlePitchAlignment: 'map',
+              }}
+            />
+          )}
           <Mapbox.CircleLayer
             id="pois-core"
             style={{
@@ -187,6 +197,16 @@ export default function MapScreen() {
             <Text style={[styles.pillText, { color: theme.text }]} numberOfLines={1}>
               {activeLayer === 'tutti' ? 'Tutti i P.O.I.' : 'Culturali'}
             </Text>
+          </TouchableOpacity>
+
+          <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 8 }} />
+
+          <TouchableOpacity 
+            style={[styles.pillBtn, { borderColor: eventsOn ? '#10B981' : theme.border, backgroundColor: eventsOn ? 'rgba(16, 185, 129, 0.1)' : 'transparent', paddingHorizontal: 12 }]}
+            onPress={() => setEventsOn(!eventsOn)}
+          >
+            <MaterialIcons name="event" size={14} color={eventsOn ? '#10B981' : theme.primary} />
+            <Text style={[styles.pillText, { color: eventsOn ? '#10B981' : theme.text }]} numberOfLines={1}>Eventi</Text>
           </TouchableOpacity>
 
         </ScrollView>

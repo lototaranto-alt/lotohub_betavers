@@ -382,7 +382,11 @@ export default function VetrinaScreen() {
       // Ritardiamo le richieste di localizzazione di 13.3s per coprire l'intera durata del carosello (4 clip x 3.3s)
       setTimeout(async () => {
         try {
-          let { status } = await Location.requestForegroundPermissionsAsync();
+          let { status } = await Location.getForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            const res = await Location.requestForegroundPermissionsAsync();
+            status = res.status;
+          }
           if (status === 'granted') {
             Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
             setUserLocation(loc);
@@ -442,9 +446,9 @@ export default function VetrinaScreen() {
   };
 
   useEffect(() => {
-    // Apri il modale di battesimo se il caricamento  finito, c' un profilo ma non ha un nickname
+    // Apri il modale di battesimo se il caricamento è finito, c'è un profilo ma non ha un nickname
     if (!loading && userProfile && !userProfile.nickname) {
-      setIsBaptismVisible(true);
+      // setIsBaptismVisible(true); // DISABILITATO PER ZERO-PII: l'app rimane 100% anonima
     }
   }, [loading, userProfile]);
 
