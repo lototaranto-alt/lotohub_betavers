@@ -1,10 +1,10 @@
-﻿'use client'
+'use client'
 
 import React from 'react'
 
 export default function DownloadPage() {
   // SOSTITUISCI QUESTO LINK CON IL LINK FORNITO DA SUPABASE
-  const APK_URL = "#"
+  const APK_URL = "https://github.com/lototaranto-alt/loto-app-alpha/releases/download/v1.0.0/application-c1081064-fbba-4760-b4a3-8f12f8d152a9.apk"
 
   return (
     <div className="min-h-screen bg-[#F9F6EE] font-sans selection:bg-[#4A5D23] selection:text-white flex items-center justify-center p-6">
@@ -23,15 +23,15 @@ export default function DownloadPage() {
         <div className="bg-[#4A5D23]/5 rounded-2xl p-6 mb-8 border border-[#4A5D23]/10">
           <div className="flex items-start space-x-4">
             <div className="flex-shrink-0 mt-1">
-              <span className="text-2xl">🛡️</span>
+              <span className="text-2xl">???</span>
             </div>
             <div>
               <h3 className="font-bold text-[#1F1F1F] text-lg mb-2">Nota di Sicurezza di Sistema</h3>
               <p className="text-gray-700 text-sm leading-relaxed mb-4">
-                Poiché questa versione esclusiva non è ancora pubblicata sul circuito commerciale (Google Play Store), il tuo dispositivo Android mostrerà un avviso di sicurezza standard <span className="font-semibold">("File potenzialmente dannoso")</span>. 
+                Poich� questa versione esclusiva non � ancora pubblicata sul circuito commerciale (Google Play Store), il tuo dispositivo Android mostrer� un avviso di sicurezza standard <span className="font-semibold">("File potenzialmente dannoso")</span>. 
               </p>
               <p className="text-[#4A5D23] font-semibold text-sm">
-                È assolutamente normale. Stai ricevendo un pacchetto cifrato direttamente dai nostri laboratori di test.
+                � assolutamente normale. Stai ricevendo un pacchetto cifrato direttamente dai nostri laboratori di test.
               </p>
             </div>
           </div>
@@ -45,19 +45,19 @@ export default function DownloadPage() {
             Scarica la Versione Alpha
           </a>
           <p className="mt-4 text-xs text-gray-500 font-medium">
-            Clicca "Scarica comunque" ➔ Apri il file ➔ Consenti l'installazione
+            Clicca "Scarica comunque" ? Apri il file ? Consenti l'installazione
           </p>
         </div>
 
         <div className="border-t border-gray-100 pt-6 mt-6 flex flex-col md:flex-row items-center justify-center space-y-3 md:space-y-0 md:space-x-8">
           <div className="flex items-center text-sm text-gray-500">
-            <span className="mr-2">🔒</span> Zero Dati Personali
+            <span className="mr-2">??</span> Zero Dati Personali
           </div>
           <div className="flex items-center text-sm text-gray-500">
-            <span className="mr-2">📍</span> Nessun Tracciamento GPS
+            <span className="mr-2">??</span> Nessun Tracciamento GPS
           </div>
           <div className="flex items-center text-sm text-gray-500">
-            <span className="mr-2">📱</span> Ottimizzata per Android
+            <span className="mr-2">??</span> Ottimizzata per Android
           </div>
         </div>
 
@@ -65,3 +65,4 @@ export default function DownloadPage() {
     </div>
   )
 }
+
