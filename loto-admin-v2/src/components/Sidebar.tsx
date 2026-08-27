@@ -1,0 +1,36 @@
+'use client'
+
+import Link from 'next/link'
+import { LayoutDashboard, Users, MapPin, MessageSquare } from 'lucide-react'
+
+export function Sidebar() {
+  const navItems = [
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  ]
+
+  return (
+    <div className="flex h-full w-64 flex-col bg-slate-900 text-white">
+      <div className="flex h-16 items-center justify-center border-b border-slate-800">
+        <h1 className="text-xl font-bold tracking-widest text-emerald-500">L.O.T.O.</h1>
+      </div>
+      <nav className="flex-1 space-y-2 py-4">
+        {navItems.map((item) => {
+          const Icon = item.icon
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className="flex items-center space-x-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:text-white"
+            >
+              <Icon className="h-5 w-5" />
+              <span>{item.name}</span>
+            </Link>
+          )
+        })}
+      </nav>
+      <div className="border-t border-slate-800 p-4 text-xs text-slate-500 text-center">
+        Versione Read-Only (v2)
+      </div>
+    </div>
+  )
+}
