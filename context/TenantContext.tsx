@@ -1,4 +1,4 @@
-// context/TenantContext.tsx
+﻿// context/TenantContext.tsx
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import * as Location from 'expo-location';
 import * as Linking from 'expo-linking';
@@ -158,8 +158,8 @@ export const TenantProvider: React.FC<{
 
   /**
    * [NOTA DI SVILUPPO - FASE 4: Whitelabel]
-   * Questa funzione è responsabile di decidere QUALE Comune caricare all'avvio.
-   * L'algoritmo segue questo ordine di priorità:
+   * Questa funzione Ã¨ responsabile di decidere QUALE Comune caricare all'avvio.
+   * L'algoritmo segue questo ordine di prioritÃ :
    * 1. Deep Link (es. loto://app?tenant=borgo-test) -> Utile per campagne marketing.
    * 2. GPS Fallback -> Calcola l'Haversine distance; se sei a < 50km dal centro di un tenant attivo, lo carica.
    * 3. Default Fallback -> Carica il primo tenant attivo disponibile (es. Taranto).
@@ -182,37 +182,8 @@ export const TenantProvider: React.FC<{
         }
       }
 
-      // 2. GPS fallback
-      if (!targetId) {
-        try {
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status === 'granted') {
-            const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            const { latitude, longitude } = location.coords;
-
-            const allTenants = await fetchAllTenants();
-            if (allTenants.length > 0) {
-              let closest = allTenants[0];
-              let minDist = haversine(latitude, longitude, parseFloat(closest.center_lat), parseFloat(closest.center_lng));
-
-              for (const t of allTenants) {
-                const dist = haversine(latitude, longitude, parseFloat(t.center_lat), parseFloat(t.center_lng));
-                if (dist < minDist) {
-                  minDist = dist;
-                  closest = t;
-                }
-              }
-
-              if (minDist < 50) {
-                targetId = closest.id;
-              }
-            }
-          }
-        } catch (gpsError) {
-          console.warn('GPS fallback fallito o disabilitato, ignoro...', gpsError);
-          // Ignoriamo l'errore per far scattare il fallback di default
-        }
-      }
+      // 2. GPS fallback (DISABILITATO PER FASE ALPHA - EVITA GLITCH LECCE)
+      // if (!targetId) { ... }
 
       if (targetId) {
         const config = await fetchTenantById(targetId);
@@ -299,3 +270,4 @@ export const useTenant = (): TenantContextType => {
   if (!ctx) throw new Error('useTenant must be used inside TenantProvider');
   return ctx;
 };
+
