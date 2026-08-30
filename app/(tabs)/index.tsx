@@ -205,41 +205,33 @@ export default function VetrinaScreen() {
   const [stepsToday, setStepsToday] = useState(0);
   const lastNotifiedSteps = useRef(0);
 
+  const stepScaleAnim = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
-    let subscription: any;
-    const initPedometer = async () => {
-      try {
-        const isAvailable = await Pedometer.isAvailableAsync();
-        if (isAvailable) {
-          const end = new Date();
-          const start = new Date();
-          start.setHours(0, 0, 0, 0);
-          const result = await Pedometer.getStepCountAsync(start, end);
-          const initialSteps = result ? result.steps : 0;
-          setStepsToday(initialSteps);
-          lastNotifiedSteps.current = initialSteps;
+    // 1. Carica il totale salvato all'avvio
+    AsyncStorage.getItem('@sincro_avventura_steps').then(stored => {
+      if (stored) setStepsToday(parseInt(stored, 10));
+    });
 
-          subscription = Pedometer.watchStepCount(res => {
-            const currentSteps = initialSteps + res.steps;
-            setStepsToday(currentSteps);
-
-            // Logica Gamification Locale: Notifica ogni 2000 passi (~1.4km)
-            if (currentSteps - lastNotifiedSteps.current >= 2000) {
-              lastNotifiedSteps.current = currentSteps;
-              const km = (currentSteps * 0.7) / 1000;
-              triggerStepMilestoneNotification(km);
-            }
-          });
-        }
-      } catch (err) {
-        console.log('[Pedometer] Errore:', err);
+    // 2. Ascolta gli incrementi live dal motore di SincroAvventura
+    const subscription = DeviceEventEmitter.addListener('onStepIncrement', (event) => {
+      setStepsToday(event.total);
+      
+      // Animazione "battito/spinta"
+      Animated.sequence([
+        Animated.timing(stepScaleAnim, { toValue: 1.3, duration: 150, useNativeDriver: true }),
+        Animated.timing(stepScaleAnim, { toValue: 1, duration: 150, useNativeDriver: true })
+      ]).start();
+      
+      if (event.total - lastNotifiedSteps.current >= 2000) {
+        lastNotifiedSteps.current = event.total;
+        const km = (event.total * 0.7) / 1000;
+        triggerStepMilestoneNotification(km);
       }
-    };
-    initPedometer();
+    });
+
     return () => {
-      if (subscription && subscription.remove) {
-        subscription.remove();
-      }
+      subscription.remove();
     };
   }, []);
 
@@ -792,7 +784,9 @@ export default function VetrinaScreen() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                  <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={12} color="#FFF" style={{marginRight: 4}} />
+                  <Animated.View style={{ transform: [{ scale: stepScaleAnim }] }}>
+                    <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={12} color="#FFF" style={{marginRight: 4}} />
+                  </Animated.View>
                   <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
                     {isAccessibleMode ? `${stepsToday} spinte` : `${stepsToday} passi`}
                   </Text>
