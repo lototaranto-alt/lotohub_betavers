@@ -24,3 +24,8 @@ As an AI working on the L.O.T.O. HUB project, you MUST strictly adhere to the fo
 ## 5. MVP Target (Taranto 2026)
 - Keep implementations Lean. Avoid creating complex, costly real-time external API calls (e.g., live AI validations or expensive CO2 tracking APIs per user). 
 - Use "Shadow Validation": calculate CO2 locally using ISPRA/DEFRA coefficients, and only sample 1% via external APIs to maintain scientific authority while dropping COGS to zero.
+
+## 6. Sviluppo Cross-Platform (iOS & Android)
+- **Design Architetturale:** Tutta la codifica passata, presente e futura deve essere **Cross-Platform**.
+- **Consapevolezza Nativa:** Non forzare un'unica soluzione se danneggia una piattaforma. Sfrutta l'ecosistema nativo quando necessario (es. *CoreMotion/HealthKit* per background iOS e *Foreground Services* per background Android).
+- **Parit di Funzioni:** L'utente iOS e l'utente Android devono godere della stessa identica esperienza (es. Sincro-Avventura), anche se il codice "sotto il cofano" usa motori diversi.

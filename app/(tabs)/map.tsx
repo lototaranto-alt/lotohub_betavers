@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, Dimensions, Text, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import * as Location from 'expo-location';
@@ -7,6 +7,9 @@ import { supabase } from '../../utils/supabase';
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
+import RouteSummarySheet from '../../components/RouteSummarySheet';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import UserAvatar from '../../components/MapCursor';
 import Constants from 'expo-constants';
@@ -22,31 +25,45 @@ export default function MapScreen() {
   const { theme } = useTheme();
 
   const [pois, setPois] = useState<any[]>([]);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [selectedPoi, setSelectedPoi] = useState<any>(null);
   const [heatScores, setHeatScores] = useState<Record<string, number>>({});
   
   // UI States
   const [accessibilityOn, setAccessibilityOn] = useState(false);
   const [routePois, setRoutePois] = useState<any[]>([]);
-  const [activeLayer, setActiveLayer] = useState('tutti');
-  const [heatmapOn, setHeatmapOn] = useState(false);
+  const [activeLayer, setActiveLayer] = useState('monument');
+  const [heatmapOn, setHeatmapOn] = useState(true);
     const [isLayerDropdownOpen, setIsLayerDropdownOpen] = useState(false);
   const [eventsEverToggled, setEventsEverToggled] = useState(false);
 
-  const layers = [
+    const layers = [
     { id: 'tutti', title: 'Tutti', icon: 'layers' },
     { id: 'monument', title: 'Monumenti', icon: 'account-balance' },
     { id: 'museum', title: 'Musei', icon: 'museum' },
     { id: 'park', title: 'Parchi', icon: 'park' },
+    { id: 'fountain', title: 'Fontane', icon: 'water-drop' },
     { id: 'attraction', title: 'Attrazioni', icon: 'local-activity' }
   ];
   const [eventsOn, setEventsOn] = useState(false);
+  const [isRouteSheetOpen, setIsRouteSheetOpen] = useState(false);
+  const [userXp, setUserXp] = useState(0);
+
+  useEffect(() => {
+    AsyncStorage.getItem('loto_fallback_xp').then(val => {
+      if (val) setUserXp(parseInt(val, 10));
+    });
+  }, []);
+
 
   useEffect(() => {
     (async () => {
       const { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted') {
-        await Location.requestForegroundPermissionsAsync();
+        const req = await Location.requestForegroundPermissionsAsync();
+        if (req.status === 'granted') setHasLocationPermission(true);
+      } else {
+        setHasLocationPermission(true);
       }
     })();
   }, []);
@@ -64,7 +81,8 @@ export default function MapScreen() {
           .eq('tenant_id', currentTenant.slug)
           .eq('is_active', true)
           .not('lat', 'is', null)
-          .neq('layer_name', 'nodo_civico');
+          .neq('layer_name', 'nodo_civico')
+          .neq('category', 'concierge');
           
         if (isActive && poisData) {
           setPois(poisData);
@@ -100,6 +118,7 @@ export default function MapScreen() {
   );
 
   const filteredPois = pois.filter(poi => {
+    if (poi.category === 'fountain') return true; // Sempre visibili
     if (activeLayer !== 'tutti' && poi.category !== activeLayer) return false;
     return true;
   });
@@ -137,12 +156,14 @@ export default function MapScreen() {
           animationDuration={2000}
         />
 
-        {/* Cursore Utente (Modern v10 API) */}
-        <Mapbox.LocationPuck 
-          puckBearingEnabled 
-          puckBearing="heading" 
-          pulsing={{ isEnabled: true, color: theme.primary }}
-        />
+        {/* Cursore Utente (Modern v10 API) - Reso condizionale per evitare crash prima dei permessi */}
+        {hasLocationPermission && (
+          <Mapbox.LocationPuck 
+            puckBearingEnabled 
+            puckBearing="heading" 
+            pulsing={{ isEnabled: true, color: theme.primary }}
+          />
+        )}
 
         <Mapbox.ShapeSource 
           id="pois-source" 
@@ -173,15 +194,48 @@ export default function MapScreen() {
               }}
             />
           )}
-          <Mapbox.CircleLayer
+          <Mapbox.SymbolLayer
             id="pois-core"
             style={{
-              circleRadius: 8,
-              circleColor: theme.text,
-              circleStrokeWidth: 2,
-              circleStrokeColor: '#ffffff',
+              iconImage: [
+                'match',
+                ['get', 'category'],
+                'park', 'park-15',
+                'fountain', 'drinking-water-15',
+                'museum', 'museum-15',
+                'monument', 'monument-15',
+                'marker-15'
+              ],
+              iconSize: 1.5,
+              iconAllowOverlap: true,
+              textField: ['get', 'name'],
+              textSize: 10,
+              textOffset: [0, 1.2],
+              textAnchor: 'top',
+              textColor: theme.text,
+              textHaloColor: theme.surface,
+              textHaloWidth: 2
             }}
           />
+                  {eventsOn && (
+            <Mapbox.SymbolLayer
+              id="events-layer"
+              style={{
+                iconImage: 'star-15', // Icona stella (Maki)
+                iconSize: 1.8,
+                iconColor: '#10B981', // Verde Smeraldo (L.O.T.O. Eventi)
+                iconAllowOverlap: true,
+                textField: ['get', 'name'],
+                textSize: 11,
+                textOffset: [0, 1.5],
+                textAnchor: 'top',
+                textColor: '#10B981',
+                textHaloColor: '#FFFFFF',
+                textHaloWidth: 2
+              }}
+              filter={['==', 'category', 'event']} // Mostra solo se  un evento
+            />
+          )}
         </Mapbox.ShapeSource>
       </Mapbox.MapView>
 
@@ -195,7 +249,7 @@ export default function MapScreen() {
             onPress={() => { setHeatmapOn(!heatmapOn); setIsLayerDropdownOpen(false); }}
           >
             <MaterialIcons name="local-fire-department" size={16} color={heatmapOn ? '#E63946' : theme.primary} />
-            <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text }]} numberOfLines={1}>Densità</Text>
+            <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text }]} numberOfLines={1}>DensitÃ </Text>
           </TouchableOpacity>
           
           <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 8 }} />
@@ -205,7 +259,7 @@ export default function MapScreen() {
             onPress={() => setIsLayerDropdownOpen(!isLayerDropdownOpen)}
           >
             <MaterialIcons name="place" size={14} color={theme.primary} />
-            <Text style={[styles.pillText, { color: theme.text }]} numberOfLines={1}>
+            <Text style={[styles.pillText, { color: theme.text, maxWidth: 100 }]} numberOfLines={1}>
               {layers.find(l => l.id === activeLayer)?.title || 'Tutti i P.O.I.'}
             </Text>
             <MaterialIcons name={isLayerDropdownOpen ? "arrow-drop-up" : "arrow-drop-down"} size={16} color={theme.text} />
@@ -213,13 +267,15 @@ export default function MapScreen() {
 
           <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 8 }} />
 
-          <TouchableOpacity 
+          {userXp >= 100 && (
+<TouchableOpacity 
             style={[styles.pillBtn, { borderColor: eventsOn ? '#10B981' : theme.border, backgroundColor: eventsOn ? 'rgba(16, 185, 129, 0.1)' : 'transparent', paddingHorizontal: 12 }]}
             onPress={() => { setEventsOn(!eventsOn); setEventsEverToggled(true); setIsLayerDropdownOpen(false); }}
           >
             <MaterialIcons name="event" size={14} color={eventsOn ? '#10B981' : theme.primary} />
             <Text style={[styles.pillText, { color: eventsOn ? '#10B981' : theme.text }]} numberOfLines={1}>Eventi</Text>
           </TouchableOpacity>
+)}
 
         </ScrollView>
       </View>
@@ -248,7 +304,7 @@ export default function MapScreen() {
       {/* FAB GROUP (Bottom Right) */}
       <View style={{ position: 'absolute', bottom: 25, right: 20, alignItems: 'flex-end' }}>
         
-        {/* FAB 1: Accessibilità */}
+        {/* FAB 1: AccessibilitÃ  */}
         <TouchableOpacity 
           style={[styles.fabCircle, accessibilityOn && { backgroundColor: theme.primary }]}
           onPress={() => setAccessibilityOn(!accessibilityOn)}
@@ -258,10 +314,11 @@ export default function MapScreen() {
         </TouchableOpacity>
 
         {/* FAB 3: Crea Percorso / Itinerario */}
-        <TouchableOpacity 
+        {userXp >= 100 && (
+<TouchableOpacity 
           style={[styles.fabCircle, { backgroundColor: routePois.length > 0 ? theme.primary : theme.surface }]}
           onPress={() => {
-            // Qui andrà la logica per aprire la bottom sheet dell'itinerario
+            // Qui andrÃ  la logica per aprire la bottom sheet dell'itinerario
             console.log('Apri Itinerario');
           }}
           activeOpacity={0.8}
@@ -273,6 +330,7 @@ export default function MapScreen() {
             </View>
           )}
         </TouchableOpacity>
+)}
 
       </View>
 
@@ -281,6 +339,12 @@ export default function MapScreen() {
         onClose={() => setSelectedPoi(null)}
         poi={selectedPoi}
         onNavigate={() => {}}
+      />
+      <RouteSummarySheet
+        visible={isRouteSheetOpen}
+        onClose={() => setIsRouteSheetOpen(false)}
+        routePois={routePois}
+        theme={theme}
       />
     </SafeAreaView>
   );
@@ -358,3 +422,4 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.05)' 
   }
 });
+

@@ -7,6 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
 import XpToast from '../../components/XpToast';
 import { supabase } from '../../utils/supabase';
+import { startCrowdRadarScan } from '../../utils/bleManager';
 
 const { height } = Dimensions.get('window');
 
@@ -58,44 +59,55 @@ export default function DeepLinkPoiScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsScanning(true);
 
-    setTimeout(async () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setIsScanning(false);
-      
-      if (!poiData) return;
+    let crowdCount = 1;
+    try {
+      // Aspettiamo esattamente i 5 secondi del radar
+      crowdCount = await startCrowdRadarScan();
+    } catch (e) {
+      console.warn('Radar BLE fallito o non supportato:', e);
+    }
 
-      const xpToAward = poiData.xp_reward || 50;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsScanning(false);
+    
+    if (!poiData) return;
 
-      // Aggiorna AsyncStorage (Offline-first / Caching fallback)
-      const currentXpStr = await AsyncStorage.getItem('loto_fallback_xp');
-      const currentXp = currentXpStr ? parseInt(currentXpStr) : 0;
-      const newXp = currentXp + xpToAward;
-      await AsyncStorage.setItem('loto_fallback_xp', newXp.toString());
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session && session.user) {
-        // Inserimento storico check-in (NFC/GPS validato)
-        try {
-          await supabase.from('user_pois').upsert({
-            profile_id: session.user.id,
-            poi_id: poiData.id,
-            visited_at: new Date().toISOString()
-          }, { onConflict: 'profile_id, poi_id' });
-        } catch(err) {
-          console.error('Errore inserimento storico check-in', err);
-        }
+    const xpToAward = poiData.xp_reward || 50;
+
+    // Aggiorna AsyncStorage (Offline-first / Caching fallback)
+    const currentXpStr = await AsyncStorage.getItem('loto_fallback_xp');
+    const currentXp = currentXpStr ? parseInt(currentXpStr) : 0;
+    const newXp = currentXp + xpToAward;
+    await AsyncStorage.setItem('loto_fallback_xp', newXp.toString());
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session && session.user) {
+      // Inserimento storico check-in e popolamento Heatmap
+      try {
+        await supabase.rpc('process_crowd_radar', {
+          p_poi_id: poiData.id,
+          p_reporter_id: session.user.id,
+          p_raw_count: crowdCount
+        });
+
+        await supabase.from('user_pois').upsert({
+          profile_id: session.user.id,
+          poi_id: poiData.id,
+          visited_at: new Date().toISOString()
+        }, { onConflict: 'profile_id, poi_id' });
+      } catch(err) {
+        console.error('Errore inserimento storico check-in', err);
       }
+    }
 
-      setToastXp(xpToAward);
-      setToastMessage(`Check-in validato presso ${poiData.name}`);
-      setToastVisible(true);
+    setToastXp(xpToAward);
+    setToastMessage(`Check-in validato presso ${poiData.name}`);
+    setToastVisible(true);
 
-      setTimeout(() => {
-        router.replace('/' as any);
-      }, 2500);
-
-    }, 3000);
+    setTimeout(() => {
+      router.replace('/' as any);
+    }, 2500);
   };
 
   if (loading) {
@@ -191,7 +203,7 @@ export default function DeepLinkPoiScreen() {
           {isScanning ? (
             <>
               <ActivityIndicator size="small" color={theme.primary} style={{ marginRight: 10 }} />
-              <Text style={[styles.btnText, { color: theme.primary, fontSize: 14 }]}>Scansione BLE in corso (3s)...</Text>
+              <Text style={[styles.btnText, { color: theme.primary, fontSize: 14 }]}>Scansione Ambiente (5s)...</Text>
             </>
           ) : (
             <>

@@ -1,4 +1,4 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+﻿import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
@@ -29,7 +29,7 @@ import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
-import { Pedometer } from 'expo-sensors';
+
 import { useScanner } from './_layout';
 const { width, height } = Dimensions.get('window');
 
@@ -42,26 +42,26 @@ const DICTIONARY = {
     hello: 'Ciao',
     guest: 'ESPLORATORE',
     impactTitle: 'IL TUO IMPATTO ECO-SOSTENIBILE',
-    co2Lab: 'Kg CO₂ Evitata',
+    co2Lab: 'Kg COâ‚‚ Evitata',
     ptsLab: 'LOTO PTI',
-    ticker: '🍃 COMMUNITY TARANTO OGGI: 1.240 Litri risparmiati • 45kg Plastica • 12kg CO₂',
+    ticker: 'ðŸƒ COMMUNITY TARANTO OGGI: 1.240 Litri risparmiati â€¢ 45kg Plastica â€¢ 12kg COâ‚‚',
     btnCheckin: 'Check-in',
     btnEvents: 'Eventi',
     btnMap: 'Mappa',
     sectionSpots: 'METE CONSIGLIATE',
-    recommended: '✨ CONSIGLIATO: BONUS +10 PTI',
+    recommended: 'âœ¨ CONSIGLIATO: BONUS +10 PTI',
     scanBtn: 'SCANSIONA SCONTRINO',
     checkinAction: 'CHECK-IN (+15 XP)',
     userBadge: 'Utente Loto',
     modalCo2: 'CO2 Evitata',
     modalPlast: 'Plastica Ridotta',
     modalTok: 'Token Accumulati',
-    modalDev: 'DEV TOOLS 🛠️ (Modalità Super User)',
+    modalDev: 'DEV TOOLS ðŸ› ï¸ (ModalitÃ  Super User)',
     levelGold: 'EROE DEL MARE',
-    levelSilver: 'CUSTODE DELLA CITTÀ',
+    levelSilver: 'CUSTODE DELLA CITTÃ€',
     levelBronze: 'ECO-NAVIGATORE',
-    refillBadge: '🚰 STAZIONE REFILL: BONUS IDRICO',
-    crowdWarning: '🔴 META MOLTO AFFOLLATA',
+    refillBadge: 'ðŸš° STAZIONE REFILL: BONUS IDRICO',
+    crowdWarning: 'ðŸ”´ META MOLTO AFFOLLATA',
     btnAlternative: 'VEDI ALTERNATIVA CONSIGLIATA',
     btnUnlockStory: 'SBLOCCA STORIA (+30 XP)'
   },
@@ -69,26 +69,26 @@ const DICTIONARY = {
     hello: 'Hello',
     guest: 'Loto Guest',
     impactTitle: 'YOUR ECO-SUSTAINABLE IMPACT',
-    co2Lab: 'Kg CO₂ avoided',
+    co2Lab: 'Kg COâ‚‚ avoided',
     ptsLab: 'LOTO PTS',
-    ticker: '🍃 TARANTO COMMUNITY TODAY: 1.240 Liters saved • 45kg Plastic • 12kg CO₂',
+    ticker: 'ðŸƒ TARANTO COMMUNITY TODAY: 1.240 Liters saved â€¢ 45kg Plastic â€¢ 12kg COâ‚‚',
     btnCheckin: 'Check-in',
     btnEvents: 'Events',
     btnMap: 'Map',
     sectionSpots: 'RECOMMENDED SPOTS',
-    recommended: '✨ RECOMMENDED: +10 PTS BONUS',
+    recommended: 'âœ¨ RECOMMENDED: +10 PTS BONUS',
     scanBtn: 'SCAN RECEIPT',
     checkinAction: 'CHECK-IN (+15 XP)',
     userBadge: 'Loto User',
     modalCo2: 'CO2 Avoided',
     modalPlast: 'Plastic Reduced',
     modalTok: 'Tokens Earned',
-    modalDev: 'DEV TOOLS 🛠️ (Super User Mode)',
+    modalDev: 'DEV TOOLS ðŸ› ï¸ (Super User Mode)',
     levelGold: 'SEA HERO',
     levelSilver: 'CITY GUARDIAN',
     levelBronze: 'ECO-NAVIGATOR',
-    refillBadge: '🚰 REFILL STATION: WATER BONUS',
-    crowdWarning: '🔴 VERY CROWDED DESTINATION',
+    refillBadge: 'ðŸš° REFILL STATION: WATER BONUS',
+    crowdWarning: 'ðŸ”´ VERY CROWDED DESTINATION',
     btnAlternative: 'SEE RECOMMENDED ALTERNATIVE',
     btnUnlockStory: 'UNLOCK STORY (+30 XP)'
   }
@@ -101,19 +101,19 @@ const getMobilityPillStyle = (type: string) => {
       return {
         bg: '#ECFDF5', // Sfondo verde leggero
         text: '#10B981', // Testo verde
-        label: '🌱 Dolce',
+        label: 'ðŸŒ± Dolce',
       };
     case 'pubblica':
       return {
         bg: '#F0F9FF', // Sfondo blu leggero
         text: '#0a7ea4', // Testo blu
-        label: '🚌 Pubblica',
+        label: 'ðŸšŒ Pubblica',
       };
     case 'privata':
       return {
         bg: '#F1F5F9', // Sfondo grigio leggero
         text: '#4B5563', // Testo grigio
-        label: '🚗 Privata',
+        label: 'ðŸš— Privata',
       };
     default:
       return {
@@ -141,7 +141,7 @@ export default function VetrinaScreen() {
   const [communityStats, setCommunityStats] = useState<any>(null);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
 
-  // --- STATO TRIANGOLO DELLA VERITÀ (INTEGRALE) ---
+  // --- STATO TRIANGOLO DELLA VERITÃ€ (INTEGRALE) ---
   const [isMotorized, setIsMotorized] = useState(false);
   const lastSample = useRef<{ coords: Location.LocationObjectCoords; timestamp: number } | null>(null);
   const KINEMATIC_TIMER_MS = 60000;
@@ -397,9 +397,9 @@ export default function VetrinaScreen() {
                 if (poi.latitude && poi.longitude) {
                   const dist = calculateDistanceRaw(loc.coords.latitude, loc.coords.longitude, poi.latitude, poi.longitude);
                   if (dist < 50) {
-                    // Vibrazione leggera per indicare prossimità
+                    // Vibrazione leggera per indicare prossimitÃ 
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-                    break; // Una vibrazione è sufficiente
+                    break; // Una vibrazione Ã¨ sufficiente
                   }
                 }
               }
@@ -446,7 +446,7 @@ export default function VetrinaScreen() {
   };
 
   useEffect(() => {
-    // Apri il modale di battesimo se il caricamento è finito, c'è un profilo ma non ha un nickname
+    // Apri il modale di battesimo se il caricamento Ã¨ finito, c'Ã¨ un profilo ma non ha un nickname
     if (!loading && userProfile && !userProfile.nickname) {
       // setIsBaptismVisible(true); // DISABILITATO PER ZERO-PII: l'app rimane 100% anonima
     }
@@ -493,7 +493,7 @@ export default function VetrinaScreen() {
       await AsyncStorage.setItem('loto_gps_prompt_seen', 'true');
       Alert.alert(
         "Ottieni il massimo da L.O.T.O.",
-        "Vuoi attivare la localizzazione in background? Ti permetterà di guadagnare LOTO PTI camminando per la città in automatico e sbloccare i Whisper. Puoi spegnerli in qualsiasi momento dalle Impostazioni.",
+        "Vuoi attivare la localizzazione in background? Ti permetterÃ  di guadagnare LOTO PTI camminando per la cittÃ  in automatico e sbloccare i Whisper. Puoi spegnerli in qualsiasi momento dalle Impostazioni.",
         [
           { text: "Non ora", style: "cancel" },
           { 
@@ -531,7 +531,7 @@ export default function VetrinaScreen() {
 
   const executeScan = async (poi: any) => {
     if (isMotorized) {
-      Alert.alert("Velocità Elevata", "L'uso di mezzi motorizzati sospende l'erogazione di XP mobilità.");
+      Alert.alert("VelocitÃ  Elevata", "L'uso di mezzi motorizzati sospende l'erogazione di XP mobilitÃ .");
       return;
     }
 
@@ -556,7 +556,7 @@ export default function VetrinaScreen() {
 
     const { data: existing } = await supabase.from('impact_transactions').select('id').eq('receipt_hash', receiptHash).single();
     if (existing) {
-      Alert.alert("Errore", "Scontrino già registrato.");
+      Alert.alert("Errore", "Scontrino giÃ  registrato.");
       return;
     }
 
@@ -604,8 +604,8 @@ export default function VetrinaScreen() {
 
   const trovaAlternativa = (poiAffollato: any) => {
     Alert.alert(
-      "Capacità Massima Raggiunta",
-      `Il luogo ${poiAffollato.name} è attualmente sovraffollato. Il protocollo LOTO ti invia alla mappa per esplorare opzioni sicure e guadagnare più punti!`,
+      "CapacitÃ  Massima Raggiunta",
+      `Il luogo ${poiAffollato.name} Ã¨ attualmente sovraffollato. Il protocollo LOTO ti invia alla mappa per esplorare opzioni sicure e guadagnare piÃ¹ punti!`,
       [
         { text: "Resta qui", style: "cancel" },
         { text: "Apri Mappa", onPress: () => router.push('/map') }
@@ -628,7 +628,7 @@ export default function VetrinaScreen() {
       { 
         id: 'badge_first_scan', name: 'Battesimo', icon: 'location-on', color: '#2ECC71', 
         unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan'),
-        actionDescription: 'Scansiona il tuo primo POI (fontanella o punto d\'ombra) per iniziare a mappare la città.',
+        actionDescription: 'Scansiona il tuo primo POI (fontanella o punto d\'ombra) per iniziare a mappare la cittÃ .',
         progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan') ? 100 : Math.min(99, (userProfile?.pois_discovered || 0) * 100)
       },
       { 
@@ -640,7 +640,7 @@ export default function VetrinaScreen() {
       { 
         id: 'badge_eco_5kg', name: 'Eco-Sostenitore', icon: 'eco', color: '#4CAF50', 
         unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg'),
-        actionDescription: 'Mantieni uno stile di mobilità dolce (bici/piedi) per 5 giorni consecutivi.',
+        actionDescription: 'Mantieni uno stile di mobilitÃ  dolce (bici/piedi) per 5 giorni consecutivi.',
         progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg') ? 100 : 20
       },
       { 
@@ -652,7 +652,7 @@ export default function VetrinaScreen() {
       { 
         id: 'badge_level_5', name: 'Cittadino Attivo', icon: 'stars', color: '#FFD700', 
         unlocked: isLevel5OrAbove,
-        actionDescription: 'Raggiungi il Livello 5 accumulando punti esperienza per la città.',
+        actionDescription: 'Raggiungi il Livello 5 accumulando punti esperienza per la cittÃ .',
         progress: Math.min(100, Math.round(((levelProgress.currentLevel) / 5) * 100))
       }
     ];
@@ -866,7 +866,7 @@ export default function VetrinaScreen() {
 
   // Rimossa BreathingLeaf iniziale come richiesto
   const userTokens = userProfile?.total_tokens ?? 0;
-  // OFFLINE FALLBACK: Scegliamo il valore più alto tra il DB (se esiste) e la memoria locale
+  // OFFLINE FALLBACK: Scegliamo il valore piÃ¹ alto tra il DB (se esiste) e la memoria locale
   const userXp = Math.max(userProfile?.total_xp ?? 0, localXpFallback);
   const levelProgress = getLevelProgress(userXp, theme);
   const levelInfo = { title: levelProgress.levelTitle, stemma: levelProgress.stemma, color: levelProgress.color };
@@ -880,10 +880,10 @@ export default function VetrinaScreen() {
     });
 
     return [
-      { id: 'recommended', title: 'Mete Consigliate ✨', data: sorted.filter(p => p.is_recommended) },
-      { id: 'free', title: 'Culturali 🏛️', data: sorted.filter(p => (p.category === 'free' || p.category === 'museum' || p.category === 'attraction' || p.category === 'monument' || p.category === 'park') && !p.is_recommended) },
-      { id: 'partner', title: 'Boutique & Partner 🛍️', data: sorted.filter(p => p.category === 'partner') },
-      { id: 'secret', title: 'Mete Segrete 🤫', data: sorted.filter(p => p.category === 'secret') },
+      { id: 'recommended', title: 'Mete Consigliate âœ¨', data: sorted.filter(p => p.is_recommended) },
+      { id: 'free', title: 'Culturali ðŸ›ï¸', data: sorted.filter(p => (p.category === 'free' || p.category === 'museum' || p.category === 'attraction' || p.category === 'monument' || p.category === 'park') && !p.is_recommended) },
+      { id: 'partner', title: 'Boutique & Partner ðŸ›ï¸', data: sorted.filter(p => p.category === 'partner') },
+      { id: 'secret', title: 'Mete Segrete ðŸ¤«', data: sorted.filter(p => p.category === 'secret') },
 
     ];
   };
@@ -942,7 +942,7 @@ export default function VetrinaScreen() {
       <View style={{ marginBottom: 40, marginTop: 10 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, paddingHorizontal: 20 }}>
           <Text style={{ fontSize: 20, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold', color: theme.text }}>
-            Eventi Pubblici 🗓️
+            Eventi Pubblici ðŸ—“ï¸
           </Text>
         </View>
         <FlatList
@@ -971,6 +971,7 @@ export default function VetrinaScreen() {
   return (
     <ContentWrapper {...wrapperProps}>
       <SafeAreaView style={styles.container}>
+        <LiveFeedBanner pois={pois} />
         <StatusBar barStyle="dark-content" />
         <FlatList
           data={getDynamicPois()} // Scaffali Netflix
@@ -984,7 +985,7 @@ export default function VetrinaScreen() {
 
         {isMotorized && (
           <View style={styles.motorizedToast}>
-            <Text style={styles.motorizedToastText}>🚌 MODO MOTORIZZATO ATTIVO</Text>
+            <Text style={styles.motorizedToastText}>ðŸšŒ MODO MOTORIZZATO ATTIVO</Text>
           </View>
         )}
 
@@ -1112,7 +1113,7 @@ export default function VetrinaScreen() {
               >
                 <MaterialIcons name="pedal-bike" size={24} color={mobilityType === 'dolce' ? theme.primary : theme.text} style={{ marginRight: 15 }} />
                 <View>
-                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: mobilityType === 'dolce' ? theme.primary : theme.text }}>Mobilità Dolce</Text>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: mobilityType === 'dolce' ? theme.primary : theme.text }}>MobilitÃ  Dolce</Text>
                   <Text style={{ fontSize: 12, color: theme.textMuted }}>Bici, Monopattino, Piedi (Miglior Impatto)</Text>
                 </View>
               </TouchableOpacity>
@@ -1242,3 +1243,4 @@ const getStyles = (theme: any) => StyleSheet.create({
   mStatValBoutique: { fontSize: 18, fontWeight: 'bold' },
   mStatLab: { fontSize: 9, color: '#64748B', marginTop: 5, textTransform: 'uppercase', fontWeight: 'bold' }
 });
+

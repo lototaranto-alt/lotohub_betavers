@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../context/ThemeContext';
@@ -56,7 +57,7 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
       activeOpacity={0.9}
     >
       <View style={styles.poiImageContainer}>
-        {img ? <Image source={img} style={styles.poiImageHarmonious} /> : <View style={[styles.poiImageHarmonious, { backgroundColor: '#E2E8F0' }]} />}
+        {img ? <Image source={img} style={styles.poiImageHarmonious} contentFit="cover" transition={200} cachePolicy="memory-disk" /> : <View style={[styles.poiImageHarmonious, { backgroundColor: '#E2E8F0' }]} />}
         <View style={[styles.recommendedBadge, { backgroundColor: badgeColor, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }]}>
           <MaterialIcons name={badgeIcon as any} size={14} color="#FFF" />
           <Text style={[styles.recommendedText, { color: '#FFF', marginLeft: 4, fontSize: 10, fontWeight: 'bold' }]}>{badgeText}</Text>

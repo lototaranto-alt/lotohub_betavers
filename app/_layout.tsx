@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+﻿import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { supabase } from '@/utils/supabase';
 import { TenantProvider } from '../context/TenantContext';
+import { PostHogProvider } from 'posthog-react-native';
 import { CityProvider } from '../context/CityContext';
 import { MobilityProvider } from '../context/MobilityContext';
 import { ThemeProvider as AppThemeProvider } from '../context/ThemeContext';
@@ -65,7 +66,7 @@ export default function RootLayout() {
       if (currentUserId) {
         const { error: profileError } = await supabase.from('profiles').select('id').eq('id', currentUserId).single();
         if (profileError && profileError.code === 'PGRST116') {
-           console.log('[Auto-Healing] Riga profile mancante e protetta da RLS. Forzo il reset dell\'identità...');
+           console.log('[Auto-Healing] Riga profile mancante e protetta da RLS. Forzo il reset dell\'identitÃ ...');
            await supabase.auth.signOut();
            await AsyncStorage.clear();
            
@@ -73,7 +74,7 @@ export default function RootLayout() {
            const { data: newData, error: newError } = await supabase.auth.signInAnonymously();
            if (newError) throw newError;
            currentUserId = newData.user?.id;
-           console.log('[Auto-Healing] Nuova identità creata con successo.');
+           console.log('[Auto-Healing] Nuova identitÃ  creata con successo.');
         }
       }
       
@@ -132,13 +133,14 @@ export default function RootLayout() {
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FDFBF2' }}>
         <ActivityIndicator size="large" color="#5F713D" style={{ marginBottom: 20 }} />
         <Text style={{ fontSize: 20, fontWeight: '900', color: '#5F713D', fontFamily: 'serif', letterSpacing: 2 }}>L.O.T.O.</Text>
-        <Text style={{ fontSize: 12, color: '#1A1C1E', marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Sincronizzazione Identità...</Text>
+        <Text style={{ fontSize: 12, color: '#1A1C1E', marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Sincronizzazione IdentitÃ ...</Text>
       </View>
     );
   }
 
   return (
-    <TenantProvider>
+    <PostHogProvider apiKey={"${process.env.EXPO_PUBLIC_POSTHOG_KEY || 'phc_INSERISCI_QUI_LA_CHIAVE'}"} options={{ host: 'https://eu.i.posthog.com' }}>
+      <TenantProvider>
       <AppThemeProvider>
         <CityProvider>
           <MobilityProvider>
@@ -159,6 +161,7 @@ export default function RootLayout() {
         </CityProvider>
       </AppThemeProvider>
     </TenantProvider>
+    </PostHogProvider>
   );
 }
 
