@@ -8,6 +8,7 @@ import { startBackgroundTracking, stopBackgroundTracking } from '../../utils/Sin
 
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useMobility } from '../../context/MobilityContext';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import RouteSummarySheet from '../../components/RouteSummarySheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,6 +26,7 @@ const INITIAL_COORDS = [17.234050, 40.472850];
 export default function MapScreen() {
   const { currentTenant } = useTenant();
   const { theme } = useTheme();
+  const { isAccessibleMode, toggleAccessibleMode } = useMobility();
 
   const [pois, setPois] = useState<any[]>([]);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
@@ -32,21 +34,27 @@ export default function MapScreen() {
   const [heatScores, setHeatScores] = useState<Record<string, number>>({});
   
   // UI States
-  const [accessibilityOn, setAccessibilityOn] = useState(false);
+  
   const [routePois, setRoutePois] = useState<any[]>([]);
   const [activeLayer, setActiveLayer] = useState('monument');
   const [heatmapOn, setHeatmapOn] = useState(true);
 
+
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.id) setUserId(session.user.id);
+    });
+  }, []);
+
   // Inizializza Sincro-Avventura in base allo switch accessibilità
   useEffect(() => {
-    if (userProfile?.id) {
-      startBackgroundTracking(accessibilityOn, userProfile.id);
+    if (userId) {
+      startBackgroundTracking(isAccessibleMode, userId);
     }
-    return () => {
-      // Optional: non fermiamo il tracking altrimenti smette di contare in background,
-      // ma lo riavviamo con la modalità aggiornata ogni volta che cambia accessibilityOn.
-    };
-  }, [accessibilityOn, userProfile?.id]);
+  }, [isAccessibleMode, userId]);
+
 
     const [isLayerDropdownOpen, setIsLayerDropdownOpen] = useState(false);
   const [eventsEverToggled, setEventsEverToggled] = useState(false);
@@ -320,11 +328,11 @@ export default function MapScreen() {
         
         {/* FAB 1: AccessibilitÃ  */}
         <TouchableOpacity 
-          style={[styles.fabCircle, accessibilityOn && { backgroundColor: theme.primary }]}
-          onPress={() => setAccessibilityOn(!accessibilityOn)}
+          style={[styles.fabCircle, isAccessibleMode && { backgroundColor: theme.primary }]}
+          onPress={() => toggleAccessibleMode()}
           activeOpacity={0.8}
         >
-          <MaterialIcons name="accessible" size={20} color={accessibilityOn ? theme.background : theme.text} />
+          <MaterialIcons name="accessible" size={20} color={isAccessibleMode ? theme.background : theme.text} />
         </TouchableOpacity>
 
         {/* FAB 3: Crea Percorso / Itinerario */}
