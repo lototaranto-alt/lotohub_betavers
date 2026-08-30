@@ -38,7 +38,7 @@ export default function RootLayout() {
       Alert.alert(
         "Aggiornamento",
         "È disponibile una nuova versione migliorata di L.O.T.O. HUB! Abbiamo ottimizzato il GPS e risolto alcuni bug. Clicca su Aggiorna per scaricare il nuovo pacchetto.",
-        [{ text: "Aggiorna Ora", onPress: () => Linking.openURL('https://loto-admin-v2.vercel.app/download') }]
+        [{ text: "Aggiorna Ora", onPress: () => Linking.openURL('https://tinyurl.com/Loto-Hub-Alpha') }]
       );
     }
   }, []);
