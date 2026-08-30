@@ -182,29 +182,63 @@ export const TenantProvider: React.FC<{
         }
       }
 
-      // 2. GPS fallback (DISABILITATO PER FASE ALPHA - EVITA GLITCH LECCE)
-      // if (!targetId) { ... }
+      // Pre-carichiamo tutti i tenant (ci serve in ogni caso)
+      const allTenants = await fetchAllTenants();
+      setAvailableTenants(allTenants.map(t => ({ id: t.id, displayName: t.display_name, cityName: t.city_name })));
+
+      // Trova Taranto come fallback sicuro
+      const fallbackTenant = allTenants.find(t => t.city_name === 'Taranto') || allTenants[0];
+
+      // 2. GPS fallback intelligente e scalabile
+      if (!targetId) {
+        try {
+          // Controlliamo se abbiamo GIA' i permessi, per non bloccare l'UI inutilmente all'avvio
+          const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+          
+          if (existingStatus === 'granted') {
+            const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            const { latitude, longitude } = location.coords;
+
+            if (allTenants.length > 0) {
+              let closest = allTenants[0];
+              let minDist = haversine(latitude, longitude, parseFloat(closest.center_lat), parseFloat(closest.center_lng));
+
+              for (const t of allTenants) {
+                const dist = haversine(latitude, longitude, parseFloat(t.center_lat), parseFloat(t.center_lng));
+                if (dist < minDist) {
+                  minDist = dist;
+                  closest = t;
+                }
+              }
+
+              // Se siamo entro 50km da un Comune convenzionato, carichiamo quello
+              if (minDist < 50) {
+                targetId = closest.id;
+              }
+            }
+          } else {
+            // Se i permessi NON sono ancora concessi, non forziamo la richiesta qui!
+            // Lasciamo che sia index.tsx o l'onboarding a chiederla con calma.
+            // Assegniamo temporaneamente il fallback così l'App non glitcha "senza tema".
+            targetId = fallbackTenant?.id;
+          }
+        } catch (gpsError) {
+          console.warn('GPS fallback fallito o disabilitato, ignoro...', gpsError);
+        }
+      }
+
+      // 3. Assegnazione Finale
+      if (!targetId && fallbackTenant) {
+        targetId = fallbackTenant.id;
+      }
 
       if (targetId) {
         const config = await fetchTenantById(targetId);
         setTenant(config);
       } else {
-        const all = await fetchAllTenants();
-        setAvailableTenants(
-          all.map((t) => ({
-            id: t.id,
-            displayName: t.display_name,
-            cityName: t.city_name,
-          }))
-        );
-        // Fallback safety per non rompere l'app
-        if (all.length > 0) {
-            const config = await fetchTenantById(all[0].id);
-            setTenant(config);
-        } else {
-            setTenant(null);
-        }
+        setTenant(null);
       }
+      
     } catch (err: any) {
       console.error('Tenant resolution error:', err);
       setError(err.message || 'Errore risoluzione tenant');
