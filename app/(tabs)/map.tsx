@@ -4,6 +4,8 @@ import Mapbox from '@rnmapbox/maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../utils/supabase';
+import { startBackgroundTracking, stopBackgroundTracking } from '../../utils/SincroAvventura';
+
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
@@ -34,6 +36,18 @@ export default function MapScreen() {
   const [routePois, setRoutePois] = useState<any[]>([]);
   const [activeLayer, setActiveLayer] = useState('monument');
   const [heatmapOn, setHeatmapOn] = useState(true);
+
+  // Inizializza Sincro-Avventura in base allo switch accessibilità
+  useEffect(() => {
+    if (userProfile?.id) {
+      startBackgroundTracking(accessibilityOn, userProfile.id);
+    }
+    return () => {
+      // Optional: non fermiamo il tracking altrimenti smette di contare in background,
+      // ma lo riavviamo con la modalità aggiornata ogni volta che cambia accessibilityOn.
+    };
+  }, [accessibilityOn, userProfile?.id]);
+
     const [isLayerDropdownOpen, setIsLayerDropdownOpen] = useState(false);
   const [eventsEverToggled, setEventsEverToggled] = useState(false);
 
