@@ -34,13 +34,9 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    if (Application.nativeBuildVersion === '1') {
-      Alert.alert(
-        "Aggiornamento",
-        "È disponibile una nuova versione migliorata di L.O.T.O. HUB! Abbiamo ottimizzato il GPS e risolto alcuni bug. Clicca su Aggiorna per scaricare il nuovo pacchetto.",
-        [{ text: "Aggiorna Ora", onPress: () => Linking.openURL('https://tinyurl.com/Loto-Hub-Alpha') }]
-      );
-    }
+    /* if (Application.nativeBuildVersion === '1') { 
+ // Disabilitato fino al rilascio del nuovo APK V2 a Settembre
+ } */
   }, []);
 
 
