@@ -7,6 +7,8 @@ import { Raleway_400Regular, Raleway_600SemiBold } from '@expo-google-fonts/rale
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+import * as Application from 'expo-application';
+import { Alert, Linking } from 'react-native';
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { supabase } from '@/utils/supabase';
@@ -30,6 +32,17 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    if (Application.nativeBuildVersion === '1') {
+      Alert.alert(
+        "Aggiornamento",
+        "È disponibile una nuova versione migliorata di L.O.T.O. HUB! Abbiamo ottimizzato il GPS e risolto alcuni bug. Clicca su Aggiorna per scaricare il nuovo pacchetto.",
+        [{ text: "Aggiorna Ora", onPress: () => Linking.openURL('https://loto-admin-v2.vercel.app/download') }]
+      );
+    }
+  }, []);
+
 
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
