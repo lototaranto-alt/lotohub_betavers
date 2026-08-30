@@ -24,7 +24,8 @@
           "fetch"
         ],
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Serve la posizione in background per permettere all'app Camaleonte di aggiornarsi automaticamente senza consumare batteria in primo piano.",
-        "NSMotionUsageDescription": "L'app usa il contapassi per calcolare i km percorsi in mobilitÃ  dolce e le emissioni di CO2 risparmiate per la tua gamification ecologica."
+        "NSMotionUsageDescription": "L'app usa il contapassi per calcolare i km percorsi in mobilitÃ  dolce e le emissioni di CO2 risparmiate per la tua gamification ecologica.",
+        "NSLocationWhenInUseUsageDescription": "L'App usa il GPS per ottimizzare l'esperienza in mappa, permetterti di fare i check-in e mostrarti i POI vicini."
       }
     },
     "android": {
@@ -90,7 +91,8 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Consenti a L.O.T.O. HUB di usare la tua posizione per aggiornare il Geofencing anche in tasca.",
-          "isAndroidBackgroundLocationEnabled": true
+          "isAndroidBackgroundLocationEnabled": true,
+          "locationWhenInUsePermission": "L'App usa il GPS per ottimizzare l'esperienza in mappa, permetterti di fare i check-in e mostrarti i POI vicini."
         }
       ],
       "react-native-nfc-manager",
