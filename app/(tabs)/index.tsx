@@ -18,8 +18,8 @@ import GameAchievementsSheet from '../../components/GameAchievementsSheet';
 import ScannedPoisSheet from '../../components/ScannedPoisSheet';
 import SingleBadgeSheet from '../../components/SingleBadgeSheet';
 import TouristBaptismModal from '../../components/TouristBaptismModal';
-import { triggerStepMilestoneNotification } from '../../utils/notifications';
 import XpToast from '../../components/XpToast';
+import LiveFeedBanner from '../../components/LiveFeedBanner';
 import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
 import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
@@ -226,7 +226,7 @@ export default function VetrinaScreen() {
       if (event.total - lastNotifiedSteps.current >= 2000) {
         lastNotifiedSteps.current = event.total;
         const km = (event.total * 0.7) / 1000;
-        triggerStepMilestoneNotification(km);
+        // triggerStepMilestoneNotification(km);
       }
     });
 
