@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, StyleSheet } from 'react-native';
+﻿import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, StyleSheet, Platform } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
+import { Camera, CameraView } from 'expo-camera';
 
 interface Props {
   visible: boolean;
@@ -12,16 +13,28 @@ interface Props {
 export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Props) {
   const [loading, setLoading] = useState(false);
   const [manualCode, setManualCode] = useState('');
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [scanned, setScanned] = useState(false);
+
+  useEffect(() => {
+    const getCameraPermissions = async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === 'granted');
+    };
+    getCameraPermissions();
+  }, []);
+
+  const handleBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
+    setScanned(true);
+    setManualCode(data);
+    processRecoveryCode(data);
+  };
 
   const processRecoveryCode = async (code: string) => {
     if (!code.trim()) return;
     
     setLoading(true);
     try {
-      // LOGICA DEFINITIVA: In produzione, la stringa letta dal QR viene passata a una RPC
-      // che verifica il codice e restituisce un Custom JWT per quell'utente,
-      // oppure fonde i dati del vecchio profilo con il nuovo UUID anonimo appena creato.
-      
       const { data, error } = await supabase.rpc('recover_loto_pass', {
         recovery_code: code.trim()
       });
@@ -29,7 +42,7 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
       if (error) {
         throw error;
       } else if (data?.success) {
-        Alert.alert('Recupero Riuscito', data.message || 'Bentornato! Il tuo L.O.T.O. Pass è valido e i tuoi dati sono stati ripristinati.');
+        Alert.alert('Recupero Riuscito', data.message || 'Bentornato! Il tuo L.O.T.O. Pass e valido e i tuoi dati sono stati ripristinati.');
         onClose();
       } else {
         Alert.alert('Attenzione', data?.message || 'Codice non valido.');
@@ -38,6 +51,7 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
       Alert.alert('Errore di Recupero', 'Impossibile verificare il codice: ' + err.message);
     } finally {
       setLoading(false);
+      setScanned(false);
     }
   };
 
@@ -52,15 +66,30 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
             </TouchableOpacity>
           </View>
 
-          {/* PLACEHOLDER SCANNER AREA */}
-          <View style={[styles.cameraPlaceholder, { borderColor: theme.accent }]}>
-            <MaterialIcons name="qr-code-scanner" size={60} color={theme.textMuted} />
-            <Text style={{ color: theme.textMuted, marginTop: 10, textAlign: 'center' }}>
-              (Funzione Scanner nativa in arrivo) Inquadra il QR Code salvato nella tua galleria.
-            </Text>
+          {/* SCANNER AREA */}
+          <View style={[styles.cameraContainer, { borderColor: theme.accent }]}>
+            {hasPermission === null ? (
+              <Text style={{color: theme.text}}>Richiesta permessi fotocamera...</Text>
+            ) : hasPermission === false ? (
+              <Text style={{color: theme.text}}>Nessun accesso alla fotocamera.</Text>
+            ) : (
+              <CameraView
+                onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+                barcodeScannerSettings={{
+                  barcodeTypes: ["qr"],
+                }}
+                style={StyleSheet.absoluteFillObject}
+              />
+            )}
+            
+            {scanned && (
+              <View style={styles.scannedOverlay}>
+                <ActivityIndicator size="large" color="#FFF" />
+              </View>
+            )}
           </View>
 
-          <Text style={{ textAlign: 'center', color: theme.textMuted, marginVertical: 20 }}>— OPPURE INSERISCI MANUALMENTE —</Text>
+          <Text style={{ textAlign: 'center', color: theme.textMuted, marginVertical: 20 }}>- OPPURE INSERISCI MANUALMENTE -</Text>
 
           <TextInput
             style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
@@ -89,7 +118,8 @@ const styles = StyleSheet.create({
   container: { width: '90%', borderRadius: 24, padding: 25, elevation: 10 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 20, fontWeight: 'bold' },
-  cameraPlaceholder: { height: 200, borderWidth: 2, borderStyle: 'dashed', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  cameraContainer: { height: 200, borderWidth: 2, borderRadius: 16, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  scannedOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   input: { padding: 15, borderRadius: 12, borderWidth: 1, fontSize: 16, textAlign: 'center', letterSpacing: 1 },
   button: { padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 15 },
   buttonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 }

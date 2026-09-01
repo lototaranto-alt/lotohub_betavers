@@ -429,37 +429,6 @@ export default function ProfileScreen() {
               
               <View style={{ width: '100%', height: 1, backgroundColor: theme.border, marginVertical: 20 }} />
 
-              {/* OPZIONE 2: EMAIL CLOUD BACKUP */}
-              <View style={[styles.formContainer, { backgroundColor: theme.background, borderColor: theme.border, marginBottom: 25 }]}>
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: theme.text, marginBottom: 15 }}>Opzione 2: Backup Cloud (Email)</Text>
-                <View style={[styles.inputWrapper, { borderBottomColor: theme.border }]}>
-                  <MaterialIcons name="email" size={20} color="#94A3B8" style={styles.inputIcon} />
-                  <TextInput style={[styles.input, { color: theme.text }]} placeholder="La tua Email" placeholderTextColor="#94A3B8" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-                </View>
-                <View style={[styles.inputWrapper, { borderBottomWidth: 0 }]}>
-                  <MaterialIcons name="lock" size={20} color="#94A3B8" style={styles.inputIcon} />
-                  <TextInput style={[styles.input, { color: theme.text }]} placeholder="Crea Password" placeholderTextColor="#94A3B8" secureTextEntry value={password} onChangeText={setPassword} />
-                </View>
-                <TouchableOpacity style={[styles.authButton, { backgroundColor: theme.primary, borderRadius: 0, borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }]} onPress={handleEmailLogin} disabled={isLinking}>
-                  <Text style={styles.authButtonText}>{isLinking ? "Salvataggio..." : "Metti al Sicuro i miei Punti in Cloud"}</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* OPZIONE DEMO: RESET */}
-              <View style={{ marginBottom: 25 }}>
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: theme.text, marginLeft: 5, marginBottom: 10 }}>Opzione 3: Reset Dispositivo (Test)</Text>
-                <TouchableOpacity 
-                  style={[styles.authButton, { backgroundColor: '#EF4444', borderRadius: 12 }]} 
-                  onPress={handleResetDemo}
-                >
-                  <MaterialIcons name="delete-forever" size={20} color="#FFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.authButtonText}>Formatta Account Locale</Text>
-                </TouchableOpacity>
-                <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 8, textAlign: 'center' }}>
-                  Usalo sul 2° telefono per ripartire dal livello 1.
-                </Text>
-              </View>
-
               {/* Supporto & FAQ con Documentazione Proprietà Intellettuale */}
               <View style={{ marginTop: 10, padding: 15, backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: 12, borderWidth: 1, borderColor: theme.border }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
