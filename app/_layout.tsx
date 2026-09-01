@@ -141,7 +141,7 @@ export default function RootLayout() {
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FDFBF2' }}>
         <ActivityIndicator size="large" color="#5F713D" style={{ marginBottom: 20 }} />
         <Text style={{ fontSize: 20, fontWeight: '900', color: '#5F713D', fontFamily: 'serif', letterSpacing: 2 }}>L.O.T.O.</Text>
-        <Text style={{ fontSize: 12, color: '#1A1C1E', marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Sincronizzazione IdentitÃ ...</Text>
+        <Text style={{ fontSize: 12, color: '#1A1C1E', marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Sincronizzazione Identità ...</Text>
       </View>
     );
   }
