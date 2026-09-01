@@ -10,7 +10,9 @@ import B2BFeedbackModal from './B2BFeedbackModal';
 import { LruCacheManager } from '../utils/LruCacheManager';
 import { OfflineQueueManager } from '../utils/OfflineQueueManager';
 import NetInfo from '@react-native-community/netinfo';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useTenant } from '../../context/TenantContext';
+import { useTheme as _skip } from '../context/ThemeContext';
 import PoiScannerModal from './PoiScannerModal';
 import PlasticaqquaEventSheet from './PlasticaqquaEventSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -806,7 +808,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                   style={[styles.mainBtn, { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0', marginTop: 15 }]} 
                   onPress={async () => {
                     try {
-                      const url = poi.website_url || `https://www.google.com/search?q=${encodeURIComponent(poi.name + ' Taranto')}`;
+                      const url = poi.website_url || `https://www.google.com/search?q=${encodeURIComponent(poi.name + (currentTenant?.name ? ' ' + currentTenant.name : ' Taranto'))}`;
                       await WebBrowser.openBrowserAsync(url);
                     } catch (e) {
                       Alert.alert('Errore', 'Impossibile aprire il browser');

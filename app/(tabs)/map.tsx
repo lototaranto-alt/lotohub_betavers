@@ -48,11 +48,10 @@ export default function MapScreen() {
     });
   }, []);
 
-  // Inizializza Sincro-Avventura in base allo switch accessibilità
+  // [MODIFICA UX] Il pedometro NON si avvia più in automatico all'apertura della mappa
+  // Verrà spostato in un trigger manuale (es. Onboarding Tips) per azzerare la frizione.
   useEffect(() => {
-    if (userId) {
-      startBackgroundTracking(isAccessibleMode, userId);
-    }
+    // Sincro-Avventura rimossa dall'auto-avvio
   }, [isAccessibleMode, userId]);
 
 

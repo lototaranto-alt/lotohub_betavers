@@ -31,7 +31,7 @@ export default function OnboardingCarousel({ onComplete, isFirstLaunch = false }
         clearInterval(interval);
         handleComplete();
       }
-    }, 3300); // 3.3 secondi a slide
+    }, 3600); // 3.6 secondi a slide
 
     return () => clearInterval(interval);
   }, []);
