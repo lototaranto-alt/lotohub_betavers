@@ -20,6 +20,7 @@ import SingleBadgeSheet from '../../components/SingleBadgeSheet';
 import TouristBaptismModal from '../../components/TouristBaptismModal';
 import XpToast from '../../components/XpToast';
 import LiveFeedBanner from '../../components/LiveFeedBanner';
+import SensorsOnboardingModal from '../../components/SensorsOnboardingModal';
 import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
 import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
@@ -152,6 +153,7 @@ export default function VetrinaScreen() {
   // STATI LOGICI
   const [lang, setLang] = useState<'IT' | 'UK'>('IT');
   const [isTipsVisible, setIsTipsVisible] = useState(false);
+  const [isSensorsModalVisible, setIsSensorsModalVisible] = useState(false);
   const sparkleAnim = useRef(new Animated.Value(1)).current;
   const [tipsAnim] = useState(new Animated.Value(1));
   const [liveFeedIndex, setLiveFeedIndex] = useState(0);
@@ -902,7 +904,11 @@ export default function VetrinaScreen() {
           </Text>
           {item.id === 'recommended' && (
             <Animated.View style={{ transform: [{ scale: tipsAnim }] }}>
-              <TouchableOpacity onPress={() => setIsTipsVisible(true)} style={{ backgroundColor: '#FDFBF7', padding: 6, borderRadius: 20, elevation: 4, borderWidth: 1, borderColor: '#D4AF37' }}>
+              <TouchableOpacity onPress={async () => {
+                  const ob = await AsyncStorage.getItem('loto_sensors_onboarded');
+                  if (!ob) setIsSensorsModalVisible(true);
+                  else setIsTipsVisible(true);
+                }} style={{ backgroundColor: '#FDFBF7', padding: 6, borderRadius: 20, elevation: 4, borderWidth: 1, borderColor: '#D4AF37' }}>
                 <MaterialIcons name="tips-and-updates" size={20} color="#D4AF37" />
               </TouchableOpacity>
             </Animated.View>
@@ -1113,6 +1119,7 @@ export default function VetrinaScreen() {
 
       {/* BOTTONE TIPS ELIMINATO: spostato nell'header */}
 
+      <SensorsOnboardingModal visible={isSensorsModalVisible} onClose={() => setIsSensorsModalVisible(false)} theme={theme} />
       <TipsBoutiqueSheet visible={isTipsVisible} onClose={() => setIsTipsVisible(false)} />
 
       <BadgeCollectionModal
