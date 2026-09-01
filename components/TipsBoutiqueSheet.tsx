@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
+﻿import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Animated } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as Location from 'expo-location';
+import { Pedometer } from 'expo-sensors';
 import { useTheme } from '../context/ThemeContext';
+import { startBackgroundTracking } from '../utils/SincroAvventura';
+import { supabase } from '../utils/supabase';
 
 interface TipsBoutiqueSheetProps {
   visible: boolean;
@@ -13,85 +17,122 @@ const TIPS_DATA = [
     id: 'explore',
     title: 'Esplorazione Dinamica',
     icon: 'map',
-    content: 'La mappa non mostra tutti i luoghi contemporaneamente per non sovraccaricarti. Accendi il filtro "Heatmap BLE" per scoprire dove pulsa il cuore della città in questo momento.'
+    content: 'La mappa non mostra tutti i luoghi contemporaneamente per non sovraccaricarti. Usa i filtri per scoprire dove pulsa il cuore della citt in questo momento.'
   },
   {
     id: 'earn',
     title: 'Guadagnare LOTO PTI',
     icon: 'nfc',
-    content: 'Quando raggiungi un Luogo d\'Interesse, avvicina il telefono all\'adesivo NFC che trovi all\'ingresso. In alternativa, scansiona il QR Code. Il GPS convaliderà la tua posizione e riceverai i tuoi PTI.'
-  },
-  {
-    id: 'status',
-    title: 'Status e Privilegi',
-    icon: 'star-outline',
-    content: 'I punti accumulati aumentano il livello del tuo L.O.T.O. Pass sbloccando Titoli speciali. Raggiungendo i nuovi Status (es. Elite, Gold) sbloccherai accessi VIP, funzionalità avanzate sulla mappa e potrai partecipare ad eventi esclusivi riservati alla Community.'
-  },
-  {
-    id: 'civic',
-    title: 'Gamification & Community',
-    icon: 'volunteer-activism',
-    content: 'Non si esplora da soli! Usa la mobilità dolce, partecipa alle sfide della Community LOTO, raccogli oggetti collezionabili e segnala le barriere. Contribuirai a rendere la città migliore e verrai premiato per il tuo impatto collettivo.'
+    content: 'Quando raggiungi un Luogo d\'Interesse, avvicina il telefono all\'adesivo NFC che trovi all\'ingresso, o scansiona il QR Code. Riceverai i tuoi punti istantaneamente.'
   }
 ];
 
 export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueSheetProps) {
   const { theme } = useTheme();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [gpsGranted, setGpsGranted] = useState(false);
+  const [pedGranted, setPedGranted] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const toggleExpand = (id: string) => {
-    setExpandedId(prev => prev === id ? null : id);
+  useEffect(() => {
+    if (visible) {
+      checkPermissions();
+      fetchUser();
+    }
+  }, [visible]);
+
+  const fetchUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) setUserId(session.user.id);
+  };
+
+  const checkPermissions = async () => {
+    const gps = await Location.getForegroundPermissionsAsync();
+    const ped = await Pedometer.getPermissionsAsync();
+    setGpsGranted(gps.status === 'granted');
+    setPedGranted(ped.status === 'granted');
+  };
+
+  const requestGps = async () => {
+    const res = await Location.requestForegroundPermissionsAsync();
+    if (res.status === 'granted') setGpsGranted(true);
+  };
+
+  const requestPedometer = async () => {
+    const res = await Pedometer.requestPermissionsAsync();
+    if (res.status === 'granted') {
+      setPedGranted(true);
+      if (userId) {
+        startBackgroundTracking(false, userId); // Avvia tracking se permesso
+      }
+    }
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
-        <View style={[styles.sheet, { backgroundColor: theme.background }]}>
+        <View style={[styles.sheet, { backgroundColor: theme.surface }]}>
           
           <View style={styles.header}>
-            <View>
-              <Text style={[styles.title, { color: theme.text }]}>L'Arte di Esplorare</Text>
-              <Text style={styles.subtitle}>Guide e segreti per maestri del viaggio</Text>
-            </View>
+            <Text style={[styles.title, { color: theme.text }]}>Guida & Sensori</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <MaterialIcons name="close" size={24} color={theme.text} />
+              <MaterialIcons name="close" size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            {TIPS_DATA.map((tip) => {
-              const isExpanded = expandedId === tip.id;
-              return (
-                <View key={tip.id} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                  <TouchableOpacity 
-                    style={styles.cardHeader} 
-                    onPress={() => toggleExpand(tip.id)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.cardHeaderLeft}>
-                      <View style={[styles.iconBox, { backgroundColor: theme.primary + '15' }]}>
-                        <MaterialIcons name={tip.icon as any} size={22} color={theme.primary} />
-                      </View>
-                      <Text style={[styles.cardTitle, { color: theme.text }]}>{tip.title}</Text>
-                    </View>
-                    <MaterialIcons 
-                      name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-                      size={24} 
-                      color={theme.text} 
-                    />
-                  </TouchableOpacity>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+            
+            {/* SEZIONE 1: I SENSI DEL CAMALEONTE (PERMESSI HARDWARE) */}
+            <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 10 }]}>I Sensi del Camaleonte</Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>
+              Attiva i sensori per sbloccare il pieno potenziale dell'app.
+            </Text>
 
-                  {isExpanded && (
-                    <View style={styles.cardBody}>
-                      <View style={[styles.divider, { backgroundColor: theme.border }]} />
-                      <Text style={[styles.cardContent, { color: theme.text }]}>{tip.content}</Text>
-                    </View>
-                  )}
+            {/* Tasto GPS */}
+            <TouchableOpacity 
+              style={[styles.permissionRow, { borderColor: gpsGranted ? '#2ECC71' : theme.border }]} 
+              onPress={requestGps}
+              disabled={gpsGranted}
+            >
+              <View style={[styles.iconBox, { backgroundColor: gpsGranted ? 'rgba(46, 204, 113, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <MaterialIcons name="place" size={24} color={gpsGranted ? '#2ECC71' : theme.primary} />
+              </View>
+              <View style={styles.permissionText}>
+                <Text style={[styles.permTitle, { color: theme.text }]}>Mappa & Check-in (GPS)</Text>
+                <Text style={[styles.permDesc, { color: theme.textMuted }]}>Necessario per trovarti sulla mappa e validare i punti.</Text>
+              </View>
+              <MaterialIcons name={gpsGranted ? "check-circle" : "add-circle-outline"} size={24} color={gpsGranted ? '#2ECC71' : theme.primary} />
+            </TouchableOpacity>
+
+            {/* Tasto Pedometro */}
+            <TouchableOpacity 
+              style={[styles.permissionRow, { borderColor: pedGranted ? '#2ECC71' : theme.border }]} 
+              onPress={requestPedometer}
+              disabled={pedGranted}
+            >
+              <View style={[styles.iconBox, { backgroundColor: pedGranted ? 'rgba(46, 204, 113, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <MaterialIcons name="directions-walk" size={24} color={pedGranted ? '#2ECC71' : theme.primary} />
+              </View>
+              <View style={styles.permissionText}>
+                <Text style={[styles.permTitle, { color: theme.text }]}>Sincro-Avventura (Passi)</Text>
+                <Text style={[styles.permDesc, { color: theme.textMuted }]}>Necessario per calcolare la CO2 risparmiata camminando.</Text>
+              </View>
+              <MaterialIcons name={pedGranted ? "check-circle" : "add-circle-outline"} size={24} color={pedGranted ? '#2ECC71' : theme.primary} />
+            </TouchableOpacity>
+
+
+            {/* SEZIONE 2: CONSIGLI (TIPS) */}
+            <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 30 }]}>Consigli di Esplorazione</Text>
+            {TIPS_DATA.map((tip) => (
+              <View key={tip.id} style={[styles.tipCard, { backgroundColor: theme.background }]}>
+                <View style={styles.tipHeader}>
+                  <MaterialIcons name={tip.icon as any} size={22} color={theme.primary} />
+                  <Text style={[styles.tipTitle, { color: theme.text }]}>{tip.title}</Text>
                 </View>
-              );
-            })}
-          </ScrollView>
+                <Text style={[styles.tipContent, { color: theme.textMuted }]}>{tip.content}</Text>
+              </View>
+            ))}
 
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -101,84 +142,83 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   sheet: {
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    minHeight: '75%',
-    maxHeight: '90%',
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 20,
+    padding: 25,
+    maxHeight: '85%',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 30,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   title: {
     fontSize: 24,
-    fontWeight: '900',
-    fontFamily: 'serif',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    marginTop: 4,
-    fontStyle: 'italic'
+    fontWeight: 'bold',
+    fontFamily: 'PlayfairDisplay_700Bold',
   },
   closeBtn: {
-    padding: 4,
+    padding: 5,
   },
-  scrollContent: {
-    paddingBottom: 40,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
   },
-  card: {
-    borderRadius: 16,
+  sectionSubtitle: {
+    fontSize: 13,
+    marginBottom: 15,
+  },
+  permissionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 15,
     borderWidth: 1,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-  },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 12,
   },
   iconBox: {
-    width: 40,
-    height: 40,
+    width: 45,
+    height: 45,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 15,
   },
-  cardTitle: {
+  permissionText: {
+    flex: 1,
+  },
+  permTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  permDesc: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  tipCard: {
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 15,
+  },
+  tipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  tipTitle: {
     fontSize: 16,
     fontWeight: 'bold',
+    marginLeft: 10,
   },
-  cardBody: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  divider: {
-    height: 1,
-    width: '100%',
-    marginBottom: 16,
-  },
-  cardContent: {
-    fontSize: 14,
-    lineHeight: 22,
-    opacity: 0.9,
+  tipContent: {
+    fontSize: 13,
+    lineHeight: 20,
   }
 });
