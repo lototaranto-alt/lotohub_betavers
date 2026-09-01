@@ -15,15 +15,15 @@ interface TipsBoutiqueSheetProps {
 const TIPS_DATA = [
   {
     id: 'explore',
-    title: 'Esplorazione Dinamica',
+    title: 'L\'Arte dell\'Esplorazione',
     icon: 'map',
-    content: 'La mappa non mostra tutti i luoghi contemporaneamente per non sovraccaricarti. Usa i filtri per scoprire dove pulsa il cuore della citt in questo momento.'
+    content: 'L.O.T.O. rivela i suoi segreti con eleganza, un passo alla volta. Usa il radar sensoriale nella mappa per percepire le zone attive senza spezzare la magia del viaggio.'
   },
   {
     id: 'earn',
-    title: 'Guadagnare LOTO PTI',
+    title: 'Sigilli Digitali (Zero-IoT)',
     icon: 'nfc',
-    content: 'Quando raggiungi un Luogo d\'Interesse, avvicina il telefono all\'adesivo NFC che trovi all\'ingresso, o scansiona il QR Code. Riceverai i tuoi punti istantaneamente.'
+    content: 'Ogni Luogo Custode protegge un emblema invisibile. Sfiora l\'adesivo L.O.T.O. con il tuo dispositivo per validare la tua presenza e rivendicare i tuoi Punti Impatto (PTI).'
   }
 ];
 
@@ -82,9 +82,9 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
             
             {/* SEZIONE 1: I SENSI DEL CAMALEONTE (PERMESSI HARDWARE) */}
-            <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 10 }]}>I Sensi del Camaleonte</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 10 }]}>Sincro-Avventura</Text>
             <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>
-              Attiva i sensori per sbloccare il pieno potenziale dell'app.
+              Sincronizza il tuo dispositivo per sbloccare il pieno potenziale dell'ecosistema L.O.T.O.
             </Text>
 
             {/* Tasto GPS */}
