@@ -119,6 +119,17 @@
         {
           "photosPermission": "L.O.T.O. HUB ha bisogno di accedere alla tua galleria per permetterti di caricare il L.O.T.O. Pass (QR Code) che avevi salvato in precedenza."
         }
+      ],
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": [
+            "peripheral",
+            "central"
+          ],
+          "bluetoothAlwaysPermission": "L.O.T.O. HUB utilizza il Bluetooth per comunicare con i beacon interni (Musei/B&B) permettendoti check-in automatici e accessibilità indoor anche senza GPS."
+        }
       ]
     ],
     "experiments": {
