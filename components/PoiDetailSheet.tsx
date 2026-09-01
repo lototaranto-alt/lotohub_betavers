@@ -6,6 +6,7 @@ import { calculateDistanceRaw } from '../utils/haversine';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../utils/supabase';
+import B2BFeedbackModal from './B2BFeedbackModal';
 import { LruCacheManager } from '../utils/LruCacheManager';
 import { OfflineQueueManager } from '../utils/OfflineQueueManager';
 import NetInfo from '@react-native-community/netinfo';
@@ -58,6 +59,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
   const [poiWhispers, setPoiWhispers] = useState<any[]>([]);
   const [poiEvents, setPoiEvents] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'media' | 'info' | 'events'>('media');
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   
   // Tracker Location per abilitare pulsante GPS
@@ -723,7 +725,8 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                           </TouchableOpacity>
                         </View>
                       ))}
-                    </ScrollView>
+                      <B2BFeedbackModal visible={showFeedbackModal} onClose={() => setShowFeedbackModal(false)} poiId={poi.id} theme={theme} />
+        </ScrollView>
                   </View>
                 ) : (
                   <View style={{ padding: 20, alignItems: 'center' }}>
@@ -738,7 +741,21 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
             {activeTab === 'info' && (
               <View style={[styles.actionSection, styles.tabContent]}>
                 
-                {/* Bio / Description */}
+                
+                  <TouchableOpacity 
+                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FDFBF2', padding: 15, borderRadius: 12, marginTop: 15, borderWidth: 1, borderColor: '#D4AF37' }}
+                    onPress={() => setShowFeedbackModal(true)}
+                  >
+                    <MaterialIcons name="mail-outline" size={24} color="#D4AF37" />
+                    <View style={{ marginLeft: 15, flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1A3621' }}>La Posta del Cuore</Text>
+                      <Text style={{ fontSize: 12, color: '#6A5638', marginTop: 2 }}>Lascia un feedback anonimo al custode (Visibile solo al B&B)</Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={24} color="#D4AF37" />
+                  </TouchableOpacity>
+
+
+                  {/* Bio / Description */}
                 {poi.description && (
                   <View style={{ marginBottom: 20 }}>
                     <Text style={[styles.sectionTitle, { color: theme.text }]}>STORIA E BIO</Text>
@@ -796,7 +813,8 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                 )}
               </View>
             )}
-          </ScrollView>
+            <B2BFeedbackModal visible={showFeedbackModal} onClose={() => setShowFeedbackModal(false)} poiId={poi.id} theme={theme} />
+        </ScrollView>
         </View>
 
         {/* MOCK VISUALIZZATORE PREMIUM ALTO LIVELLO */}
