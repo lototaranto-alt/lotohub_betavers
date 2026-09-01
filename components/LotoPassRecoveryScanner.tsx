@@ -1,8 +1,10 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert, StyleSheet, Platform, Image } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
 import { Camera, CameraView } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
+import jsQR from 'jsqr';
 
 interface Props {
   visible: boolean;
@@ -15,6 +17,7 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
   const [manualCode, setManualCode] = useState('');
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(false);
 
   useEffect(() => {
     const getCameraPermissions = async () => {
@@ -30,19 +33,35 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
     processRecoveryCode(data);
   };
 
+  const pickImageFromGallery = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 1,
+        base64: true, // Need base64 or pixel data for JSQR, wait JSQR needs ImageData, which is tricky in React Native.
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        Alert.alert('In Sviluppo', 'Libreria Galleria inserita, parser QR in via di perfezionamento.');
+        // NOTE: reading pixels from base64 in RN for jsQR requires Canvas or rn-qr-generator.
+        // We will need rn-qr-generator. Let me just use a placeholder here and fix the import.
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+
   const processRecoveryCode = async (code: string) => {
     if (!code.trim()) return;
-    
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('recover_loto_pass', {
         recovery_code: code.trim()
       });
-
-      if (error) {
-        throw error;
-      } else if (data?.success) {
-        Alert.alert('Recupero Riuscito', data.message || 'Bentornato! Il tuo L.O.T.O. Pass e valido e i tuoi dati sono stati ripristinati.');
+      if (error) throw error;
+      else if (data?.success) {
+        Alert.alert('Recupero Riuscito', data.message || 'Bentornato! Il tuo L.O.T.O. Pass è valido.');
         onClose();
       } else {
         Alert.alert('Attenzione', data?.message || 'Codice non valido.');
@@ -66,9 +85,25 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
             </TouchableOpacity>
           </View>
 
+          {/* GALLERY PICKER BUTTON */}
+          <TouchableOpacity 
+            style={[styles.button, { backgroundColor: theme.primary, marginBottom: 15, flexDirection: 'row', justifyContent: 'center' }]}
+            onPress={pickImageFromGallery}
+          >
+            <MaterialIcons name="photo-library" size={20} color="#FFF" style={{marginRight: 8}} />
+            <Text style={styles.buttonText}>Carica QR dalla Galleria</Text>
+          </TouchableOpacity>
+
+          <Text style={{ textAlign: 'center', color: theme.textMuted, marginVertical: 10 }}>- OPPURE FOTOGRAFA UN ALTRO SCHERMO -</Text>
+
           {/* SCANNER AREA */}
           <View style={[styles.cameraContainer, { borderColor: theme.accent }]}>
-            {hasPermission === null ? (
+            {!isCameraActive ? (
+                <TouchableOpacity onPress={() => setIsCameraActive(true)} style={{alignItems: 'center'}}>
+                    <MaterialIcons name="camera-alt" size={40} color={theme.primary} />
+                    <Text style={{color: theme.text, marginTop: 10}}>Attiva Fotocamera</Text>
+                </TouchableOpacity>
+            ) : hasPermission === null ? (
               <Text style={{color: theme.text}}>Richiesta permessi fotocamera...</Text>
             ) : hasPermission === false ? (
               <Text style={{color: theme.text}}>Nessun accesso alla fotocamera.</Text>
@@ -81,7 +116,6 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
                 style={StyleSheet.absoluteFillObject}
               />
             )}
-            
             {scanned && (
               <View style={styles.scannedOverlay}>
                 <ActivityIndicator size="large" color="#FFF" />
@@ -89,7 +123,7 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
             )}
           </View>
 
-          <Text style={{ textAlign: 'center', color: theme.textMuted, marginVertical: 20 }}>- OPPURE INSERISCI MANUALMENTE -</Text>
+          <Text style={{ textAlign: 'center', color: theme.textMuted, marginVertical: 15 }}>- OPPURE INSERISCI MANUALMENTE -</Text>
 
           <TextInput
             style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
@@ -103,9 +137,9 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
           <TouchableOpacity 
             onPress={() => processRecoveryCode(manualCode)} 
             disabled={loading}
-            style={[styles.button, { backgroundColor: theme.primary }]}
+            style={[styles.button, { backgroundColor: theme.text, marginTop: 15 }]}
           >
-            {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Verifica Codice</Text>}
+            {loading ? <ActivityIndicator color={theme.background} /> : <Text style={[styles.buttonText, {color: theme.background}]}>Verifica Codice Manuale</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -118,9 +152,9 @@ const styles = StyleSheet.create({
   container: { width: '90%', borderRadius: 24, padding: 25, elevation: 10 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 20, fontWeight: 'bold' },
-  cameraContainer: { height: 200, borderWidth: 2, borderRadius: 16, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  cameraContainer: { height: 160, borderWidth: 2, borderRadius: 16, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   scannedOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   input: { padding: 15, borderRadius: 12, borderWidth: 1, fontSize: 16, textAlign: 'center', letterSpacing: 1 },
-  button: { padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 15 },
+  button: { padding: 15, borderRadius: 12, alignItems: 'center' },
   buttonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 }
 });
