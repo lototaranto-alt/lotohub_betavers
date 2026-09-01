@@ -103,6 +103,14 @@ export async function startBackgroundTracking(isAccessibilityMode: boolean, user
   
   currentSessionCount = 0;
 
+  if (!isAccessibilityMode) {
+    const { status } = await Pedometer.requestPermissionsAsync();
+    if (status !== 'granted') {
+      console.warn('[SincroAvventura] Permesso Pedometro negato.');
+      return;
+    }
+  }
+
   if (isAccessibilityMode) {
     Accelerometer.setUpdateInterval(200);
     subscription = Accelerometer.addListener(accelerometerData => {
