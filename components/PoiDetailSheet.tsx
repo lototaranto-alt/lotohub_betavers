@@ -803,7 +803,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
         {premiumPreviewVisible && (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: '#121417', zIndex: 1000 }]}>
             <Image 
-              source={require('../assets/images/archivio_aragonese.png')} 
+              source={require('../assets/images/archivio_aragonese.jpg')} 
               style={{ width: '100%', height: '60%', resizeMode: 'cover' }} 
             />
             <View style={{ padding: 20 }}>
