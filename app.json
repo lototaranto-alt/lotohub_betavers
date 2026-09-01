@@ -53,7 +53,8 @@
         "android.permission.FOREGROUND_SERVICE_LOCATION",
         "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.FOREGROUND_SERVICE_HEALTH",
-        "android.permission.WAKE_LOCK"
+        "android.permission.WAKE_LOCK",
+        "android.permission.CAMERA"
       ],
       "versionCode": 2
     },
@@ -106,7 +107,19 @@
       "react-native-nfc-manager",
       "expo-font",
       "expo-web-browser",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "L.O.T.O. HUB ha bisogno della fotocamera per scansionare il tuo L.O.T.O. Pass (QR Code) e recuperare il tuo account anonimo."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "L.O.T.O. HUB ha bisogno di accedere alla tua galleria per permetterti di caricare il L.O.T.O. Pass (QR Code) che avevi salvato in precedenza."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
