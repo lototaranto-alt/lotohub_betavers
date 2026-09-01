@@ -196,7 +196,7 @@ export default function MapScreen() {
              setIsLayerDropdownOpen(false);
           }}
         >
-          {heatmapOn && (
+          {heatmapOn ? (
             <Mapbox.CircleLayer
               id="pois-heat-halo"
               style={{
@@ -214,7 +214,7 @@ export default function MapScreen() {
                 circlePitchAlignment: 'map',
               }}
             />
-          )}
+          ) : <></>}
           <Mapbox.SymbolLayer
             id="pois-core"
             style={{
@@ -238,7 +238,7 @@ export default function MapScreen() {
               textHaloWidth: 2
             }}
           />
-                  {eventsOn && (
+                  {eventsOn ? (
             <Mapbox.SymbolLayer
               id="events-layer"
               style={{
@@ -256,7 +256,7 @@ export default function MapScreen() {
               }}
               filter={['==', 'category', 'event']} // Mostra solo se  un evento
             />
-          )}
+          ) : <></>}
         </Mapbox.ShapeSource>
       </Mapbox.MapView>
 
@@ -359,13 +359,14 @@ export default function MapScreen() {
         visible={!!selectedPoi}
         onClose={() => setSelectedPoi(null)}
         poi={selectedPoi}
-        onNavigate={() => {}}
+        onCheckIn={() => {}}
+        
       />
       <RouteSummarySheet
         visible={isRouteSheetOpen}
         onClose={() => setIsRouteSheetOpen(false)}
-        routePois={routePois}
-        theme={theme}
+        
+        
       />
     </SafeAreaView>
   );

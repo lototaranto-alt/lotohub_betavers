@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useTheme } from '../../context/ThemeContext';
-import { useTenant } from '../../context/TenantContext';
+import { useTheme } from '../context/ThemeContext';
+import { useTenant } from '../context/TenantContext';
 import { useTheme as _skip } from '../context/ThemeContext';
 import { calculateDistance } from '../utils/haversine';
 import { LocationObject } from 'expo-location';
@@ -106,7 +106,7 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
                 style={[styles.btnActionHarmonious, { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' }]}
                 onPress={async () => {
                   try {
-                    const url = item.website_url || `https://www.google.com/search?q=${encodeURIComponent(item.name + (currentTenant?.name ? ' ' + currentTenant.name : ' Taranto'))}`;
+                    const url = item.website_url || `https://www.google.com/search?q=${encodeURIComponent(item.name + (currentTenant?.id ? ' ' + currentTenant.name : ' Taranto'))}`;
                     await WebBrowser.openBrowserAsync(url);
                   } catch (e) {
                     Alert.alert('Errore', 'Impossibile aprire il browser');
