@@ -7,13 +7,11 @@ import { Raleway_400Regular, Raleway_600SemiBold } from '@expo-google-fonts/rale
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import * as Application from 'expo-application';
 import { Alert, Linking } from 'react-native';
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { supabase } from '@/utils/supabase';
 import { TenantProvider } from '../context/TenantContext';
-import { PostHogProvider } from 'posthog-react-native';
 import { CityProvider } from '../context/CityContext';
 import { MobilityProvider } from '../context/MobilityContext';
 import { ThemeProvider as AppThemeProvider } from '../context/ThemeContext';
@@ -24,7 +22,8 @@ import OnboardingCarousel from '../components/OnboardingCarousel';
 import { registerForPushNotificationsAsync } from '../utils/notifications';
 
 // Inizializzazione Globale Hardware NFC (Commentato per Expo Go Demo)
-// NfcManager.start().catch(e => console.warn('NFC non supportato in questo ambiente (es. Web/Simulatore)'));
+import NfcManager from 'react-native-nfc-manager';
+NfcManager.start().catch(e => console.warn('NFC non supportato in questo ambiente (es. Web/Simulatore)'));
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -148,7 +147,7 @@ export default function RootLayout() {
   }
 
   return (
-    <PostHogProvider apiKey={"${process.env.EXPO_PUBLIC_POSTHOG_KEY || 'phc_INSERISCI_QUI_LA_CHIAVE'}"} options={{ host: 'https://eu.i.posthog.com' }}>
+    
       <TenantProvider>
       <AppThemeProvider>
         <CityProvider>
@@ -170,7 +169,7 @@ export default function RootLayout() {
         </CityProvider>
       </AppThemeProvider>
     </TenantProvider>
-    </PostHogProvider>
+    
   );
 }
 

@@ -1,7 +1,7 @@
 import { Platform, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pedometer, Accelerometer } from 'expo-sensors';
-// import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
+import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { supabase } from './supabase';
 
 const STORAGE_KEY = '@sincro_avventura_steps';
@@ -11,7 +11,17 @@ let currentSessionCount = 0;
 let subscription: any = null;
 let lastPeakTime = 0;
 
-
+// Registrazione Headless Task per Android Notifee
+notifee.registerForegroundService((notification) => {
+  return new Promise((resolve) => {
+    notifee.onForegroundEvent(({ type, detail }) => {
+      if (type === EventType.ACTION_PRESS && detail.pressAction?.id === 'stop') {
+        stopBackgroundTracking();
+        resolve();
+      }
+    });
+  });
+});
 
 async function syncSteps(userId: string, count: number, isAccessibilityMode: boolean): Promise<void> {
   try {
@@ -39,7 +49,20 @@ async function incrementSteps(userId: string, isAccessibilityMode: boolean, step
     await AsyncStorage.setItem(STORAGE_KEY, totalLocal.toString());
     DeviceEventEmitter.emit('onStepIncrement', { total: totalLocal });
     
-    
+    if (Platform.OS === 'android') {
+      await notifee.displayNotification({
+        id: 'sincro-avventura',
+        title: 'Sincro-Avventura Attiva',
+        body: `Passi/Spinte elaborati: ${totalLocal}`,
+        android: {
+          channelId: 'sincro-avventura',
+          asForegroundService: true,
+          importance: AndroidImportance.HIGH,
+          onlyAlertOnce: true,
+          ongoing: true,
+        },
+      });
+    }
 
     if (currentSessionCount >= SYNC_THRESHOLD) {
       const countToSync = currentSessionCount;
@@ -52,7 +75,26 @@ async function incrementSteps(userId: string, isAccessibilityMode: boolean, step
 }
 
 export async function startBackgroundTracking(isAccessibilityMode: boolean, userId: string): Promise<void> {
-  
+  if (Platform.OS === 'android') {
+    const channelId = await notifee.createChannel({
+      id: 'sincro-avventura',
+      name: 'Sincro Avventura Tracking',
+      importance: AndroidImportance.HIGH,
+    });
+
+    await notifee.displayNotification({
+      id: 'sincro-avventura',
+      title: 'Sincro-Avventura Avviata',
+      body: 'In attesa di movimento...',
+      android: {
+        channelId,
+        asForegroundService: true,
+        importance: AndroidImportance.HIGH,
+        ongoing: true,
+        onlyAlertOnce: true,
+      },
+    });
+  }
 
   if (subscription) {
     subscription.remove();
@@ -97,6 +139,6 @@ export async function stopBackgroundTracking(): Promise<void> {
   }
   
   if (Platform.OS === 'android') {
-    // await notifee.stopForegroundService();
+    await notifee.stopForegroundService();
   }
 }

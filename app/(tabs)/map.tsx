@@ -9,6 +9,7 @@ import { startBackgroundTracking, stopBackgroundTracking } from '../../utils/Sin
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useMobility } from '../../context/MobilityContext';
+import { scanEncryptedTag } from '../../utils/nfcManager';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import RouteSummarySheet from '../../components/RouteSummarySheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
