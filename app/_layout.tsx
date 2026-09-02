@@ -59,14 +59,14 @@ export default function RootLayout() {
       if (session) {
         console.log('[Auth Success] Sessione esistente ripristinata');
         currentUserId = session.user.id;
-        registerForPushNotificationsAsync();
+        // registerForPushNotificationsAsync(); // Spostato o disabilitato per evitare popup all'avvio
       } else {
         // Tentativo di login anonimo rigoroso
         const { data, error } = await supabase.auth.signInAnonymously();
         if (error) throw error;
         console.log('[Auth Success] Entrato come ospite anonimo');
         currentUserId = data.user?.id;
-        registerForPushNotificationsAsync();
+        // registerForPushNotificationsAsync(); // Spostato o disabilitato per evitare popup all'avvio
       }
       
       // AUTO-HEALING TRAMITE REINCARNAZIONE

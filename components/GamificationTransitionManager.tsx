@@ -1,5 +1,6 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, Animated, Easing, Dimensions, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -44,6 +45,7 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
   
   const [queue, setQueue] = useState<GamificationEvent[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
 
   // Animazioni
@@ -240,6 +242,7 @@ const styles = StyleSheet.create({
   cardContent: {
     padding: 30,
     paddingTop: 40,
+    paddingBottom: insets.bottom + 30, // Rispetto della Navigation Bar a 3 tasti Android
     flex: 1,
     alignItems: 'center',
   },

@@ -501,7 +501,7 @@ export default function VetrinaScreen() {
             text: "Attiva", 
             onPress: async () => {
               try {
-                await startBackgroundLocationUpdates();
+                // await startBackgroundLocationUpdates(); // Spostato al toggle manuale
                 setIsGeofenceActive(true);
               } catch (e) {
                 console.log("Location BG non autorizzata", e);
@@ -516,7 +516,7 @@ export default function VetrinaScreen() {
   const toggleSensors = async () => {
     if (!isGeofenceActive) {
       try {
-        await startBackgroundLocationUpdates();
+        // await startBackgroundLocationUpdates(); // Spostato al toggle manuale
         setIsGeofenceActive(true);
         // Alert rimosso per evitare spam UI
       } catch (e) {

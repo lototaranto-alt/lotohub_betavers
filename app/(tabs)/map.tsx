@@ -82,12 +82,7 @@ export default function MapScreen() {
   useEffect(() => {
     (async () => {
       const { status } = await Location.getForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        const req = await Location.requestForegroundPermissionsAsync();
-        if (req.status === 'granted') setHasLocationPermission(true);
-      } else {
-        setHasLocationPermission(true);
-      }
+        if (status === 'granted') setHasLocationPermission(true);
     })();
   }, []);
 
