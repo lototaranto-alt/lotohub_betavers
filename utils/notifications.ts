@@ -5,6 +5,10 @@ import { supabase } from './supabase';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
+    // @ts-ignore
+    shouldShowBanner: true,
+    // @ts-ignore
+    shouldShowList: true,
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,

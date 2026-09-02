@@ -17,6 +17,7 @@
   "exclude": [
     "node_modules",
     "supabase",
-    "temp_backup_2"
+    "temp_backup_2",
+    "loto-admin-v2"
   ]
 }
