@@ -11,6 +11,8 @@ import { LruCacheManager } from '../utils/LruCacheManager';
 import { OfflineQueueManager } from '../utils/OfflineQueueManager';
 import NetInfo from '@react-native-community/netinfo';
 import { useTheme } from '../context/ThemeContext';
+import { useGamification } from '../context/GamificationContext';
+import { buildLevelUpEvents, calculateLevel } from '../utils/levelUtils';
 import { useTenant } from '../context/TenantContext';
 import { useTheme as _skip } from '../context/ThemeContext';
 import PoiScannerModal from './PoiScannerModal';
@@ -41,6 +43,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
   const router = useRouter();
   const { theme, isElite } = useTheme();
   const { currentTenant } = useTenant();
+  const { queueEvents } = useGamification();
   
   // Route Builder
   const { isPoiInRoute, addPoiToRoute, removePoiFromRoute } = useRouteBuilder();
@@ -551,9 +554,28 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                   if (scannedData.includes('loto.app/e/1') || scannedData.includes('plasticaqqua')) {
                      setIsEventSheetVisible(true);
                   } else {
-                    const { data, error } = await supabase.rpc('scan_poi', { p_poi_id: poi.id });
-                    if (error) throw error;
-                    Alert.alert('Ottimo!', `Hai ottenuto i punti di questo POI. I tuoi XP sono ora ${data.new_total_xp}.`);
+                    
+      const { data: { user } } = await supabase.auth.getUser();
+      let oldXp = 0;
+      if (user) {
+        const { data: prof } = await supabase.from('profiles').select('total_xp').eq('id', user.id).single();
+        oldXp = prof?.total_xp || 0;
+      }
+      
+      const { data, error } = await supabase.rpc('scan_poi', { p_poi_id: poi.id });
+      if (error) throw error;
+      
+      const newXp = data.new_total_xp;
+      const oldLevel = calculateLevel(oldXp);
+      const newLevel = calculateLevel(newXp);
+      
+      const events = buildLevelUpEvents(oldLevel, newLevel, 'it');
+      if (events.length > 0) {
+        queueEvents(events);
+      } else {
+        Alert.alert('Ottimo!', `Hai ottenuto i punti di questo POI. I tuoi XP sono ora ${newXp}.`);
+      }
+
                     onCheckIn(poi);
                   }
                 } catch(e: any) {

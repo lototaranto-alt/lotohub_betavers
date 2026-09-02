@@ -1,3 +1,4 @@
+import { getLoreForLevel } from './LevelUpLore';
 export interface LevelThreshold {
   level: number;
   minXp: number;
@@ -165,4 +166,28 @@ export const getAvatarFrameStyle = (level: number) => {
     borderColor: 'rgba(255, 255, 255, 0.4)',
     elevation: 3,
   };
+};
+
+export const buildLevelUpEvents = (oldLevel: number, newLevel: number, lang: 'it' | 'en' = 'it') => {
+  if (newLevel <= oldLevel) return [];
+
+  const events = [];
+  
+  for (let lvl = oldLevel + 1; lvl <= newLevel; lvl++) {
+    events.push({
+      type: 'LEVEL_UP',
+      level: lvl
+    });
+
+    const loreText = getLoreForLevel(lvl, lang);
+    if (loreText) {
+      events.push({
+        type: 'WHISPER',
+        title: `Pillola del Livello ${lvl}`,
+        text: loreText
+      });
+    }
+  }
+
+  return events;
 };

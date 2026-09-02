@@ -150,7 +150,8 @@ export default function RootLayout() {
       <TenantProvider>
       <AppThemeProvider>
         <CityProvider>
-          <MobilityProvider>
+          <GamificationProvider>
+            <MobilityProvider>
             <RouteProvider>
               <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                 <Stack>
@@ -165,6 +166,7 @@ export default function RootLayout() {
               </ThemeProvider>
             </RouteProvider>
           </MobilityProvider>
+            </GamificationProvider>
         </CityProvider>
       </AppThemeProvider>
     </TenantProvider>
