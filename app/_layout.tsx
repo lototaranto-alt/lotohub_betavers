@@ -1,7 +1,7 @@
+import 'react-native-reanimated';
 ﻿import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
 import { useFonts, PlayfairDisplay_400Regular, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
 import { Raleway_400Regular, Raleway_600SemiBold } from '@expo-google-fonts/raleway';
 
@@ -23,7 +23,6 @@ import { registerForPushNotificationsAsync } from '../utils/notifications';
 
 // Inizializzazione Globale Hardware NFC (Commentato per Expo Go Demo)
 import NfcManager from 'react-native-nfc-manager';
-NfcManager.start().catch(e => console.warn('NFC non supportato in questo ambiente (es. Web/Simulatore)'));
 
 export const unstable_settings = {
   anchor: '(tabs)',

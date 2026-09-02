@@ -18,7 +18,9 @@ import UserAvatar from '../../components/MapCursor';
 import Constants from 'expo-constants';
 
 // Inizializza Mapbox con la chiave pubblica
-Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_KEY || 'pk.eyJ1IjoibG90b2h1YiIsImEiOiJjbW5yOGY4bXYwMTliMnNzNG84c2YwbXFqIn0.wUjhbriAWqmuGh0tn-zHtw');
+try {
+  Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_KEY || 'pk.eyJ1IjoibG90b2h1YiIsImEiOiJjbW5yOGY4bXYwMTliMnNzNG84c2YwbXFqIn0.wUjhbriAWqmuGh0tn-zHtw');
+} catch(e) {}
 
 const { width, height } = Dimensions.get('window');
 const INITIAL_COORDS = [17.234050, 40.472850];
