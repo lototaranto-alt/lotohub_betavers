@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
+﻿import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, Animated, Easing, Dimensions, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -11,23 +11,23 @@ const { width, height } = Dimensions.get('window');
 const getRankInfo = (level: number) => {
   if (level <= 4) return { 
     title: 'TURISTA CURIOSO', 
-    asset: require('../assets/images/ranks/rank1_turista_curioso_organic.jpg') 
+    asset: require('../assets/images/logo-LOTO.png') 
   };
   if (level <= 8) return { 
     title: 'CITTADINO ATTIVO', 
-    asset: require('../assets/images/ranks/rank2_cittadino_attivo_organic.jpg') 
+    asset: require('../assets/images/logo-LOTO.png') 
   };
   if (level <= 12) return { 
     title: 'CUSTODE URBANO', 
-    asset: require('../assets/images/ranks/rank3_custode_urbano_organic.jpg') 
+    asset: require('../assets/images/logo-LOTO.png') 
   };
   if (level <= 16) return { 
     title: 'EROE JONICO', 
-    asset: require('../assets/images/ranks/rank4_eroe_jonico_organic.jpg') 
+    asset: require('../assets/images/logo-LOTO.png') 
   };
   return { 
     title: 'LEGGENDA L.O.T.O.', 
-    asset: require('../assets/images/ranks/rank5_leggenda_loto_organic.jpg') 
+    asset: require('../assets/images/logo-LOTO.png') 
   };
 };
 
@@ -108,7 +108,7 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
         <Image 
           source={rankInfo.asset} 
           style={styles.rankImage} 
-          defaultSource={require('../assets/images/ranks/rank1_turista_curioso_organic.jpg')}
+          defaultSource={require('../assets/images/logo-LOTO.png')}
         />
         <Text style={styles.levelText}>LIVELLO {level} RAGGIUNTO</Text>
         <Text style={styles.rankTitle}>{rankInfo.title}</Text>
@@ -330,3 +330,4 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   }
 });
+
