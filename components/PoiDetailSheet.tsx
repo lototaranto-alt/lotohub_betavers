@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, ScrollView, Alert, Linking, Dimensions, ActivityIndicator } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Location from 'expo-location';
@@ -12,7 +12,7 @@ import { OfflineQueueManager } from '../utils/OfflineQueueManager';
 import NetInfo from '@react-native-community/netinfo';
 import { useTheme } from '../context/ThemeContext';
 import { useGamification } from '../context/GamificationContext';
-import { buildLevelUpEvents, calculateLevel } from '../utils/levelUtils';
+import { buildLevelUpEvents } from '../utils/levelUtils';
 import { useTenant } from '../context/TenantContext';
 import { useTheme as _skip } from '../context/ThemeContext';
 import PoiScannerModal from './PoiScannerModal';
@@ -76,7 +76,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') return;
         
-        // Controlla se c'è un timer in corso in AsyncStorage
+        // Controlla se c'Ã¨ un timer in corso in AsyncStorage
         const savedTime = await AsyncStorage.getItem(`@checkin_start_${poi.id}`);
         if (savedTime) {
            setCheckinStartTime(parseInt(savedTime));
@@ -85,7 +85,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
         sub = await Location.watchPositionAsync({ distanceInterval: 10 }, (loc) => {
            if (poi.lat && poi.lng) {
               const dist = calculateDistanceRaw(loc.coords.latitude, loc.coords.longitude, poi.lat, poi.lng);
-              setGpsDistance(dist); // già in metri
+              setGpsDistance(dist); // giÃ  in metri
            }
         });
       })();
@@ -219,7 +219,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
           } else if (queuedIds.includes(media.id)) {
             statusMap[media.id] = 'queued';
           } else if (unlockedIds.includes(media.id)) {
-            // Già sbloccato su server, ma non scaricato localmente (es. dopo reinstallazione)
+            // GiÃ  sbloccato su server, ma non scaricato localmente (es. dopo reinstallazione)
             statusMap[media.id] = 'locked';
             const netState = await NetInfo.fetch();
             if (netState.isConnected) {
@@ -285,7 +285,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
 
     if (!netState.isConnected) {
       Alert.alert(
-        "Modalità Offline",
+        "ModalitÃ  Offline",
         `Non hai connessione internet. Vuoi prenotare lo sblocco di "${media.title}"? I contenuti si scaricheranno appena ritrovi la rete.`,
         [
           { text: "Annulla", style: "cancel" },
@@ -294,7 +294,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
             onPress: async () => {
               await OfflineQueueManager.enqueueUnlock(media.id, 0, poi.name);
               setMediaStatus(prev => ({ ...prev, [media.id]: 'queued' }));
-              Alert.alert("Sblocco Prenotato", "Sblocco registrato in locale. Il file si scaricherà in background quando tornerai online.");
+              Alert.alert("Sblocco Prenotato", "Sblocco registrato in locale. Il file si scaricherÃ  in background quando tornerai online.");
             }
           }
         ]
@@ -313,7 +313,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
         .from('user_unlocked_media')
         .insert({ profile_id: user.id, media_id: media.id });
 
-      if (error && error.code !== '23505') { // Ignora errore se già sbloccato
+      if (error && error.code !== '23505') { // Ignora errore se giÃ  sbloccato
         Alert.alert("Errore", "Impossibile registrare lo sblocco nel Cloud.");
         setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
         return;
@@ -336,7 +336,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
 
       if (localPath) {
         setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
-        Alert.alert("Successo!", `"${media.title}" è stato sbloccato e scaricato localmente per l'ascolto offline.`);
+        Alert.alert("Successo!", `"${media.title}" Ã¨ stato sbloccato e scaricato localmente per l'ascolto offline.`);
       } else {
         setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
         Alert.alert("Errore", "Salvataggio locale fallito.");
@@ -373,7 +373,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
   const hasParkingSuggestion = !!poi.recommended_parking_id;
 
   const handleNavigate = (type: 'driving' | 'walking' | 'transit' | 'bicycling', isParking: boolean = false) => {
-    // Coordinate fittizie per il parcheggio se isParking è vero, altrimenti coordinate del POI
+    // Coordinate fittizie per il parcheggio se isParking Ã¨ vero, altrimenti coordinate del POI
     const destLat = isParking ? 40.4720 : poi.latitude;
     const destLng = isParking ? 17.2285 : poi.longitude;
     const url = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=${type}`;
@@ -579,7 +579,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                     onCheckIn(poi);
                   }
                 } catch(e: any) {
-                  Alert.alert('Errore', 'Non è stato possibile validare la scansione sul server: ' + e.message);
+                  Alert.alert('Errore', 'Non Ã¨ stato possibile validare la scansione sul server: ' + e.message);
                 }
               }}
             />
@@ -590,8 +590,8 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                onCheckInEvent={() => {
                  setIsEventSheetVisible(false);
                  Alert.alert(
-                   '✨ Evento Completato!', 
-                   'Hai confermato la presenza alla Raccolta Rifiuti al Lido Azzurro. Ti è stato conferito il badge \"Sentinella\"!'
+                   'âœ¨ Evento Completato!', 
+                   'Hai confermato la presenza alla Raccolta Rifiuti al Lido Azzurro. Ti Ã¨ stato conferito il badge \"Sentinella\"!'
                  );
                  onCheckIn(poi); // Aggiorna la Home
                }}
@@ -617,7 +617,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
 
             {poiWhispers.length > 0 && (
               <View style={[styles.vaultSection, { borderBottomColor: theme.border }]}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>🤫 MISTERI E WHISPERS</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>ðŸ¤« MISTERI E WHISPERS</Text>
                 {poiWhispers.map(whisper => {
                    const isUnlocked = inRoute; // Qui assumiamo che se fa checkin (o mockato con inRoute) li veda
                    // Idealmente dovremmo controllare esg_raw_logs o se l'utente l'ha sbloccato.
@@ -646,7 +646,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                       ) : (
                          <View style={{padding: 10, backgroundColor: theme.surface, borderRadius: 8, marginTop: 10, alignItems: 'center'}}>
                             <MaterialIcons name="vpn-key" size={16} color={theme.textMuted} />
-                            <Text style={{color: theme.textMuted, fontSize: 11, marginTop: 4}}>La storia si rivelerà solo quando sarai sul posto.</Text>
+                            <Text style={{color: theme.textMuted, fontSize: 11, marginTop: 4}}>La storia si rivelerÃ  solo quando sarai sul posto.</Text>
                          </View>
                       )}
                     </View>
@@ -657,7 +657,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
             
             {vaultMedia.length > 0 && (
               <View style={[styles.vaultSection, { borderBottomColor: theme.border }]}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>🎒 RISORSE ESCLUSIVE</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>ðŸŽ’ RISORSE ESCLUSIVE</Text>
                 {vaultMedia.map(media => {
                   const status = mediaStatus[media.id] || 'locked';
                   return (
@@ -671,7 +671,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                         <View style={{ marginLeft: 12, flex: 1 }}>
                           <Text style={[styles.mediaTitle, { color: theme.text }]}>{media.title}</Text>
                           <Text style={[styles.mediaTypeLabel, { color: theme.textMuted }]}>
-                            {media.media_type.toUpperCase()} • Sblocco: Livello {media.required_level || 1}
+                            {media.media_type.toUpperCase()} â€¢ Sblocco: Livello {media.required_level || 1}
                           </Text>
                         </View>
                       </View>
@@ -730,7 +730,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
               <View style={styles.tabContent}>
                 {poiEvents && poiEvents.length > 0 ? (
                   <View style={[styles.vaultSection, { borderBottomColor: theme.border, marginTop: 15 }]}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>📅 PROSSIMI EVENTI</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>ðŸ“… PROSSIMI EVENTI</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
                       {poiEvents.map((ev: any) => (
                         <View key={ev.id} style={{ backgroundColor: theme.background, padding: 15, borderRadius: 15, marginRight: 15, width: 200, borderWidth: 1, borderColor: theme.border }}>
@@ -746,7 +746,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                             style={{ marginTop: 10, backgroundColor: ev.is_premium ? theme.accent : theme.primary, paddingVertical: 8, borderRadius: 10, alignItems: 'center' }}
                             onPress={() => ev.is_premium && !isElite ? router.push('/upgrade') : Alert.alert('Iscritto!', 'Sei in lista per questo evento.')}
                           >
-                            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Partecipa {ev.is_premium ? '🌟' : ''}</Text>
+                            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Partecipa {ev.is_premium ? 'ðŸŒŸ' : ''}</Text>
                           </TouchableOpacity>
                         </View>
                       ))}
@@ -780,7 +780,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                   </TouchableOpacity>
 
 
-                                    {/* Accessibilità a 3 Stati (Community) */}
+                                    {/* AccessibilitÃ  a 3 Stati (Community) */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: poi.is_wheelchair_accessible === true ? 'rgba(46, 204, 113, 0.1)' : poi.is_wheelchair_accessible === false ? 'rgba(231, 76, 60, 0.1)' : 'rgba(149, 165, 166, 0.1)', padding: 12, borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: poi.is_wheelchair_accessible === true ? '#2ECC71' : poi.is_wheelchair_accessible === false ? '#E74C3C' : '#95A5A6' }}>
                     <MaterialIcons name={poi.is_wheelchair_accessible === true ? 'accessible' : poi.is_wheelchair_accessible === false ? 'not-accessible' : 'help-outline'} size={24} color={poi.is_wheelchair_accessible === true ? '#2ECC71' : poi.is_wheelchair_accessible === false ? '#E74C3C' : '#7F8C8D'} />
                     <View style={{ marginLeft: 12, flex: 1 }}>
@@ -818,7 +818,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                       <Text style={[styles.governanceTitle, { color: theme.accent }]}>Suggerimento Sosta Strategica</Text>
                     </View>
                     <Text style={[styles.governanceText, { color: theme.textMuted }]}>
-                      La zona intorno a {poi.name} è a traffico limitato o congestionata. Parcheggia comodamente a "Park Porto Antico" e guadagna <Text style={{fontWeight: 'bold', color: theme.accent}}>+10 PTI</Text>.
+                      La zona intorno a {poi.name} Ã¨ a traffico limitato o congestionata. Parcheggia comodamente a "Park Porto Antico" e guadagna <Text style={{fontWeight: 'bold', color: theme.accent}}>+10 PTI</Text>.
                     </Text>
                     <TouchableOpacity style={[styles.navParkingBtn, { backgroundColor: theme.accent }]} onPress={() => handleNavigate('driving', true)}>
                       <MaterialIcons name="navigation" size={16} color={theme.background} style={{ marginRight: 5 }} />
@@ -985,3 +985,4 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   }
 });
+
