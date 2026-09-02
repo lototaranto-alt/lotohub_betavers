@@ -72,7 +72,7 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
-        <View style={[styles.sheet, { backgroundColor: theme.surface }]}>
+        <View style={[styles.sheet, { backgroundColor: theme.surface, paddingBottom: Math.max(25, insets.bottom) }]}>
           
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.text }]}>Guida & Sensori</Text>
@@ -81,7 +81,7 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: Math.max(40, insets.bottom + 10) }}>
             
             {/* SEZIONE 1: I SENSI DEL CAMALEONTE (PERMESSI HARDWARE) */}
             <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 10 }]}>Sincro-Avventura</Text>

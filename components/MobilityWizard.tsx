@@ -18,7 +18,7 @@ export default function MobilityWizard() {
       transparent={true}
       statusBarTranslucent={true}
     >
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { paddingBottom: Math.max(24, insets.bottom + 10) }]}>
         <View style={styles.card}>
           <Text style={styles.title}>Come esplori oggi?</Text>
           <Text style={styles.subtitle}>

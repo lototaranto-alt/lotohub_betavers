@@ -391,7 +391,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
         
-        <View style={[styles.sheetContainer, { backgroundColor: theme.surface }]}>
+        <View style={[styles.sheetContainer, { backgroundColor: theme.surface, paddingBottom: insets.bottom }]}>
           <View style={styles.dragHandle} />
           
           <ScrollView showsVerticalScrollIndicator={false}>
