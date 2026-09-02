@@ -15,6 +15,7 @@ import { TenantProvider } from '../context/TenantContext';
 import { CityProvider } from '../context/CityContext';
 import { MobilityProvider } from '../context/MobilityContext';
 import { ThemeProvider as AppThemeProvider } from '../context/ThemeContext';
+import { GamificationProvider } from '../context/GamificationContext';
 import { RouteProvider } from '../context/RouteContext';
 import MobilityWizard from '../components/MobilityWizard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
