@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Animated } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
@@ -29,6 +30,7 @@ const TIPS_DATA = [
 
 export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueSheetProps) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [gpsGranted, setGpsGranted] = useState(false);
   const [pedGranted, setPedGranted] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
