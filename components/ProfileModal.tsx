@@ -9,6 +9,7 @@ import LotoPassRecoveryScanner from './LotoPassRecoveryScanner';
 const { width } = Dimensions.get('window');
 
 interface ProfileModalProps {
+  pois?: any[];
   visible: boolean;
   onClose: () => void;
   userProfile: any;
@@ -23,7 +24,12 @@ interface ProfileModalProps {
   onDeleteItinerary?: (id: string) => void;
 }
 
-export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userItineraries, userTransactions, userTokens, theme, t, setUserProfile, onDeleteItinerary }: ProfileModalProps) {
+export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userItineraries, userTransactions, userTokens, theme, t, setUserProfile, onDeleteItinerary , pois }: ProfileModalProps) {
+  const visitedPois = (pois || []).filter(p => p.is_visited);
+  const countNatura = visitedPois.filter(p => p.category === 'park' || p.category === 'fountain').length;
+  const countCultura = visitedPois.filter(p => p.category === 'monument' || p.category === 'museum').length;
+  const countPartner = visitedPois.filter(p => p.category === 'partner' || p.category === 'attraction').length;
+
   const router = useRouter();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [activeProfileSection, setActiveProfileSection] = useState<'badges' | 'itineraries'>('badges');
@@ -181,19 +187,19 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                {/* Griglia P.O.I. Divisi */}
                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 15, width: '100%', marginBottom: 20 }}>
                  <View style={{ alignItems: 'center' }}>
-                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#2ECC71' }}>12</Text>
+                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#2ECC71' }}>{countNatura}</Text>
                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Natura</Text>
                  </View>
                  <View style={{ alignItems: 'center' }}>
-                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#3498DB' }}>8</Text>
+                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#3498DB' }}>{countCultura}</Text>
                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Cultura</Text>
                  </View>
                  <View style={{ alignItems: 'center' }}>
-                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#E67E22' }}>5</Text>
+                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#E67E22' }}>{countPartner}</Text>
                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Partner</Text>
                  </View>
                  <View style={{ alignItems: 'center' }}>
-                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#9B59B6' }}>3</Text>
+                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#9B59B6' }}>{visitedPois.length}</Text>
                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Segreti</Text>
                  </View>
                </View>
