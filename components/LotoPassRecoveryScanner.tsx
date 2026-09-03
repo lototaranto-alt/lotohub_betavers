@@ -43,7 +43,7 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        Alert.alert('In Sviluppo', 'Libreria Galleria inserita, parser QR in via di perfezionamento.');
+        Alert.alert('Privacy Policy', 'Per motivi di sicurezza (Zero-PII), il parsing in-app della galleria  disabilitato. Usa la funzione ''Copia Testo'' di iOS/Android dalla tua galleria per copiare il codice LOTO-... sotto il QR, e incollalo manualmente qui sotto.');
         // NOTE: reading pixels from base64 in RN for jsQR requires Canvas or rn-qr-generator.
         // We will need rn-qr-generator. Let me just use a placeholder here and fix the import.
       }
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   container: { width: '90%', borderRadius: 24, padding: 25, elevation: 10 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 20, fontWeight: 'bold' },
-  cameraContainer: { height: 160, borderWidth: 2, borderRadius: 16, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  cameraContainer: { height: 250, width: '100%', borderWidth: 2, borderRadius: 16, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   scannedOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   input: { padding: 15, borderRadius: 12, borderWidth: 1, fontSize: 16, textAlign: 'center', letterSpacing: 1 },
   button: { padding: 15, borderRadius: 12, alignItems: 'center' },
