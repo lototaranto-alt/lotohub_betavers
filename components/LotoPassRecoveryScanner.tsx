@@ -43,7 +43,7 @@ export default function LotoPassRecoveryScanner({ visible, onClose, theme }: Pro
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        Alert.alert('Privacy Policy', 'Per motivi di sicurezza (Zero-PII), il parsing in-app della galleria  disabilitato. Usa la funzione ''Copia Testo'' di iOS/Android dalla tua galleria per copiare il codice LOTO-... sotto il QR, e incollalo manualmente qui sotto.');
+        Alert.alert('Privacy Policy', "Per motivi di sicurezza (Zero-PII), il parsing in-app della galleria è disabilitato. Usa la funzione 'Copia Testo' di iOS/Android dalla tua galleria per copiare il codice LOTO-... sotto il QR, e incollalo manualmente qui sotto.");
         // NOTE: reading pixels from base64 in RN for jsQR requires Canvas or rn-qr-generator.
         // We will need rn-qr-generator. Let me just use a placeholder here and fix the import.
       }
