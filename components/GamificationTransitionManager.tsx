@@ -32,9 +32,9 @@ const getRankInfo = (level: number) => {
 };
 
 export type GamificationEvent = 
-  | { type: 'LEVEL_UP'; level: number }
-  | { type: 'WHISPER'; title?: string; text: string; rarity?: number }
-  | { type: 'BADGE'; badge: any };
+  | { type: 'LEVEL_UP'; level: number; title?: string; text?: string; rarity?: number; badge?: any }
+  | { type: 'WHISPER'; title?: string; text?: string; rarity?: number; level?: number; badge?: any }
+  | { type: 'BADGE'; badge?: any; type?: string; level?: number; title?: string; text?: string; rarity?: number };
 
 export interface GamificationTransitionManagerRef {
   queueEvents: (events: GamificationEvent[]) => void;
