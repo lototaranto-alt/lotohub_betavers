@@ -30,6 +30,16 @@ export const LEVEL_THRESHOLDS: LevelThreshold[] = [
   { level: 18, minXp: 3150, nextXp: 3700, title: "LEGGENDA L.O.T.O.", stemma: 'whatshot', gemColor: '#FF4500', gemName: 'Fuoco Eterno' },
   { level: 19, minXp: 3700, nextXp: 4300, title: "LEGGENDA L.O.T.O.", stemma: 'diamond', gemColor: '#E0FFFF', gemName: 'Diamante Puro' },
   { level: 20, minXp: 4300, nextXp: 5000, title: "LEGGENDA L.O.T.O.", stemma: 'public', gemColor: '#00FF7F', gemName: 'Smeraldo Assoluto' },
+  { level: 21, minXp: 5000, nextXp: 5800, title: 'MITO DEL MAR PICCOLO', stemma: 'sailing', gemColor: '#00BFFF', gemName: 'Zaffiro del Mare' },
+  { level: 22, minXp: 5800, nextXp: 6700, title: 'MITO DEL MAR PICCOLO', stemma: 'water-drop', gemColor: '#1E90FF', gemName: 'Acqua Profonda' },
+  { level: 23, minXp: 6700, nextXp: 7700, title: 'MITO DEL MAR PICCOLO', stemma: 'tsunami', gemColor: '#0000CD', gemName: 'Onda Perfetta' },
+  { level: 24, minXp: 7700, nextXp: 8800, title: 'MITO DEL MAR PICCOLO', stemma: 'phishing', gemColor: '#191970', gemName: 'Abisso Notturno' },
+  { level: 25, minXp: 8800, nextXp: 10000, title: 'ARALDO DI SPARTA', stemma: 'shield', gemColor: '#8B0000', gemName: 'Rubino Spartano' },
+  { level: 26, minXp: 10000, nextXp: 11300, title: 'ARALDO DI SPARTA', stemma: 'history-edu', gemColor: '#A52A2A', gemName: 'Pergamena Antica' },
+  { level: 27, minXp: 11300, nextXp: 12700, title: 'ARALDO DI SPARTA', stemma: 'account-balance', gemColor: '#D2691E', gemName: 'Marmo Dorico' },
+  { level: 28, minXp: 12700, nextXp: 14200, title: 'ARALDO DI SPARTA', stemma: 'museum', gemColor: '#CD853F', gemName: 'Oro Miceneo' },
+  { level: 29, minXp: 14200, nextXp: 16000, title: 'DIVINITÀ DEI DUE MARI', stemma: 'auto-awesome-mosaic', gemColor: '#9370DB', gemName: 'Ametista Divina' },
+  { level: 30, minXp: 16000, nextXp: 20000, title: 'DIVINITÀ DEI DUE MARI', stemma: 'flare', gemColor: '#8A2BE2', gemName: 'Essenza Assoluta' },
 ];
 
 export const calculateLevel = (totalXp: number): number => {
