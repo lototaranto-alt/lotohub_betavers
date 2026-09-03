@@ -285,7 +285,7 @@ export default function MapScreen() {
 
           <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 8 }} />
 
-          {userXp >= 100 && (
+          {userXp >= 30 && (
 <TouchableOpacity 
             style={[styles.pillBtn, { borderColor: eventsOn ? '#10B981' : theme.border, backgroundColor: eventsOn ? 'rgba(16, 185, 129, 0.1)' : 'transparent', paddingHorizontal: 12 }]}
             onPress={() => { setEventsOn(!eventsOn); setEventsEverToggled(true); setIsLayerDropdownOpen(false); }}
@@ -332,7 +332,7 @@ export default function MapScreen() {
         </TouchableOpacity>
 
         {/* FAB 3: Crea Percorso / Itinerario */}
-        {userXp >= 100 && (
+        {userXp >= 30 && (
 <TouchableOpacity 
           style={[styles.fabCircle, { backgroundColor: routePois.length > 0 ? theme.primary : theme.surface }]}
           onPress={() => {
