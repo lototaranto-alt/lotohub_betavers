@@ -60,8 +60,10 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
   };
 
   const requestBgGps = async () => {
-    const res = await Pedometer.requestPermissionsAsync();
-    if (res.status === 'granted') {
+    const res = await Location.requestForegroundPermissionsAsync();
+    const bg = await Location.requestBackgroundPermissionsAsync();
+    if (res.status === 'granted' && bg.status === 'granted') {
+      setBgGpsGranted(true);
       
       if (userId) {
         startBackgroundTracking(userId); // Avvia tracking se permesso
