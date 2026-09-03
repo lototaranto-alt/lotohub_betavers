@@ -107,6 +107,12 @@ export default function RootLayout() {
     initAuth();
   }, []);
 
+  useEffect(() => {
+    if (isAuthReady && fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [isAuthReady, fontsLoaded]);
+
   const handleRetryAuth = async () => {
     // Pulisce eventuali sessioni corrotte prima di riprovare
     await supabase.auth.signOut();
