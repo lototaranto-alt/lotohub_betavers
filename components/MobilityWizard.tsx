@@ -1,8 +1,10 @@
 import React from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useMobility } from '../context/MobilityContext';
 
 export default function MobilityWizard() {
+  const insets = useSafeAreaInsets();
   const { mobilityType, saveMobilityChoice, loading } = useMobility();
 
   // Il Modal deve essere visibile SOLO SE !loading && mobilityType === null.

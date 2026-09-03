@@ -1,15 +1,16 @@
-import { Platform, DeviceEventEmitter } from 'react-native';
+﻿import { Platform, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Pedometer, Accelerometer } from 'expo-sensors';
+import * as Location from 'expo-location';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { supabase } from './supabase';
+import { calculateDistanceRaw } from './haversine';
 
-const STORAGE_KEY = '@sincro_avventura_steps';
-const SYNC_THRESHOLD = 1000;
+const STORAGE_KEY = '@sincro_avventura_meters';
+const SYNC_THRESHOLD = 200; // Sincronizza ogni 200 metri
 
-let currentSessionCount = 0;
-let subscription: any = null;
-let lastPeakTime = 0;
+let currentSessionMeters = 0;
+let subscription: Location.LocationSubscription | null = null;
+let lastLocation: Location.LocationObjectCoords | null = null;
 
 // Registrazione Headless Task per Android Notifee
 notifee.registerForegroundService((notification) => {
@@ -23,37 +24,40 @@ notifee.registerForegroundService((notification) => {
   });
 });
 
-async function syncSteps(userId: string, count: number, isAccessibilityMode: boolean): Promise<void> {
+async function syncDistance(userId: string, meters: number): Promise<void> {
   try {
-    const { error } = await supabase.rpc('rpc_sync_adventure', {
+    // 100 metri = 5 XP, 100 metri = 1 PTI. Supabase farà il calcolo.
+    // Inoltriamo i metri percorsi.
+    const { error } = await supabase.rpc('rpc_sync_adventure_distance', {
       user_id: userId,
-      steps_count: count,
-      is_wheelchair: isAccessibilityMode,
+      meters_count: Math.round(meters)
     });
     
     if (error) {
-      console.error('[SincroAvventura] Errore sincronizzazione:', error);
+      console.error('[SincroAvventura] Errore sincronizzazione distanza:', error);
     }
   } catch (err) {
-    console.error('[SincroAvventura] Eccezione durante sincronizzazione:', err);
+    console.error('[SincroAvventura] Eccezione durante sincronizzazione distanza:', err);
   }
 }
 
-async function incrementSteps(userId: string, isAccessibilityMode: boolean, steps: number = 1): Promise<void> {
-  currentSessionCount += steps;
-  
+async function incrementDistance(userId: string, meters: number): Promise<void> {
+  currentSessionMeters += meters;
   
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    const totalLocal = (stored ? parseInt(stored, 10) : 0) + steps;
+    const totalLocal = (stored ? parseFloat(stored) : 0) + meters;
     await AsyncStorage.setItem(STORAGE_KEY, totalLocal.toString());
-    DeviceEventEmitter.emit('onStepIncrement', { total: totalLocal });
+    
+    // Emettiamo evento per l'UI (arrotondato ai metri)
+    DeviceEventEmitter.emit('onDistanceIncrement', { total: Math.round(totalLocal) });
     
     if (Platform.OS === 'android') {
+      const displayDistance = totalLocal > 1000 ? (totalLocal/1000).toFixed(2) + ' Km' : Math.round(totalLocal) + ' m';
       await notifee.displayNotification({
         id: 'sincro-avventura',
         title: 'Sincro-Avventura Attiva',
-        body: `Passi/Spinte elaborati: ${totalLocal}`,
+        body: `Distanza esplorata: ${displayDistance}`,
         android: {
           channelId: 'sincro-avventura',
           asForegroundService: true,
@@ -64,17 +68,17 @@ async function incrementSteps(userId: string, isAccessibilityMode: boolean, step
       });
     }
 
-    if (currentSessionCount >= SYNC_THRESHOLD) {
-      const countToSync = currentSessionCount;
-      currentSessionCount = 0;
-      await syncSteps(userId, countToSync, isAccessibilityMode);
+    if (currentSessionMeters >= SYNC_THRESHOLD) {
+      const distanceToSync = currentSessionMeters;
+      currentSessionMeters = 0;
+      await syncDistance(userId, distanceToSync);
     }
   } catch (err) {
-    console.error('[SincroAvventura] Errore aggiornamento storage:', err);
+    console.error('[SincroAvventura] Errore aggiornamento storage distanza:', err);
   }
 }
 
-export async function startBackgroundTracking(isAccessibilityMode: boolean, userId: string): Promise<void> {
+export async function startBackgroundTracking(userId: string): Promise<void> {
   if (Platform.OS === 'android') {
     const channelId = await notifee.createChannel({
       id: 'sincro-avventura',
@@ -85,7 +89,7 @@ export async function startBackgroundTracking(isAccessibilityMode: boolean, user
     await notifee.displayNotification({
       id: 'sincro-avventura',
       title: 'Sincro-Avventura Avviata',
-      body: 'In attesa di movimento...',
+      body: 'In attesa di segnale GPS...',
       android: {
         channelId,
         asForegroundService: true,
@@ -101,42 +105,48 @@ export async function startBackgroundTracking(isAccessibilityMode: boolean, user
     subscription = null;
   }
   
-  currentSessionCount = 0;
+  currentSessionMeters = 0;
+  lastLocation = null;
 
-  if (!isAccessibilityMode) {
-    const { status } = await Pedometer.requestPermissionsAsync();
-    if (status !== 'granted') {
-      console.warn('[SincroAvventura] Permesso Pedometro negato.');
-      return;
-    }
+  // Richiediamo permessi Foreground e Background per garantire tracking pulito.
+  const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+  if (fgStatus !== 'granted') {
+    console.warn('[SincroAvventura] Permesso Foreground negato.');
+    return;
   }
+  
+  // Opzionale: richiamare background per massima persistenza in Android Doze
+  await Location.requestBackgroundPermissionsAsync();
 
-  if (isAccessibilityMode) {
-    Accelerometer.setUpdateInterval(200);
-    subscription = Accelerometer.addListener(accelerometerData => {
-      const { x, z } = accelerometerData;
-      const magnitude = Math.sqrt(x * x + z * z);
-      const now = Date.now();
-      
-      if (magnitude > 1.5 && now - lastPeakTime > 500) {
-        lastPeakTime = now;
-        incrementSteps(userId, isAccessibilityMode, 1);
-      }
-    });
-  } else {
-    const isAvailable = await Pedometer.isAvailableAsync();
-    if (isAvailable) {
-      let lastCount = 0;
-      subscription = Pedometer.watchStepCount(result => {
-        const delta = result.steps - lastCount;
-        lastCount = result.steps;
-        if (delta > 0) {
-          incrementSteps(userId, isAccessibilityMode, delta);
+  try {
+    subscription = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.BestForNavigation, // Massima precisione
+        timeInterval: 5000, // Aggiornamento minimo ogni 5 secondi
+        distanceInterval: 5, // Aggiornamento ogni 5 metri reali
+      },
+      (newLocation) => {
+        if (!lastLocation) {
+          lastLocation = newLocation.coords;
+          return;
         }
-      });
-    } else {
-      console.warn('[SincroAvventura] Pedometro non disponibile su questo dispositivo.');
-    }
+
+        const deltaMeters = calculateDistanceRaw(
+          lastLocation.latitude,
+          lastLocation.longitude,
+          newLocation.coords.latitude,
+          newLocation.coords.longitude
+        );
+
+        // Filtro antirumore GPS (escludiamo salti assurdi > 100m in 5 sec, o micro-rumori < 2m)
+        if (deltaMeters > 2 && deltaMeters < 100) {
+          incrementDistance(userId, deltaMeters);
+          lastLocation = newLocation.coords;
+        }
+      }
+    );
+  } catch (err) {
+    console.error('[SincroAvventura] Errore avvio watchPosition:', err);
   }
 }
 

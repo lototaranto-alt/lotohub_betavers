@@ -11,11 +11,11 @@ interface ImpactStatsModalProps {
   userTransactions: any[];
   userTokens: number;
   theme: any;
-  stepsToday?: number;
+  distanceToday?: number;
   isAccessibleMode?: boolean;
 }
 
-export default function ImpactStatsModal({ visible, onClose, userProfile, userTransactions, userTokens, theme, stepsToday = 0, isAccessibleMode = false }: ImpactStatsModalProps) {
+export default function ImpactStatsModal({ visible, onClose, userProfile, userTransactions, userTokens, theme, distanceToday = 0, isAccessibleMode = false }: ImpactStatsModalProps) {
   const [activeTab, setActiveTab] = useState<'co2' | 'pts' | 'sync'>('co2');
 
   return (
@@ -107,8 +107,8 @@ export default function ImpactStatsModal({ visible, onClose, userProfile, userTr
             ) : (
               <View style={{ alignItems: 'center' }}>
                 <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={60} color={theme.secondary} style={{ marginBottom: 15 }} />
-                <Text style={[styles.mainStat, { color: theme.secondary }]}>{stepsToday}</Text>
-                <Text style={styles.statLabel}>{isAccessibleMode ? 'Spinte' : 'Passi'} Registrati Oggi</Text>
+                <Text style={[styles.mainStat, { color: theme.secondary }]}>{distanceToday > 1000 ? (distanceToday/1000).toFixed(2) + ' Km' : distanceToday + ' m'}</Text>
+                <Text style={styles.statLabel}>Distanza Registrata Oggi</Text>
                 
                 <View style={{ width: '100%', marginTop: 30 }}>
                   <Text style={[styles.sectionTitle, { color: theme.text }]}>DETTAGLIO SINCRO-AVVENTURA</Text>
@@ -120,11 +120,11 @@ export default function ImpactStatsModal({ visible, onClose, userProfile, userTr
                     
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, paddingTop: 15, borderTopWidth: 1, borderTopColor: theme.border }}>
                       <View style={{ alignItems: 'center' }}>
-                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.secondary }}>{((stepsToday * 0.75) / 1000).toFixed(2)}</Text>
+                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.secondary }}>{(distanceToday / 1000).toFixed(2)}</Text>
                         <Text style={{ fontSize: 12, color: theme.textMuted }}>KM STIMATI</Text>
                       </View>
                       <View style={{ alignItems: 'center' }}>
-                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.primary }}>{(((stepsToday * 0.75) / 1000) * 0.12).toFixed(2)}</Text>
+                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.primary }}>{((distanceToday / 1000) * 0.12).toFixed(2)}</Text>
                         <Text style={{ fontSize: 12, color: theme.textMuted }}>KG CO₂</Text>
                       </View>
                     </View>

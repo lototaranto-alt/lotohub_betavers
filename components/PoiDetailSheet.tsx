@@ -43,6 +43,7 @@ type PoiDetailSheetProps = {
 export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: PoiDetailSheetProps) {
   const router = useRouter();
   const { theme, isElite } = useTheme();
+  const insets = useSafeAreaInsets();
   const { currentTenant } = useTenant();
   const { queueEvents } = useGamification();
   

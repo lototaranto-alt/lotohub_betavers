@@ -203,30 +203,30 @@ export default function VetrinaScreen() {
   const [selectedPoi, setSelectedPoi] = useState<any | null>(null);
   const [activeVaultPoiId, setActiveVaultPoiId] = useState<string | null>(null);
 
-  const [stepsToday, setStepsToday] = useState(0);
-  const lastNotifiedSteps = useRef(0);
+  const [distanceToday, setDistanceToday] = useState(0);
+  const lastNotifiedDistance = useRef(0);
 
-  const stepScaleAnim = useRef(new Animated.Value(1)).current;
+  const distanceScaleAnim = useRef(new Animated.Value(1)).current;
   const pushRotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // 1. Carica il totale salvato all'avvio
-    AsyncStorage.getItem('@sincro_avventura_steps').then(stored => {
-      if (stored) setStepsToday(parseInt(stored, 10));
+    AsyncStorage.getItem('@sincro_avventura_meters').then(stored => {
+      if (stored) setDistanceToday(parseInt(stored, 10));
     });
 
     // 2. Ascolta gli incrementi live dal motore di SincroAvventura
-    const subscription = DeviceEventEmitter.addListener('onStepIncrement', (event) => {
-      setStepsToday(event.total);
+    const subscription = DeviceEventEmitter.addListener('onDistanceIncrement', (event) => {
+      setDistanceToday(event.total);
       
       // Animazione "battito/spinta"
       Animated.sequence([
-        Animated.timing(stepScaleAnim, { toValue: 1.3, duration: 150, useNativeDriver: true }),
-        Animated.timing(stepScaleAnim, { toValue: 1, duration: 150, useNativeDriver: true })
+        Animated.timing(distanceScaleAnim, { toValue: 1.3, duration: 150, useNativeDriver: true }),
+        Animated.timing(distanceScaleAnim, { toValue: 1, duration: 150, useNativeDriver: true })
       ]).start();
       
-      if (event.total - lastNotifiedSteps.current >= 2000) {
-        lastNotifiedSteps.current = event.total;
+      if (event.total - lastNotifiedDistance.current >= 1000) {
+        lastNotifiedDistance.current = event.total;
         const km = (event.total * 0.7) / 1000;
         // triggerStepMilestoneNotification(km);
       }
@@ -380,47 +380,7 @@ export default function VetrinaScreen() {
       const { data: cStats } = await supabase.from('vw_collective_impact').select('*').single();
       if (cStats) setCommunityStats(cStats);
 
-      // Ritardiamo le richieste di localizzazione di 13.3s per coprire l'intera durata del carosello (4 clip x 3.3s)
-      setTimeout(async () => {
-        try {
-          let { status } = await Location.getForegroundPermissionsAsync();
-          if (status !== 'granted') {
-            const res = await Location.requestForegroundPermissionsAsync();
-            status = res.status;
-          }
-          if (status === 'granted') {
-            Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10 }, (loc) => {
-            setUserLocation(loc);
-            
-            // HAPTICS QUANDO CI SI AVVICINA A UN P.O.I. (< 50 METRI)
-            if (fetchedPois && fetchedPois.length > 0) {
-              for (const poi of fetchedPois) {
-                if (poi.latitude && poi.longitude) {
-                  const dist = calculateDistanceRaw(loc.coords.latitude, loc.coords.longitude, poi.latitude, poi.longitude);
-                  if (dist < 50) {
-                    // Vibrazione leggera per indicare prossimitÃ 
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-                    break; // Una vibrazione Ã¨ sufficiente
-                  }
-                }
-              }
-            }
-          }).catch(err => {
-            console.log("Errore in watchPositionAsync (es. GPS spento):", err);
-          });
-        }
-        } catch (err) {
-          console.log("Errore richiesta permessi GPS (possibile GPS di sistema disattivato):", err);
-        }
-
-        // Check per prompt GPS automatico e gentile in background
-        const hasSeenPrompt = await AsyncStorage.getItem('loto_gps_prompt_seen');
-        if (!hasSeenPrompt && userProfile?.flow_role !== 'LOTO Partner') {
-          setTimeout(() => {
-            promptGentleGps();
-          }, 1500); // Questo 1500ms parte DOPO i 12000ms iniziali
-        }
-      }, 13300);
+      
 
       // LOGICA TIPS HAPTICS
       let totalXp = 0;
@@ -489,29 +449,7 @@ export default function VetrinaScreen() {
 
   const [isGeofenceActive, setIsGeofenceActive] = useState(false);
 
-  const promptGentleGps = async () => {
-    if (!isGeofenceActive) {
-      await AsyncStorage.setItem('loto_gps_prompt_seen', 'true');
-      Alert.alert(
-        "Ottieni il massimo da L.O.T.O.",
-        "Vuoi attivare la localizzazione in background? Ti permetterÃ  di guadagnare LOTO PTI camminando per la cittÃ  in automatico e sbloccare i Whisper. Puoi spegnerli in qualsiasi momento dalle Impostazioni.",
-        [
-          { text: "Non ora", style: "cancel" },
-          { 
-            text: "Attiva", 
-            onPress: async () => {
-              try {
-                // await startBackgroundLocationUpdates(); // Spostato al toggle manuale
-                setIsGeofenceActive(true);
-              } catch (e) {
-                console.log("Location BG non autorizzata", e);
-              }
-            }
-          }
-        ]
-      );
-    }
-  };
+  ;
 
   const toggleSensors = async () => {
     if (!isGeofenceActive) {
@@ -794,13 +732,13 @@ export default function VetrinaScreen() {
               <View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                   <Animated.View style={{ transform: [
-                      { scale: stepScaleAnim },
+                      { scale: distanceScaleAnim },
                       { translateX: pushRotateAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 6] }) }
                     ] }}>
                     <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={12} color="#FFF" style={{marginRight: 4}} />
                   </Animated.View>
                   <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
-                    {isAccessibleMode ? `${stepsToday} spinte` : `${stepsToday} passi`}
+                    `${distanceToday > 1000 ? (distanceToday/1000).toFixed(1) + ' Km' : distanceToday + ' m'}`
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
@@ -1063,7 +1001,7 @@ export default function VetrinaScreen() {
           userTransactions={userTransactions}
           userTokens={Math.max(userProfile?.total_tokens || 0, localTokensFallback)}
           theme={theme}
-          stepsToday={stepsToday}
+          distanceToday={distanceToday}
           isAccessibleMode={isAccessibleMode}
         />
 

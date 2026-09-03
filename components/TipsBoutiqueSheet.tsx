@@ -32,7 +32,7 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [gpsGranted, setGpsGranted] = useState(false);
-  const [pedGranted, setPedGranted] = useState(false);
+  const [bgGpsGranted, setBgGpsGranted] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,9 +49,9 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
 
   const checkPermissions = async () => {
     const gps = await Location.getForegroundPermissionsAsync();
-    const ped = await Pedometer.getPermissionsAsync();
+    const bg = await Location.getBackgroundPermissionsAsync();
     setGpsGranted(gps.status === 'granted');
-    setPedGranted(ped.status === 'granted');
+    setBgGpsGranted(bg.status === 'granted');
   };
 
   const requestGps = async () => {
@@ -59,12 +59,12 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
     if (res.status === 'granted') setGpsGranted(true);
   };
 
-  const requestPedometer = async () => {
+  const requestBgGps = async () => {
     const res = await Pedometer.requestPermissionsAsync();
     if (res.status === 'granted') {
-      setPedGranted(true);
+      
       if (userId) {
-        startBackgroundTracking(false, userId); // Avvia tracking se permesso
+        startBackgroundTracking(userId); // Avvia tracking se permesso
       }
     }
   };
@@ -107,18 +107,18 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
 
             {/* Tasto Pedometro */}
             <TouchableOpacity 
-              style={[styles.permissionRow, { borderColor: pedGranted ? '#2ECC71' : theme.border }]} 
-              onPress={requestPedometer}
-              disabled={pedGranted}
+              style={[styles.permissionRow, { borderColor: bgGpsGranted ? '#2ECC71' : theme.border }]} 
+              onPress={requestBgGps}
+              disabled={bgGpsGranted}
             >
-              <View style={[styles.iconBox, { backgroundColor: pedGranted ? 'rgba(46, 204, 113, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
-                <MaterialIcons name="directions-walk" size={24} color={pedGranted ? '#2ECC71' : theme.primary} />
+              <View style={[styles.iconBox, { backgroundColor: bgGpsGranted ? 'rgba(46, 204, 113, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <MaterialIcons name="explore" size={24} color={bgGpsGranted ? '#2ECC71' : theme.primary} />
               </View>
               <View style={styles.permissionText}>
-                <Text style={[styles.permTitle, { color: theme.text }]}>Sincro-Avventura (Passi)</Text>
-                <Text style={[styles.permDesc, { color: theme.textMuted }]}>Necessario per calcolare la CO2 risparmiata camminando.</Text>
+                <Text style={[styles.permTitle, { color: theme.text }]}>Sincro-Avventura (GPS)</Text>
+                <Text style={[styles.permDesc, { color: theme.textMuted }]}>Esplora in background e sblocca ricompense con la distanza percorsa.</Text>
               </View>
-              <MaterialIcons name={pedGranted ? "check-circle" : "add-circle-outline"} size={24} color={pedGranted ? '#2ECC71' : theme.primary} />
+              <MaterialIcons name={bgGpsGranted ? "check-circle" : "add-circle-outline"} size={24} color={bgGpsGranted ? '#2ECC71' : theme.primary} />
             </TouchableOpacity>
 
 
