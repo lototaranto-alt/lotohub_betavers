@@ -46,7 +46,7 @@ export default function VaultModal({ visible, onClose, userProfile, theme }: Vau
         
         <View style={[styles.modalContent, { backgroundColor: theme.background, borderColor: '#D6734E' }]}>
           <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>Memoria L.O.T.O.</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>Archivio Storico</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <MaterialIcons name="close" size={20} color={theme.text} />
             </TouchableOpacity>
@@ -57,7 +57,7 @@ export default function VaultModal({ visible, onClose, userProfile, theme }: Vau
               <MaterialIcons name="photo-library" size={40} color="#D6734E" />
             </View>
             <Text style={{ fontSize: 14, color: theme.textMuted, textAlign: 'center', marginBottom: 20 }}>
-              Qui troverai tutte le audioguide e i materiali sbloccati esplorando i P.O.I.
+              In questo archivio troverai le audioguide, i documenti e i segreti sbloccati durante le tue esplorazioni.
             </Text>
           </View>
 
