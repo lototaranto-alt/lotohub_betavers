@@ -14,14 +14,16 @@ let lastLocation: Location.LocationObjectCoords | null = null;
 
 // Registrazione Headless Task per Android Notifee
 notifee.registerForegroundService((notification) => {
+  // Risoluzione immediata per prevenire ANR (Fire-and-forget)
+  return Promise.resolve();
+});
+
+// Ascolto eventi background separato (Isolate)
+notifee.onBackgroundEvent(async ({ type, detail }) => {
   return new Promise((resolve) => {
-    notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.ACTION_PRESS && detail.pressAction?.id === 'stop') {
-        stopBackgroundTracking();
-        resolve();
-      }
-    });
-  });
+  if (type === EventType.ACTION_PRESS && detail.pressAction?.id === 'stop') {
+    stopBackgroundTracking();
+  }
 });
 
 async function syncDistance(userId: string, meters: number): Promise<void> {

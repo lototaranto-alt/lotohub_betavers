@@ -185,14 +185,14 @@ export default function MapScreen() {
       <Mapbox.MapView 
         style={styles.map} 
         styleURL={Mapbox.StyleURL.Light}
-        logoEnabled={false}
-        attributionEnabled={false}
+        logoEnabled={true} // Obbligatorio per Policy TOS Mapbox
+        attributionEnabled={true} // Obbligatorio per Policy TOS Mapbox
         onPress={() => { setSelectedPoi(null); setIsLayerDropdownOpen(false); }}
       >
         <Mapbox.Camera
           ref={cameraRef}
           zoomLevel={14.5}
-          centerCoordinate={INITIAL_COORDS}
+          centerCoordinate={hasLocationPermission ? undefined : (currentTenant ? [currentTenant.longitude || 17.24, currentTenant.latitude || 40.47] : INITIAL_COORDS)}
           animationMode="flyTo"
           animationDuration={2000}
         />

@@ -71,7 +71,8 @@ export default function RootLayout() {
         const { error: profileError } = await supabase.from('profiles').select('id').eq('id', currentUserId).single();
         if (profileError && profileError.code === 'PGRST116') {
            await supabase.auth.signOut();
-           await AsyncStorage.clear();
+           // Rimuove solo i token di sessione, preservando l'onboarding
+          await AsyncStorage.removeItem('supabase-auth-token');
            const { data: newData, error: newError } = await supabase.auth.signInAnonymously();
            if (newError) throw newError;
         }
