@@ -108,10 +108,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (isAuthReady && fontsLoaded) {
+    if ((isAuthReady || authError) && fontsLoaded) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [isAuthReady, fontsLoaded]);
+  }, [isAuthReady, authError, fontsLoaded]);
 
   const handleRetryAuth = async () => {
     // Pulisce eventuali sessioni corrotte prima di riprovare
