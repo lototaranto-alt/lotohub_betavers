@@ -763,11 +763,11 @@ export default function VetrinaScreen() {
             activeOpacity={0.9}
             style={{ width: '48%', backgroundColor: '#D6734E', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
           >
-            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Media Sbloccati</Text>
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Archivio Storico</Text>
             <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>Audioguide & Foto</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialIcons name="photo-library" size={14} color="#FFF" />
-              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>Esplora la tua galleria</Text>
+              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>Esplora i segreti rivelati</Text>
             </View>
           </TouchableOpacity>
 

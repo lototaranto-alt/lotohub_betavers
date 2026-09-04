@@ -135,7 +135,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                 ) : (
                   <Text style={[styles.expNameBoutique, expandedCard === 'profile' && { fontSize: 20 }]}>{userProfile?.nickname || 'ESPLORATORE'}</Text>
                 )}
-                <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0, fontSize: expandedCard === 'profile' ? 14 : 16 }]}>{levelInfo.title} ({userXp} XP)</Text>
+                <Text style={[styles.expTitleBoutique, { color: levelInfo.color, marginBottom: 0, fontSize: expandedCard === 'profile' ? 14 : 16 }]}>Rank {Math.min(5, Math.floor((levelInfo.level || 1) / 10) + 1)} • {levelInfo.title} ({userXp} XP)</Text>
               </View>
               
               {expandedCard !== 'profile' && (
