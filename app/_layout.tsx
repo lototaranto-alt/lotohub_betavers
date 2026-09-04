@@ -58,50 +58,51 @@ export default function RootLayout() {
     try {
       setAuthError(null);
       const { data: { session } } = await supabase.auth.getSession();
-      let userLevel = 0;
       let currentUserId = null;
       if (session) {
-        console.log('[Auth Success] Sessione esistente ripristinata');
         currentUserId = session.user.id;
-        // registerForPushNotificationsAsync(); // Spostato o disabilitato per evitare popup all'avvio
       } else {
-        // Tentativo di login anonimo rigoroso
         const { data, error } = await supabase.auth.signInAnonymously();
         if (error) throw error;
-        console.log('[Auth Success] Entrato come ospite anonimo');
         currentUserId = data.user?.id;
-        // registerForPushNotificationsAsync(); // Spostato o disabilitato per evitare popup all'avvio
       }
       
-      // AUTO-HEALING TRAMITE REINCARNAZIONE
       if (currentUserId) {
         const { error: profileError } = await supabase.from('profiles').select('id').eq('id', currentUserId).single();
         if (profileError && profileError.code === 'PGRST116') {
-           console.log('[Auto-Healing] Riga profile mancante e protetta da RLS. Forzo il reset dell\'identitÃ ...');
            await supabase.auth.signOut();
            await AsyncStorage.clear();
-           
-           // Ricrea utente
            const { data: newData, error: newError } = await supabase.auth.signInAnonymously();
            if (newError) throw newError;
-           currentUserId = newData.user?.id;
-           console.log('[Auto-Healing] Nuova identitÃ  creata con successo.');
         }
       }
       
       const hasForcedOnboarding = await AsyncStorage.getItem('loto_onboarding_seen');
-      
-      // FORZATO: l'utente ha richiesto che il carosello sia sempre visibile all'avvio come caricamento
-      let willShowOnboarding = true;
-
       setIsFirstLaunch(!hasForcedOnboarding);
-      setShowOnboarding(willShowOnboarding);
+      setShowOnboarding(true);
+
+    } catch (err) {
+      console.warn('[Auth] Primo tentativo fallito. Avvio Deep Recovery...', err.message);
+      try {
+        await AsyncStorage.clear();
+        await supabase.auth.signOut();
+        const { error: recoveryError } = await supabase.auth.signInAnonymously();
+        if (recoveryError) throw recoveryError;
+        setIsFirstLaunch(true);
+        setShowOnboarding(true);
+      } catch (fatalErr) {
+        console.error('[Auth] Deep Recovery fallita:', fatalErr.message);
+        Alert.alert(
+          "Modalità Offline",
+          "Connessione ai server instabile (Err: " + fatalErr.message + "). L'app funzionerà offline.",
+          [{ text: "OK" }]
+        );
+      }
+    } finally {
       setIsAuthReady(true);
-    } catch (err: any) {
-      console.error('[Auth Error] Fallimento critico:', err.message);
-      setAuthError(err.message);
     }
   };
+
 
   useEffect(() => {
     initAuth();
