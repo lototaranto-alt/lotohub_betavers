@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, SafeAreaView, Dimensions, Text, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import * as Location from 'expo-location';
@@ -32,6 +32,28 @@ export default function MapScreen() {
 
   const [pois, setPois] = useState<any[]>([]);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
+
+  const cameraRef = useRef<any>(null);
+
+  const handleRequestLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === 'granted') {
+      setHasLocationPermission(true);
+      try {
+        const loc = await Location.getCurrentPositionAsync({});
+        cameraRef.current?.setCamera({
+          centerCoordinate: [loc.coords.longitude, loc.coords.latitude],
+          zoomLevel: 16,
+          animationDuration: 1000,
+        });
+      } catch (e) {
+        console.warn("Location error:", e);
+      }
+    } else {
+      Alert.alert("Permessi Negati", "Impossibile accedere al GPS. Attiva i permessi dalle impostazioni del telefono.");
+    }
+  };
+
   const [selectedPoi, setSelectedPoi] = useState<any>(null);
   const [heatScores, setHeatScores] = useState<Record<string, number>>({});
   
@@ -168,6 +190,7 @@ export default function MapScreen() {
         onPress={() => { setSelectedPoi(null); setIsLayerDropdownOpen(false); }}
       >
         <Mapbox.Camera
+          ref={cameraRef}
           zoomLevel={14.5}
           centerCoordinate={INITIAL_COORDS}
           animationMode="flyTo"
@@ -329,6 +352,16 @@ export default function MapScreen() {
           activeOpacity={0.8}
         >
           <MaterialIcons name="accessible" size={20} color={isAccessibleMode ? theme.background : theme.text} />
+        </TouchableOpacity>
+
+        
+        {/* FAB 2: Posizione Utente */}
+        <TouchableOpacity 
+          style={styles.fabCircle}
+          onPress={handleRequestLocation}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="my-location" size={20} color={hasLocationPermission ? theme.primary : theme.text} />
         </TouchableOpacity>
 
         {/* FAB 3: Crea Percorso / Itinerario */}
