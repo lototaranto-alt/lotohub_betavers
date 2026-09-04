@@ -126,24 +126,7 @@ export default function RootLayout() {
     setTimeout(() => router.replace('/(tabs)/map'), 100);
   };
 
-  if (authError) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1A1C1E', padding: 20 }}>
-        <Text style={{ color: '#E74C3C', fontSize: 24, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' }}>ACCESSO NEGATO</Text>
-        <Text style={{ color: '#FFF', textAlign: 'center', marginBottom: 20, fontSize: 16, lineHeight: 24 }}>
-          L'architettura Zero-PII richiede l'autenticazione anonima obbligatoria.{'\n\n'}
-          Verifica di aver abilitato "Anonymous Sign-ins" nella sezione Authentication {'>'} Providers di Supabase.
-        </Text>
-        <Text style={{ color: '#9CA3AF', fontSize: 12, marginBottom: 30, textAlign: 'center' }}>Dettagli Errore: {authError}</Text>
-        <TouchableOpacity 
-          onPress={handleRetryAuth}
-          style={{ backgroundColor: '#5F713D', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12 }}
-        >
-          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>RIPROVA CONNESSIONE</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  
 
   if (!isAuthReady || !fontsLoaded) {
     return (
