@@ -124,7 +124,7 @@ export async function startBackgroundTracking(userId: string): Promise<void> {
       {
         accuracy: Location.Accuracy.BestForNavigation, // Massima precisione
         timeInterval: 5000, // Aggiornamento minimo ogni 5 secondi
-        distanceInterval: 5, // Aggiornamento ogni 5 metri reali
+        distanceInterval: 10, // Aggiornamento ogni 10 metri reali
       },
       (newLocation) => {
         if (!lastLocation) {
@@ -140,7 +140,7 @@ export async function startBackgroundTracking(userId: string): Promise<void> {
         );
 
         // Filtro antirumore GPS (escludiamo salti assurdi > 100m in 5 sec, o micro-rumori < 2m)
-        if (deltaMeters > 2 && deltaMeters < 100) {
+        if (deltaMeters >= 10 && deltaMeters < 100) {
           incrementDistance(userId, deltaMeters);
           lastLocation = newLocation.coords;
         }
