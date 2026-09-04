@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   cardContent: {
     padding: 30,
     paddingTop: 40,
-    paddingBottom: insets.bottom + 30, // Rispetto della Navigation Bar a 3 tasti Android
+    paddingBottom: 50,
     flex: 1,
     alignItems: 'center',
   },

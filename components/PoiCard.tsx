@@ -106,7 +106,7 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
                 style={[styles.btnActionHarmonious, { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' }]}
                 onPress={async () => {
                   try {
-                    const url = item.website_url || `https://www.google.com/search?q=${encodeURIComponent(item.name + (currentTenant?.id ? ' ' + currentTenant.name : ' Taranto'))}`;
+                    const url = item.website_url || `https://www.google.com/search?q=${encodeURIComponent(item.name + (currentTenant?.id ? ' ' + currentTenant.brand_name || currentTenant.city_name : ' Taranto'))}`;
                     await WebBrowser.openBrowserAsync(url);
                   } catch (e) {
                     Alert.alert('Errore', 'Impossibile aprire il browser');
