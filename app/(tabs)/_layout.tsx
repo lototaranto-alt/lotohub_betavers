@@ -3,6 +3,7 @@ import React, { useState, createContext, useContext, useEffect } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Dimensions, Alert } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import NfcManager from 'react-native-nfc-manager';
 import { supabase } from '../../utils/supabase';
@@ -26,6 +27,7 @@ const ScannerContext = createContext({
 export const useScanner = () => useContext(ScannerContext);
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   const { theme, isElite } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [userLevel, setUserLevel] = useState(1);

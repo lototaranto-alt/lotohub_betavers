@@ -26,6 +26,7 @@ const { width, height } = Dimensions.get('window');
 const INITIAL_COORDS = [17.234050, 40.472850];
 
 export default function MapScreen() {
+  const insets = useSafeAreaInsets();
   const { currentTenant } = useTenant();
   const { theme } = useTheme();
   const { isAccessibleMode, toggleAccessibleMode } = useMobility();
@@ -343,7 +344,7 @@ export default function MapScreen() {
 
 
       {/* FAB GROUP (Bottom Right) */}
-      <View style={{ position: 'absolute', bottom: 25, right: 20, alignItems: 'flex-end' }}>
+      <View style={{ position: 'absolute', bottom: 85 + insets.bottom, right: 20, alignItems: 'flex-end' }}>
         
         {/* FAB 1: AccessibilitÃ  */}
         <TouchableOpacity 
