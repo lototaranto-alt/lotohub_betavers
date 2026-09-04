@@ -47,7 +47,7 @@ export default function RootLayout() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     PlayfairDisplay_400Regular,
     PlayfairDisplay_700Bold,
     Raleway_400Regular,
@@ -129,7 +129,7 @@ export default function RootLayout() {
 
   
 
-  if (!isAuthReady || !fontsLoaded) {
+  if (!isAuthReady || (!fontsLoaded && !fontError)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FDFBF2' }}>
         <ActivityIndicator size="large" color="#5F713D" style={{ marginBottom: 20 }} />
