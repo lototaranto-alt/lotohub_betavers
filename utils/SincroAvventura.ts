@@ -20,7 +20,6 @@ notifee.registerForegroundService((notification) => {
 
 // Ascolto eventi background separato (Isolate)
 notifee.onBackgroundEvent(async ({ type, detail }) => {
-  return new Promise((resolve) => {
   if (type === EventType.ACTION_PRESS && detail.pressAction?.id === 'stop') {
     stopBackgroundTracking();
   }
