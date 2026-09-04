@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, SafeAreaView, Dimensions, Text, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { startBackgroundTracking, stopBackgroundTracking } from '../../utils/Sin
 
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobility } from '../../context/MobilityContext';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import RouteSummarySheet from '../../components/RouteSummarySheet';
