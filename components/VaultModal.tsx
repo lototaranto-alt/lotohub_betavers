@@ -15,19 +15,34 @@ export default function VaultModal({ visible, onClose, userProfile, theme }: Vau
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && userProfile?.id) {
       fetchMedia();
     }
-  }, [visible]);
+  }, [visible, userProfile?.id]);
 
   const fetchMedia = async () => {
     setLoading(true);
     try {
-      // In a real scenario, this should join with user_unlocked_media or check-ins.
-      // For now, we simulate fetching the historical media from the DB.
+      // 1. Fetch only the POIs the user has actually discovered
+      const { data: userPois } = await supabase
+        .from('user_pois')
+        .select('poi_id')
+        .eq('user_id', userProfile.id);
+
+      const unlockedPoiIds = userPois ? userPois.map(p => p.poi_id) : [];
+
+      if (unlockedPoiIds.length === 0) {
+        // User hasn't unlocked anything yet
+        setMedia([]);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fetch media belonging strictly to the unlocked POIs
       const { data, error } = await supabase
         .from('media_vault')
-        .select('*');
+        .select('*')
+        .in('poi_id', unlockedPoiIds);
       
       if (!error && data) {
         setMedia(data);
@@ -91,13 +106,13 @@ export default function VaultModal({ visible, onClose, userProfile, theme }: Vau
               <ActivityIndicator size="large" color="#D6734E" style={{ marginTop: 40 }} />
             ) : media.length === 0 ? (
               <Text style={{ fontSize: 13, textAlign: 'center', marginTop: 40, fontStyle: 'italic', color: theme.textMuted }}>
-                Il tuo archivio è ancora vuoto. Scansiona i POI per svelare i segreti della città.
+                Il tuo archivio è vuoto. Visita i POI della città per sbloccare i segreti multimediali!
               </Text>
             ) : (
               <>
                 {audioMedia.length > 0 && (
                   <View style={styles.sectionContainer}>
-                    <Text style={[styles.sectionTitle, { color: '#D6734E' }]}>🎧 AUDIOGUIDE</Text>
+                    <Text style={[styles.sectionTitle, { color: '#D6734E' }]}>🎧 AUDIOGUIDE SBLOCCATE</Text>
                     {audioMedia.map(renderMediaRow)}
                   </View>
                 )}
@@ -113,14 +128,6 @@ export default function VaultModal({ visible, onClose, userProfile, theme }: Vau
                   <View style={styles.sectionContainer}>
                     <Text style={[styles.sectionTitle, { color: '#D6734E' }]}>📜 DOCUMENTI E SEGRETI</Text>
                     {docMedia.map(renderMediaRow)}
-                  </View>
-                )}
-                
-                {/* Fallback if media_type is null or weird */}
-                {media.filter(m => !['audio','image','photo','document','text'].includes(m.media_type)).length > 0 && (
-                  <View style={styles.sectionContainer}>
-                    <Text style={[styles.sectionTitle, { color: '#D6734E' }]}>🔍 ALTRI RITROVAMENTI</Text>
-                    {media.filter(m => !['audio','image','photo','document','text'].includes(m.media_type)).map(renderMediaRow)}
                   </View>
                 )}
               </>
