@@ -1,6 +1,7 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity, Image, Modal } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
 
 const { height } = Dimensions.get('window');
 
@@ -12,7 +13,13 @@ interface ScannedPoisSheetProps {
 }
 
 export default function ScannedPoisSheet({ visible, onClose, scannedPois, theme }: ScannedPoisSheetProps) {
-  
+  const router = useRouter();
+
+  // Calculate counters
+  const countNatura = scannedPois.filter(p => p.category === 'park' || p.category === 'fountain').length;
+  const countCultura = scannedPois.filter(p => p.category === 'monument' || p.category === 'museum').length;
+  const countPartner = scannedPois.filter(p => p.category === 'partner' || p.category === 'attraction').length;
+
   const renderPoiItem = ({ item }: { item: any }) => (
     <View style={[styles.poiItem, { backgroundColor: theme.surface, borderColor: theme.border }]}>
       <View style={styles.poiImageContainer}>
@@ -48,6 +55,40 @@ export default function ScannedPoisSheet({ visible, onClose, scannedPois, theme 
               Hai scansionato {scannedPois.length} luoghi di interesse.
             </Text>
 
+            {/* Counters Section from Old ProfileModal */}
+            {scannedPois.length > 0 && (
+              <View style={[styles.statsCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <View style={styles.statsRow}>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#2ECC71' }}>{countNatura}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Natura</Text>
+                  </View>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#3498DB' }}>{countCultura}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Cultura</Text>
+                  </View>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#E67E22' }}>{countPartner}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Partner</Text>
+                  </View>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#9B59B6' }}>{scannedPois.length}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Segreti</Text>
+                  </View>
+                </View>
+                <TouchableOpacity 
+                  style={{ backgroundColor: theme.accent, paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+                  onPress={() => {
+                    onClose();
+                    router.push('/map');
+                  }}
+                >
+                  <MaterialIcons name="explore" size={16} color="#FFF" style={{ marginRight: 6 }} />
+                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Esplora ancora</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {scannedPois.length > 0 ? (
               <FlatList
                 data={scannedPois}
@@ -80,7 +121,7 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    height: height * 0.7,
+    height: height * 0.75,
     paddingTop: 10,
     elevation: 20,
     shadowColor: '#000',
@@ -114,7 +155,23 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    marginBottom: 20,
+    marginBottom: 15,
+  },
+  statsCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 15,
+    marginBottom: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 15,
   },
   listContent: {
     paddingBottom: 40,

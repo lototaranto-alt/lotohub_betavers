@@ -975,22 +975,9 @@ export default function VetrinaScreen() {
           userProfile={userProfile}
           userXp={userXp}
           levelInfo={levelInfo}
-          userItineraries={userItineraries}
-          userTransactions={userTransactions}
           userTokens={Math.max(userProfile?.total_tokens || 0, localTokensFallback)}
           theme={theme}
-          t={t}
           setUserProfile={setUserProfile}
-          onDeleteItinerary={async (id) => {
-            const localItinStr = await AsyncStorage.getItem('loto_diary');
-            if (localItinStr) {
-              const current = JSON.parse(localItinStr);
-              const updated = current.filter((it: any) => it.id !== id);
-              await AsyncStorage.setItem('loto_diary', JSON.stringify(updated));
-              // Trigger reload
-              caricaDati();
-            }
-          }}
         />
 
         {/* MODALE IMPATTO E PUNTI (DAL QUADRANTE 2) */}
@@ -1221,4 +1208,5 @@ const getStyles = (theme: any) => StyleSheet.create({
   mStatValBoutique: { fontSize: 18, fontWeight: 'bold' },
   mStatLab: { fontSize: 9, color: '#64748B', marginTop: 5, textTransform: 'uppercase', fontWeight: 'bold' }
 });
+
 
