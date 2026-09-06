@@ -26,7 +26,7 @@ export default function TraguardiModal({ visible, onClose, userBadges, userProfi
   const percent = Math.min(100, (currentXp / nextXp) * 100);
 
   // I 5 Rank base
-  const baseRanks = LEVEL_THRESHOLDS.filter(l => [1, 5, 9, 13, 17].includes(l.level)); // Adjust if needed
+  const baseRanks = LEVEL_THRESHOLDS.filter(l => [1, 11, 21, 31, 41].includes(l.level)); // Adjust if needed
 
   // Lista fittizia di badge per la griglia
   const ALL_BADGES_CATALOG = [
