@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, Animated, Easing, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, Animated, Easing, Dimensions, ScrollView, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
@@ -9,19 +9,19 @@ const { width, height } = Dimensions.get('window');
 
 // 1. Funzione di Risoluzione Rango
 const getRankInfo = (level: number) => {
-  if (level <= 4) return { 
+  if (level < 11) return { 
     title: 'TURISTA CURIOSO', 
     asset: require('../assets/images/logo-LOTO.png') 
   };
-  if (level <= 8) return { 
+  if (level < 21) return { 
     title: 'CITTADINO ATTIVO', 
     asset: require('../assets/images/logo-LOTO.png') 
   };
-  if (level <= 12) return { 
+  if (level < 31) return { 
     title: 'CUSTODE URBANO', 
     asset: require('../assets/images/logo-LOTO.png') 
   };
-  if (level <= 16) return { 
+  if (level < 41) return { 
     title: 'EROE JONICO', 
     asset: require('../assets/images/logo-LOTO.png') 
   };
@@ -33,8 +33,8 @@ const getRankInfo = (level: number) => {
 
 export type GamificationEvent = 
   | { type: 'LEVEL_UP'; level: number; title?: string; text?: string; rarity?: number; badge?: any }
-  | { type: 'WHISPER'; title?: string; text?: string; rarity?: number; level?: number; badge?: any }
-  | { type: 'BADGE'; badge?: any; type?: string; level?: number; title?: string; text?: string; rarity?: number };
+  | { type: 'WHISPER'; title: string; text: string; rarity?: number; level?: number; badge?: any }
+  | { type: 'BADGE'; badge: any; title?: string; text?: string; rarity?: number; level?: number };
 
 export interface GamificationTransitionManagerRef {
   queueEvents: (events: GamificationEvent[]) => void;
@@ -48,15 +48,14 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
   const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
 
-  // Animazioni
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(height)).current;
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
 
   useImperativeHandle(ref, () => ({
     queueEvents: (events: GamificationEvent[]) => {
-      if (events.length > 0) {
-        setQueue(events);
+      setQueue(prev => [...prev, ...events]);
+      if (!visible) {
         setCurrentIndex(0);
         setVisible(true);
       }
@@ -65,7 +64,6 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
 
   useEffect(() => {
     if (visible && queue.length > 0) {
-      // Trigger animation for the current item
       fadeAnim.setValue(0);
       slideAnim.setValue(height);
       scaleAnim.setValue(0.5);
@@ -80,17 +78,27 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
 
   const handleNext = () => {
     if (currentIndex < queue.length - 1) {
-      // Animate out current, then next
       Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
         setCurrentIndex(prev => prev + 1);
       });
     } else {
-      // Close
       Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => {
         setVisible(false);
         setQueue([]);
         setCurrentIndex(0);
       });
+    }
+  };
+
+  const handleShare = async (message: string) => {
+    try {
+      await Share.share({
+        message,
+        url: 'https://loto.city', // Fallback se supportato
+        title: 'L.O.T.O. Taranto'
+      });
+    } catch (error) {
+      console.log('Errore condivisione', error);
     }
   };
 
@@ -100,6 +108,8 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
 
   const renderLevelUp = (level: number) => {
     const rankInfo = getRankInfo(level);
+    const shareMessage = `Ho appena raggiunto il Livello ${level} e il Rank '${rankInfo.title}' esplorando i segreti di Taranto con L.O.T.O.! 🌿`;
+    
     return (
       <Animated.View style={[
         styles.centerContainer, 
@@ -113,9 +123,15 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
         <Text style={styles.levelText}>LIVELLO {level} RAGGIUNTO</Text>
         <Text style={styles.rankTitle}>{rankInfo.title}</Text>
         
-        <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary, marginTop: 40 }]} onPress={handleNext}>
-          <Text style={styles.btnText}>Avanti</Text>
-        </TouchableOpacity>
+        <View style={styles.btnRow}>
+          <TouchableOpacity style={[styles.btn, styles.shareBtn]} onPress={() => handleShare(shareMessage)}>
+            <MaterialIcons name="share" size={20} color="#FFF" />
+            <Text style={styles.btnText}>Condividi</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary }]} onPress={handleNext}>
+            <Text style={styles.btnText}>Avanti</Text>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     );
   };
@@ -136,7 +152,7 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
           <ScrollView style={styles.whisperScroll} showsVerticalScrollIndicator={false}>
             <Text style={styles.whisperText}>"{text}"</Text>
           </ScrollView>
-          <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary, marginTop: 20 }]} onPress={handleNext}>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary, marginTop: 20, width: '100%' }]} onPress={handleNext}>
             <Text style={styles.btnText}>Avanti</Text>
           </TouchableOpacity>
         </View>
@@ -145,6 +161,9 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
   };
 
   const renderBadge = (badge: any) => {
+    const badgeName = badge.name || badge.title || 'Nuovo Obiettivo';
+    const shareMessage = `Ho appena sbloccato il badge '${badgeName}' esplorando Taranto con L.O.T.O.! 🏅`;
+
     return (
       <Animated.View style={[
         styles.centerContainer, 
@@ -160,12 +179,18 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
              )}
            </View>
            <Text style={styles.badgeLabel}>NUOVO BADGE SBLOCCATO!</Text>
-           <Text style={[styles.badgeTitle, { color: theme.text }]}>{badge.name || badge.title}</Text>
+           <Text style={[styles.badgeTitle, { color: theme.text }]}>{badgeName}</Text>
            <Text style={[styles.badgeDesc, { color: theme.textMuted }]}>{badge.desc || badge.actionDescription}</Text>
            
-           <TouchableOpacity style={[styles.btn, { backgroundColor: badge.color || theme.primary, marginTop: 30 }]} onPress={handleNext}>
-             <Text style={styles.btnText}>Avanti</Text>
-           </TouchableOpacity>
+           <View style={styles.btnRow}>
+             <TouchableOpacity style={[styles.btn, styles.shareBtn]} onPress={() => handleShare(shareMessage)}>
+               <MaterialIcons name="share" size={20} color="#FFF" />
+               <Text style={styles.btnText}>Condividi</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={[styles.btn, { backgroundColor: badge.color || theme.primary }]} onPress={handleNext}>
+               <Text style={styles.btnText}>Avanti</Text>
+             </TouchableOpacity>
+           </View>
         </View>
       </Animated.View>
     );
@@ -173,12 +198,10 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
 
   return (
     <Modal transparent animationType="none" visible={visible}>
-      {/* BACKGROUND FISSO */}
       <View style={styles.container}>
         <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFillObject} />
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(26, 54, 33, 0.7)' }]} />
 
-        {/* Render Event based on Type */}
         {currentEvent.type === 'LEVEL_UP' && renderLevelUp(currentEvent.level)}
         {currentEvent.type === 'WHISPER' && renderWhisper(currentEvent.title, currentEvent.text)}
         {currentEvent.type === 'BADGE' && renderBadge(currentEvent.badge)}
@@ -311,8 +334,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  btnRow: {
+    flexDirection: 'row',
+    gap: 15,
+    marginTop: 30,
+    width: '100%',
+    justifyContent: 'center'
+  },
   btn: {
-    paddingHorizontal: 40,
+    paddingHorizontal: 25,
     paddingVertical: 16,
     borderRadius: 30,
     shadowColor: '#000',
@@ -320,14 +350,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 6,
-    minWidth: 200,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    flex: 1
+  },
+  shareBtn: {
+    backgroundColor: '#2196F3', // Blu standard share
   },
   btnText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
     letterSpacing: 1,
   }
 });
-

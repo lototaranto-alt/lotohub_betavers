@@ -198,7 +198,8 @@ export const getAvatarFrameStyle = (level: number) => {
   };
 };
 
-export const buildLevelUpEvents = (oldLevel: number, newLevel: number, lang: 'it' | 'en' = 'it') => {
+import { GamificationEvent } from '../components/GamificationTransitionManager';
+export const buildLevelUpEvents = (oldLevel: number, newLevel: number, lang: 'it' | 'en' = 'it'): GamificationEvent[] => {
   if (newLevel <= oldLevel) return [];
 
   const events = [];
