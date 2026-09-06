@@ -117,7 +117,7 @@ export default function TraguardiModal({ visible, onClose, userBadges, userProfi
             {/* TAB: RANK */}
             {activeTab === 'rank' && (
               <View>
-                <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>La Gerarchia della Città (Ogni 4-5 Livelli)</Text>
+                <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>La Gerarchia della Citta' (Ogni 10 Livelli)</Text>
                 {baseRanks.map((rank, idx) => {
                   const isReached = currentLevel >= rank.level;
                   return (

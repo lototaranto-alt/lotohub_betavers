@@ -19,3 +19,5 @@ Questo indice serve a orientare qualsiasi futuro Agente (o Sub-Agente) sui docum
 
 ## 5. Script e Backend (Supabase)
 - **C:\Users\Sem\.gemini\antigravity\brain\edf3a8e6-785a-4c0a-adf8-ccecfa355d1b\scratch\rpc_sync_adventure.sql**: Funzione di calcolo conversione Passi/Spinte -> CO2 e XP.
+
+- [ ] **i18n (Multi-lingua):** Implementare i dizionari completi ITA/ENG sfruttando expo-localization per il cambio lingua dinamico.
