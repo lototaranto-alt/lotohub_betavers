@@ -13,7 +13,7 @@ import { getLevelProgress } from '../../utils/levelUtils';
 import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
-import BadgeCollectionModal from '../../components/BadgeCollectionModal';
+import TraguardiModal from '../../components/TraguardiModal';
 import GameAchievementsSheet from '../../components/GameAchievementsSheet';
 import ScannedPoisSheet from '../../components/ScannedPoisSheet';
 import SingleBadgeSheet from '../../components/SingleBadgeSheet';
@@ -675,33 +675,7 @@ export default function VetrinaScreen() {
 
           </View>
 
-          {/* Badges Row (5 Milestone con Anello di Progressione - Cliccabili per Collezione) */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 15, gap: 10 }}>
-            {cardBadges.map((badge, idx) => {
-              if (badge.unlocked) {
-                return (
-                  <TouchableOpacity 
-                    key={idx} 
-                    onPress={() => { setSelectedBadgeData(badge); setIsSingleBadgeVisible(true); }}
-                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: badge.color + '25', borderWidth: 2.5, borderColor: badge.color, justifyContent: 'center', alignItems: 'center' }}
-                  >
-                    <MaterialIcons name={badge.icon as any} size={20} color={badge.color} />
-                  </TouchableOpacity>
-                );
-              } else {
-                return (
-                  <TouchableOpacity 
-                    key={idx} 
-                    onPress={() => { setSelectedBadgeData(badge); setIsSingleBadgeVisible(true); }}
-                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.25)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}
-                  >
-                    <MaterialIcons name="lock" size={16} color="rgba(255,255,255,0.35)" />
-                  </TouchableOpacity>
-                );
-              }
-            })}
           </View>
-        </View>
 
         {/* --- 4 QUADRANT GRID --- */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 15 }}>
@@ -1041,16 +1015,12 @@ export default function VetrinaScreen() {
 
       <TipsBoutiqueSheet visible={isTipsVisible} onClose={() => setIsTipsVisible(false)} />
 
-      <BadgeCollectionModal
+      <TraguardiModal
         visible={isBadgeModalVisible}
         onClose={() => setIsBadgeModalVisible(false)}
         userBadges={userBadges}
         userProfile={userProfile}
         theme={theme}
-        onAction={(action) => {
-          setIsBadgeModalVisible(false);
-          // Handle badge actions here (e.g. navigation)
-        }}
       />
 
       <GameAchievementsSheet
