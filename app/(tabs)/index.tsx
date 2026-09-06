@@ -712,7 +712,7 @@ export default function VetrinaScreen() {
                     <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={12} color="#FFF" style={{marginRight: 4}} />
                   </Animated.View>
                   <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
-                    `${distanceToday > 1000 ? (distanceToday/1000).toFixed(1) + ' Km' : distanceToday + ' m'}`
+                    {distanceToday > 1000 ? (distanceToday/1000).toFixed(1) + ' Km' : distanceToday + ' m'}
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
