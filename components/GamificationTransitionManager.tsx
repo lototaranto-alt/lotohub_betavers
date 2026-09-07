@@ -1,5 +1,7 @@
 ﻿import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, Animated, Easing, Dimensions, ScrollView, Share } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
@@ -90,13 +92,28 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
     }
   };
 
+  
+  const viewRef = useRef<View>(null);
+
   const handleShare = async (message: string) => {
     try {
-      await Share.share({
-        message,
-        url: 'https://loto.city', // Fallback se supportato
-        title: 'L.O.T.O. Taranto'
-      });
+      if (viewRef.current) {
+        // Capture ONLY the clean card/asset, without status bars or buttons
+        const uri = await captureRef(viewRef, {
+          format: 'png',
+          quality: 1,
+        });
+        
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(uri, { dialogTitle: 'Condividi il tuo Traguardo', UTI: 'public.png' });
+        } else {
+          // Fallback se sharing immagine non va
+          await Share.share({ message, url: 'https://loto.city' });
+        }
+      } else {
+        await Share.share({ message, url: 'https://loto.city' });
+      }
     } catch (error) {
       console.log('Errore condivisione', error);
     }
@@ -115,13 +132,14 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
         styles.centerContainer, 
         { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }
       ]}>
-        <Image 
-          source={rankInfo.asset} 
+        <View ref={viewRef} style={styles.captureContainer}>
+        <Image source={rankInfo.asset} 
           style={styles.rankImage} 
           defaultSource={require('../assets/images/logo-LOTO.png')}
         />
         <Text style={styles.levelText}>LIVELLO {level} RAGGIUNTO</Text>
         <Text style={styles.rankTitle}>{rankInfo.title}</Text>
+        </View>
         
         <View style={styles.btnRow}>
           <TouchableOpacity style={[styles.btn, styles.shareBtn]} onPress={() => handleShare(shareMessage)}>
@@ -170,6 +188,7 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
         { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }
       ]}>
         <View style={styles.badgeGlass}>
+           <View ref={viewRef} style={styles.captureContainerBadge}>
            <BlurView intensity={60} tint="light" style={StyleSheet.absoluteFillObject} />
            <View style={[styles.iconContainer, { backgroundColor: (badge.color || '#D4AF37') + '25', borderColor: badge.color || '#D4AF37' }]}>
              {badge.image ? (
@@ -181,6 +200,7 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
            <Text style={styles.badgeLabel}>NUOVO BADGE SBLOCCATO!</Text>
            <Text style={[styles.badgeTitle, { color: theme.text }]}>{badgeName}</Text>
            <Text style={[styles.badgeDesc, { color: theme.textMuted }]}>{badge.desc || badge.actionDescription}</Text>
+           </View>
            
            <View style={styles.btnRow}>
              <TouchableOpacity style={[styles.btn, styles.shareBtn]} onPress={() => handleShare(shareMessage)}>
@@ -297,6 +317,8 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 4,
   },
+  captureContainer: { alignItems: 'center', backgroundColor: 'transparent', padding: 20 },
+  captureContainerBadge: { alignItems: 'center', backgroundColor: 'transparent', width: '100%' },
   badgeGlass: {
     width: '100%',
     borderRadius: 30,

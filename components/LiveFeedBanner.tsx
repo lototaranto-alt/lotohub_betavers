@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet, Dimensions } from 'react-native';
-import { supabase } from '../utils/supabase';
+import { View, Text, Animated, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import CommunityFeedSheet from './CommunityFeedSheet';
 
 const { width } = Dimensions.get('window');
 
@@ -9,68 +9,86 @@ interface LiveFeedBannerProps {
   pois: any[];
 }
 
+const MOCK_MESSAGES = [
+  "Marco ha appena raggiunto la Fioritura del Loto! 🌸",
+  "Esploratore Anonimo ha scoperto il Museo MarTa",
+  "Anna ha donato 50 PTI per pulire le spiagge",
+  "Squadra LOTO ha sbloccato il Bonus Sincronia 🤝",
+  "Un antico Whisper è stato rivelato in Via Cava 🤫"
+];
+
 export default function LiveFeedBanner({ pois }: LiveFeedBannerProps) {
-  const [message, setMessage] = useState('');
-  const slideAnim = useRef(new Animated.Value(-width)).current; // Inizia fuori schermo a sinistra
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(15)).current;
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   useEffect(() => {
-    // Iscrizione al canale realtime di user_pois per i check-in live
-    const subscription = supabase
-      .channel('public:user_pois_feed')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'user_pois' },
-        (payload) => {
-          const poiId = payload.new.poi_id;
-          // Cerca il nome del POI nella lista caricata in locale
-          const poi = pois.find(p => p.id === poiId);
-          const poiName = poi ? poi.name : 'un nuovo traguardo';
-          
-          setMessage(`🎉 Un esploratore ha appena raggiunto ${poiName}!`);
-          
-          // Animazione di ingresso (Slide in)
-          Animated.sequence([
-            Animated.timing(slideAnim, {
-              toValue: 20, // Margine sinistro
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.delay(4000), // Resta visibile per 4 secondi
-            Animated.timing(slideAnim, {
-              toValue: width, // Esce a destra
-              duration: 500,
-              useNativeDriver: true,
-            })
-          ]).start(() => {
-            // Reset per la prossima animazione
-            slideAnim.setValue(-width);
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
+    // Animazione di ciclo: Fade In -> Attesa -> Fade Out
+    const cycleAnimation = () => {
+      slideAnim.setValue(15);
+      
+      Animated.sequence([
+        // Fade in + slide up
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: true,
+          })
+        ]),
+        // Attendi 4 secondi affinché l'utente possa leggere con calma
+        Animated.delay(4000),
+        // Fade out + slide up
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: -15,
+            duration: 800,
+            useNativeDriver: true,
+          })
+        ])
+      ]).start(() => {
+        // Passa al prossimo messaggio
+        setCurrentIndex((prev) => (prev + 1) % MOCK_MESSAGES.length);
+      });
     };
-  }, [pois]);
 
-  if (!message) return null;
+    cycleAnimation();
+    const interval = setInterval(cycleAnimation, 5600); // 800+4000+800
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <Animated.View style={[styles.bannerContainer, { transform: [{ translateX: slideAnim }] }]}>
-      <View style={styles.bannerContent}>
-        <MaterialIcons name="notifications-active" size={16} color="#D4AF37" />
-        <Text style={styles.bannerText} numberOfLines={1}>{message}</Text>
-      </View>
-    </Animated.View>
+    <>
+      <Animated.View style={[styles.bannerContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <TouchableOpacity style={styles.bannerContent} activeOpacity={0.8} onPress={() => setSheetVisible(true)}>
+          <MaterialIcons name="eco" size={16} color="#D4AF37" />
+          <Text style={styles.bannerText} numberOfLines={1}>{MOCK_MESSAGES[currentIndex]}</Text>
+          <MaterialIcons name="chevron-right" size={18} color="#D4AF37" />
+        </TouchableOpacity>
+      </Animated.View>
+
+      <CommunityFeedSheet isVisible={sheetVisible} onClose={() => setSheetVisible(false)} />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   bannerContainer: {
     position: 'absolute',
-    top: 60, // Sotto la status bar
-    left: 0,
+    top: 50, // Sotto la safe area / header
+    alignSelf: 'center',
     zIndex: 999,
     width: width - 40,
     elevation: 10,
@@ -80,12 +98,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 }
   },
   bannerContent: {
-    backgroundColor: '#1A3621', // Verde scuro LOTO
+    backgroundColor: 'rgba(26, 54, 33, 0.95)', // Verde scuro LOTO trasparente elegante
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#D4AF37', // Oro
+    borderColor: 'rgba(212, 175, 55, 0.5)', // Oro semitrasparente
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10
@@ -97,4 +115,3 @@ const styles = StyleSheet.create({
     flex: 1
   }
 });
-
