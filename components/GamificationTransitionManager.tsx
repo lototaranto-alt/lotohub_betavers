@@ -317,8 +317,27 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 4,
   },
-  captureContainer: { alignItems: 'center', backgroundColor: 'transparent', padding: 20 },
-  captureContainerBadge: { alignItems: 'center', backgroundColor: 'transparent', width: '100%' },
+  captureContainer: { 
+    alignItems: 'center', 
+    backgroundColor: '#F8FAF5', // Eco-Boutique background
+    padding: 30, 
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#D4AF37', // Gold border
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5
+  },
+  captureContainerBadge: { 
+    alignItems: 'center', 
+    backgroundColor: '#F8FAF5', 
+    width: '100%',
+    padding: 30,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#D4AF37'
+  },
   badgeGlass: {
     width: '100%',
     borderRadius: 30,
