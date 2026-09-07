@@ -86,8 +86,8 @@ export default function LiveFeedBanner({ pois }: LiveFeedBannerProps) {
 
 const styles = StyleSheet.create({
   bannerContainer: {
-    position: 'absolute',
-    top: 50, // Sotto la safe area / header
+    marginBottom: 15,
+    marginTop: 5,
     alignSelf: 'center',
     zIndex: 999,
     width: width - 40,

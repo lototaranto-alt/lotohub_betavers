@@ -2,6 +2,8 @@
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, Animated, Easing, Dimensions, ScrollView, Share } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import * as Clipboard from 'expo-clipboard';
+import { Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
@@ -93,12 +95,16 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
   };
 
   
+  
   const viewRef = useRef<View>(null);
 
   const handleShare = async (message: string) => {
     try {
+      // 1. Copia subito il testo narrativo negli appunti in modo che l'utente possa incollarlo
+      await Clipboard.setStringAsync(message);
+      
       if (viewRef.current) {
-        // Capture ONLY the clean card/asset, without status bars or buttons
+        // 2. Cattura l'asset
         const uri = await captureRef(viewRef, {
           format: 'png',
           quality: 1,
@@ -106,20 +112,24 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
         
         const isAvailable = await Sharing.isAvailableAsync();
         if (isAvailable) {
-          await Sharing.shareAsync(uri, { dialogTitle: 'Condividi il tuo Traguardo', UTI: 'public.png' });
+          Alert.alert(
+            "Testo copiato!", 
+            "Il messaggio narrativo è stato copiato negli appunti. Incollalo quando scegli dove condividere l'immagine!",
+            [{ text: "Condividi Immagine", onPress: async () => {
+                await Sharing.shareAsync(uri, { dialogTitle: 'Condividi il tuo Traguardo', UTI: 'public.png' });
+            } }]
+          );
         } else {
-          // Fallback se sharing immagine non va
-          await Share.share({ message, url: 'https://loto.city' });
+          await Share.share({ message, url: uri }); // Fallback
         }
       } else {
-        await Share.share({ message, url: 'https://loto.city' });
+        await Share.share({ message });
       }
     } catch (error) {
       console.log('Errore condivisione', error);
     }
   };
-
-  if (!visible || queue.length === 0) return null;
+if (!visible || queue.length === 0) return null;
 
   const currentEvent = queue[currentIndex];
 

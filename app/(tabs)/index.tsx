@@ -27,6 +27,7 @@ import ImpactStatsModal from '../../components/ImpactStatsModal';
 import VaultModal from '../../components/VaultModal';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
+import { useGamification } from '../../context/GamificationContext';
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -554,6 +555,17 @@ export default function VetrinaScreen() {
 
   const { openScanner } = useScanner();
 
+  const { queueEvents } = useGamification();
+  
+  const handleCheatGamification = () => {
+    queueEvents([
+      { type: 'BADGE', badge: { title: 'Guardiano del Tempo', desc: 'Hai sfidato le ere e sbloccato un potere nascosto.' } as any },
+      { type: 'LEVEL_UP', level: 25 },
+      { type: 'WHISPER', title: 'IL SUSSURRO DELLA CITTA', text: 'Le antiche pietre si ricordano di te. Sei un Custode ora.' }
+    ]);
+  };
+
+
   const renderHeader = () => {
     const nextLevelXp = levelInfo.title === t.levelBronze ? 100 : (levelInfo.title === t.levelSilver ? 500 : 1000);
     const progressPerc = Math.min(100, Math.max(0, (userXp / nextLevelXp) * 100));
@@ -763,19 +775,7 @@ export default function VetrinaScreen() {
         </View>
 
         {/* --- LIVE COMMUNITY FEED --- */}
-        {recentUsers.length > 0 && (
-          <View style={{ backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 12, paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', elevation: 4, marginBottom: 15, borderWidth: 1, borderColor: '#D4AF37' }}>
-            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(71,101,55,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
-              <MaterialIcons name="rss-feed" size={16} color="#476537" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.text, fontSize: 10, fontWeight: 'bold', marginBottom: 1, letterSpacing: 0.5 }}>NUOVI ESPLORATORI</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 10, lineHeight: 12 }} numberOfLines={1}>
-                {recentUsers.map((u, i) => <Text key={i} style={{ fontStyle: 'italic' }}>{u.nickname || 'Anonimo'}{i < recentUsers.length - 1 ? ', ' : ''}</Text>)} si sono appena uniti!
-              </Text>
-            </View>
-          </View>
-        )}
+        <LiveFeedBanner pois={pois} />
 
 
       </View>
@@ -923,7 +923,14 @@ export default function VetrinaScreen() {
   return (
     <ContentWrapper {...wrapperProps}>
       <SafeAreaView style={styles.container}>
-        <LiveFeedBanner pois={pois} />
+
+          {/* CHEAT BUTTON */}
+          <TouchableOpacity 
+            onPress={handleCheatGamification} 
+            style={{ margin: 20, padding: 15, backgroundColor: '#FF0055', borderRadius: 10, alignItems: 'center' }}>
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>CHEAT: TESTA TRANSIZIONI GAMIFICATION</Text>
+          </TouchableOpacity>
+
         <StatusBar barStyle="dark-content" />
         <FlatList
           data={getDynamicPois()} // Scaffali Netflix
