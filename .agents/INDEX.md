@@ -21,3 +21,8 @@ Questo indice serve a orientare qualsiasi futuro Agente (o Sub-Agente) sui docum
 - **C:\Users\Sem\.gemini\antigravity\brain\edf3a8e6-785a-4c0a-adf8-ccecfa355d1b\scratch\rpc_sync_adventure.sql**: Funzione di calcolo conversione Passi/Spinte -> CO2 e XP.
 
 - [ ] **i18n (Multi-lingua):** Implementare i dizionari completi ITA/ENG sfruttando expo-localization per il cambio lingua dinamico.
+
+### Future Implementations (Co-Experience Engine)
+- [ ] **Avatar Evolutivo:** Cornice dell'avatar dinamica basata sui 5 Tier di livello (Seme -> Loto).
+- [ ] **LOTO Pass Co-Experience (Squadre):** Scansione reciproca dei QR Code tra utenti per creare "Squadre temporanee" e ottenere un Bonus Sincronia (+10% XP) muovendosi insieme.
+- [ ] **Diario dell'Impatto:** Sostituire la bacheca badge nel profilo con una timeline visiva delle azioni reali ecosostenibili (CO2 risparmiata, PTI donati).

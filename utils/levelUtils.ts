@@ -220,5 +220,5 @@ export const buildLevelUpEvents = (oldLevel: number, newLevel: number, lang: 'it
     }
   }
 
-  return events;
+  return events as GamificationEvent[];
 };
