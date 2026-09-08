@@ -775,8 +775,8 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                   >
                     <MaterialIcons name="mail-outline" size={24} color="#D4AF37" />
                     <View style={{ marginLeft: 15, flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1A3621' }}>La Posta del Cuore</Text>
-                      <Text style={{ fontSize: 12, color: '#6A5638', marginTop: 2 }}>Lascia un feedback anonimo al custode (Visibile solo al B&B)</Text>
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1A3621' }}>Lascia un Insight</Text>
+                      <Text style={{ fontSize: 12, color: '#6A5638', marginTop: 2 }}>Feedback riservato e statistiche (Visibile solo al Partner)</Text>
                     </View>
                     <MaterialIcons name="chevron-right" size={24} color="#D4AF37" />
                   </TouchableOpacity>

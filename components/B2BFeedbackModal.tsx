@@ -25,7 +25,7 @@ export default function B2BFeedbackModal({ visible, onClose, poiId, theme }: B2B
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Devi essere autenticato');
 
-      const { error } = await supabase.from('b2b_whispers').insert({
+      const { error } = await supabase.from('partner_insights').insert({
         poi_id: poiId,
         user_id: user.id,
         message: message.trim()
@@ -49,14 +49,14 @@ export default function B2BFeedbackModal({ visible, onClose, poiId, theme }: B2B
         <View style={[styles.container, { backgroundColor: theme.background }]}>
           <View style={styles.header}>
             <MaterialIcons name="mail-outline" size={24} color={theme.text} />
-            <Text style={[styles.title, { color: theme.text, marginLeft: 8 }]}>La Posta del Cuore</Text>
+            <Text style={[styles.title, { color: theme.text, marginLeft: 8 }]}>Insight Riservato</Text>
             <TouchableOpacity onPress={onClose} style={{ marginLeft: 'auto' }}>
               <MaterialIcons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
           </View>
           
           <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-            Lascia un feedback anonimo e costruttivo al proprietario o custode di questo luogo. Solo loro potranno leggerlo.
+            Aiuta il partner a migliorare lasciando un Insight statistico (Visibile solo al proprietario). o custode di questo luogo. Solo loro potranno leggerlo.
           </Text>
 
           <TextInput
@@ -75,7 +75,7 @@ export default function B2BFeedbackModal({ visible, onClose, poiId, theme }: B2B
             onPress={submitFeedback}
             disabled={loading}
           >
-            {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnText}>Invia Messaggio in Bottiglia</Text>}
+            {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnText}>Invia Insight al Partner</Text>}
           </TouchableOpacity>
         </View>
       </View>
