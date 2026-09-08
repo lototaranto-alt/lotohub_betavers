@@ -79,14 +79,14 @@ export interface RankInfo {
 }
 
 export const getRankInfo = (lvl: number): RankInfo => {
-  if (lvl <= 4) {
-    return { rankName: 'TURISTA CURIOSO', nextRank: 'CITTADINO ATTIVO', color: '#8D6E63', requiredLvl: 5 };
-  } else if (lvl <= 8) {
-    return { rankName: 'CITTADINO ATTIVO', nextRank: 'CUSTODE URBANO', color: '#2A9D8F', requiredLvl: 9 };
-  } else if (lvl <= 12) {
-    return { rankName: 'CUSTODE URBANO', nextRank: 'EROE JONICO', color: '#D4AF37', requiredLvl: 13 };
-  } else if (lvl <= 16) {
-    return { rankName: 'EROE JONICO', nextRank: 'LEGGENDA L.O.T.O.', color: '#00CED1', requiredLvl: 17 };
+  if (lvl < 11) {
+    return { rankName: 'TURISTA CURIOSO', nextRank: 'CITTADINO ATTIVO', color: '#8D6E63', requiredLvl: 11 };
+  } else if (lvl < 21) {
+    return { rankName: 'CITTADINO ATTIVO', nextRank: 'CUSTODE URBANO', color: '#2A9D8F', requiredLvl: 21 };
+  } else if (lvl < 31) {
+    return { rankName: 'CUSTODE URBANO', nextRank: 'EROE JONICO', color: '#D4AF37', requiredLvl: 31 };
+  } else if (lvl < 41) {
+    return { rankName: 'EROE JONICO', nextRank: 'LEGGENDA L.O.T.O.', color: '#00CED1', requiredLvl: 41 };
   } else {
     return { rankName: 'LEGGENDA L.O.T.O.', nextRank: 'MAX', color: '#FF69B4', requiredLvl: 99 };
   }
@@ -151,49 +151,58 @@ export const getLevelInfo = (level: number, theme?: any) => {
 };
 
 export const getAvatarFrameStyle = (level: number) => {
-  if (level >= 10) {
+  // Tier 5: L'Aura Dorata (Liv 41+)
+  if (level >= 41) {
     return {
       borderWidth: 4,
-      borderColor: '#00F0FF',
-      shadowColor: '#00F0FF',
+      borderColor: '#FFD700', // Oro brillante
+      shadowColor: '#FFD700',
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.8,
-      shadowRadius: 12,
+      shadowOpacity: 0.9,
+      shadowRadius: 15,
+      elevation: 12,
+    };
+  }
+  // Tier 4: La Fioritura del Loto (Liv 31-40)
+  if (level >= 31) {
+    return {
+      borderWidth: 3.5,
+      borderColor: '#00CED1', // Turchese / Eroe
+      shadowColor: '#00CED1',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.7,
+      shadowRadius: 10,
       elevation: 10,
     };
   }
-  if (level >= 5) {
+  // Tier 3: La Linfa Vitale (Liv 21-30)
+  if (level >= 21) {
     return {
-      borderWidth: 3.5,
-      borderColor: '#FFD700',
-      shadowColor: '#FFD700',
+      borderWidth: 3,
+      borderColor: '#D4AF37', // Oro antico / Linfa
+      shadowColor: '#D4AF37',
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.6,
+      shadowOpacity: 0.5,
       shadowRadius: 8,
       elevation: 8,
     };
   }
-  if (level >= 3) {
-    return {
-      borderWidth: 3,
-      borderColor: '#C0C0C0',
-      shadowColor: '#FFF',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.4,
-      shadowRadius: 6,
-      elevation: 6,
-    };
-  }
-  if (level >= 2) {
+  // Tier 2: Le Radici Antiche (Liv 11-20)
+  if (level >= 11) {
     return {
       borderWidth: 2.5,
-      borderColor: '#BCA37F',
-      elevation: 4,
+      borderColor: '#2A9D8F', // Verde Radice
+      shadowColor: '#2A9D8F',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
+      elevation: 5,
     };
   }
+  // Tier 1: Il Risveglio del Seme (Liv 1-10)
   return {
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: '#8D6E63', // Marrone Terra / Seme
     elevation: 3,
   };
 };
