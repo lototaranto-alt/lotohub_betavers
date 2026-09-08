@@ -20,6 +20,7 @@ import SingleBadgeSheet from '../../components/SingleBadgeSheet';
 import TouristBaptismModal from '../../components/TouristBaptismModal';
 import XpToast from '../../components/XpToast';
 import LiveFeedBanner from '../../components/LiveFeedBanner';
+import MemoriesCameraModal from '../../components/MemoriesCameraModal';
 import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
 import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
@@ -242,6 +243,7 @@ export default function VetrinaScreen() {
   const [openAccordion, setOpenAccordion] = useState<string | null>('recommended');
 
   const [isBaptismVisible, setIsBaptismVisible] = useState(false);
+  const [isCameraVisible, setIsCameraVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastData, setToastData] = useState({ xpAmount: 0, message: '' });
   const [localXpFallback, setLocalXpFallback] = useState(0);
@@ -932,6 +934,19 @@ export default function VetrinaScreen() {
           </TouchableOpacity>
 
         <StatusBar barStyle="dark-content" />
+          
+          <TouchableOpacity 
+            onPress={() => setIsCameraVisible(true)}
+            style={{ position: 'absolute', bottom: 20, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', elevation: 10, zIndex: 100 }}>
+            <MaterialIcons name="camera" size={28} color="#FFF" />
+          </TouchableOpacity>
+
+          <MemoriesCameraModal 
+            visible={isCameraVisible} 
+            onClose={() => setIsCameraVisible(false)} 
+            userLevel={levelProgress.currentLevel} 
+            theme={theme} 
+          />
         <FlatList
           data={getDynamicPois()} // Scaffali Netflix
           ListHeaderComponent={renderHeader}
