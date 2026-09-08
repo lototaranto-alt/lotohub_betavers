@@ -38,3 +38,26 @@ Queste due architetture risolvono due delle metriche più difficili per le start
     *   Mappare barriere architettoniche per l'associazione *Diseducation*.
     *   Fare check-in nei luoghi della cultura.
 *   **Il Valore B2G (Business to Government):** La Classifica mostra i "Cittadini del Mese". Il Comune di Taranto avrà interesse istituzionale a premiare pubblicamente questi utenti. L.O.T.O. non è più solo una guida, ma uno strumento di ingegneria sociale positiva per le Amministrazioni Pubbliche.
+
+
+---
+
+## 🛠 3. Nuovi Sviluppi Architetturali e Anti-Fragilità
+
+Nell'ottica di azzerare i disservizi strutturali in zone turistiche e migliorare la qualità del dato ESG, l'architettura si è evoluta con i seguenti moduli:
+
+### 3.1 Offline Queue Manager (Optimistic UI)
+*   **Problema:** I luoghi della cultura (musei, cripte sotterranee, aree remote) presentano enormi colli di bottiglia per la connettività. Il turista rischia di perdere Punti (PTI) se il server non risponde durante il Check-in.
+*   **Soluzione:** È stato ingegnerizzato un livello di *Offline-First*. Qualsiasi interazione (Sblocco Media, Check-in GPS) non restituisce errori all'utente. L'App salva istantaneamente il payload (inclusa la latitudine/longitudine registrata *in quel preciso millisecondo*) nella memoria criptata del dispositivo (AsyncStorage). Appena il dispositivo aggancia una rete stabile, l'Offline Queue Manager in background "svuota" la coda in totale autonomia sincronizzando le transazioni con Supabase. L'utente gode di un'esperienza fluida e *Optimistic* (l'app si fida prima di aver comunicato col server).
+
+### 3.2 Motore SQL Anti-Spoofing & Shadow Validation (ESG Integrity)
+Il controllo di truffe GPS è stato spostato integralmente lato server (PostGIS su Supabase) garantendo assoluta inattaccabilità.
+*   **Velocity Check Avanzato:** La funzione `scan_poi_gps` calcola matematicamente la velocità dell'utente tra l'ultimo POI validato e quello attuale.
+*   **Shadowban Silenzioso:** Se la velocità supera i 130 km/h (Fake GPS / Teletrasporto), il server accetta la richiesta per non destare sospetti nell'hacker (che vedrà successo sulla sua App), ma gli assegnerà **0 XP e 0 CO2**, taggandolo in modalità Shadowban.
+*   **Integrità Dati ESG (Veicolare vs Pedonale):** Se la velocità è tra i 20 km/h e i 130 km/h, il sistema capisce che l'utente ha usato l'auto o i mezzi. Verranno assegnati gli XP di esplorazione, ma la quota di risparmio di CO2 sarà calcolata a 0. Solo gli spostamenti dolci (<20 km/h) sbloccano il calcolo ESG completo.
+
+### 3.3 Geofencing Passivo e "Zero Attrito" (Notifiche Push Locali)
+Per ovviare alla dimenticanza del check-in:
+*   L'App genera "bolle" virtuali di 60 metri attorno a ciascun POI.
+*   Se l'utente passa fisicamente il confine, il sistema operativo invia una Notifica Push (anche a telefono in tasca) usando energia zero, perché sfrutta le celle telefoniche. L'input proattivo distrugge il tasso di abbandono (drop-off).
+*   L'architettura Bluetooth è stata completata con la tabella `poi_ble_fingerprints`, gettando le basi per un Machine Learning che apprenderà e riconoscerà nel tempo i MAC Address dei televisori/hardware dei locali commerciali come ancore di salvezza indoor.
