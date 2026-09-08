@@ -3,12 +3,15 @@ import NetInfo from '@react-native-community/netinfo';
 import { supabase } from './supabase';
 import { LruCacheManager } from './LruCacheManager';
 
-const OFFLINE_QUEUE_KEY = 'loto_offline_unlock_queue';
+const OFFLINE_QUEUE_KEY = 'loto_offline_action_queue';
+
+export type QueueActionType = 'UNLOCK_MEDIA' | 'CHECKIN_GPS';
 
 export interface QueueItem {
-  mediaId: string;
-  lotoCost: number;
-  poiName: string;
+  id: string; // unique ID to prevent duplicates (e.g. `${type}_${poiId}`)
+  type: QueueActionType;
+  payload: any; // e.g. { mediaId, lotoCost } or { poiId, lat, lng }
+  description: string; // for logging and UI (e.g. "Sblocco Media", "Check-in GPS")
   queuedAt: number;
 }
 
@@ -20,17 +23,11 @@ export class OfflineQueueManager {
   private static listeners: StatusListener[] = [];
   private static isSyncing = false;
 
-  /**
-   * Registra un listener per ricevere aggiornamenti sullo stato della coda
-   */
   static addListener(listener: StatusListener): () => void {
     this.listeners.push(listener);
-    // Invia lo stato iniziale
     this.getQueue().then(queue => {
       listener(queue.length > 0 ? 'pending' : 'synced', queue.length);
     });
-
-    // Ritorna la funzione per rimuovere il listener
     return () => {
       this.listeners = this.listeners.filter(l => l !== listener);
     };
@@ -46,9 +43,6 @@ export class OfflineQueueManager {
     });
   }
 
-  /**
-   * Recupera la coda di sblocchi pendenti da AsyncStorage
-   */
   static async getQueue(): Promise<QueueItem[]> {
     try {
       const queueStr = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
@@ -58,40 +52,44 @@ export class OfflineQueueManager {
     }
   }
 
-  /**
-   * Aggiunge una richiesta di sblocco alla coda offline
-   */
+  // --- COMPATIBILITA' ESISTENTE: SBLOCCO MEDIA ---
   static async enqueueUnlock(mediaId: string, lotoCost: number, poiName: string): Promise<void> {
-    try {
-      const queue = await this.getQueue();
-      
-      // Evita duplicati nella coda
-      if (queue.some(item => item.mediaId === mediaId)) {
-        console.log(`[OfflineQueue] Media ${mediaId} già presente nella coda offline.`);
-        return;
-      }
+    const queue = await this.getQueue();
+    const id = `UNLOCK_${mediaId}`;
+    if (queue.some(item => item.id === id)) return;
 
-      const newItem: QueueItem = {
-        mediaId,
-        lotoCost,
-        poiName,
-        queuedAt: Date.now()
-      };
+    queue.push({
+      id,
+      type: 'UNLOCK_MEDIA',
+      payload: { mediaId, lotoCost, poiName },
+      description: `Sblocco "${poiName}" (${lotoCost} PTI)`,
+      queuedAt: Date.now()
+    });
 
-      queue.push(newItem);
-      await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
-      
-      console.log(`[OfflineQueue] Accodato sblocco offline per: ${poiName} (Costo: ${lotoCost} PTI)`);
-      this.notifyListeners('pending', queue.length);
-      
-    } catch (e) {
-      console.error('[OfflineQueue] Errore enqueueUnlock:', e);
-    }
+    await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+    console.log(`[OfflineQueue] Accodato ${id}`);
+    this.notifyListeners('pending', queue.length);
   }
 
-  /**
-   * Avvia il processamento della coda offline (da chiamare quando si è online)
-   */
+  // --- NUOVA FUNZIONE: CHECK-IN GPS ---
+  static async enqueueCheckinGPS(poiId: string, lat: number, lng: number, poiName: string): Promise<void> {
+    const queue = await this.getQueue();
+    const id = `CHECKIN_${poiId}`; // Evita spam dello stesso checkin
+    if (queue.some(item => item.id === id)) return;
+
+    queue.push({
+      id,
+      type: 'CHECKIN_GPS',
+      payload: { poiId, lat, lng },
+      description: `Check-in GPS a "${poiName}"`,
+      queuedAt: Date.now()
+    });
+
+    await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+    console.log(`[OfflineQueue] Accodato ${id}`);
+    this.notifyListeners('pending', queue.length);
+  }
+
   static async processQueue(): Promise<void> {
     if (this.isSyncing) return;
     
@@ -101,104 +99,77 @@ export class OfflineQueueManager {
       return;
     }
 
-    // Verifica connettività effettiva prima di partire
     const netState = await NetInfo.fetch();
     if (!netState.isConnected) {
-      console.log('[OfflineQueue] Tentativo di sync ma la rete risulta ancora disconnessa.');
+      console.log('[OfflineQueue] Impossibile processare: Rete disconnessa.');
       this.notifyListeners('pending', queue.length);
       return;
     }
 
     this.isSyncing = true;
     this.notifyListeners('syncing', queue.length);
-    console.log(`[OfflineQueue] Inizio sincronizzazione coda di ${queue.length} elementi...`);
-
     const remainingItems: QueueItem[] = [];
 
     for (const item of queue) {
       try {
-        console.log(`[OfflineQueue] Sincronizzo sblocco per POI ${item.poiName} (${item.mediaId})`);
+        console.log(`[OfflineQueue] Processo: ${item.description}`);
         
-        // Esegue la RPC transazionale su Supabase
-        const { data, error } = await supabase.rpc('sblocca_media', {
-          p_media_id: item.mediaId
-        });
-
-        if (error) {
-          console.error(`[OfflineQueue] Errore RPC per ${item.poiName}:`, error.message);
-          remainingItems.push(item); // Tiene in coda per riprovare
-          continue;
-        }
-
-        const res = data as any;
-        const success = res[0]?.unlocked;
-        const mediaPath = res[0]?.media_path;
-        const msg = res[0]?.message;
-
-        if (success) {
-          console.log(`[OfflineQueue] Sblocco registrato con successo sul DB. Avvio download in background...`);
+        if (item.type === 'UNLOCK_MEDIA') {
+          const { mediaId } = item.payload;
+          const { data, error } = await supabase.rpc('sblocca_media', { p_media_id: mediaId });
           
-          // Genera il link firmato da Supabase Storage usando il path restituito
-          const { data: signedData, error: storageError } = await supabase
-            .storage
-            .from('loto-vault')
-            .createSignedUrl(mediaPath, 900); // URL valido 15 minuti
-
-          if (storageError || !signedData?.signedUrl) {
-            console.error('[OfflineQueue] Errore creazione signed URL:', storageError?.message);
-            remainingItems.push(item);
-            continue;
+          if (error) throw error;
+          
+          const success = data[0]?.unlocked;
+          const mediaPath = data[0]?.media_path;
+          
+          if (success) {
+            const { data: signedData } = await supabase.storage.from('loto-vault').createSignedUrl(mediaPath, 900);
+            if (signedData?.signedUrl) {
+              const fileName = mediaPath.split('/').pop() || `${mediaId}.mp4`;
+              await LruCacheManager.downloadFile(signedData.signedUrl, fileName);
+            }
+          } else if (data[0]?.message?.includes('insufficiente')) {
+             console.error('[OfflineQueue] Rimozione elemento: saldo insufficiente.');
+             continue; // scarta
           }
-
-          // Scarica fisicamente nella sandbox tramite LruCacheManager
-          const fileName = mediaPath.split('/').pop() || `${item.mediaId}.mp4`;
-          const downloadedPath = await LruCacheManager.downloadFile(signedData.signedUrl, fileName);
-
-          if (downloadedPath) {
-            console.log(`[OfflineQueue] Contenuto scaricato e salvato localmente: ${downloadedPath}`);
-          } else {
-            console.warn('[OfflineQueue] Download completato ma salvataggio fallito. Riprovo al prossimo ciclo.');
-            remainingItems.push(item);
-          }
-        } else {
-          console.warn(`[OfflineQueue] RPC sblocca_media ha risposto negativo: ${msg}`);
-          // Se il saldo punti è insufficiente o non esiste sul server, rimuoviamo per non bloccare la coda
-          if (msg && msg.includes('insufficiente')) {
-            console.error('[OfflineQueue] Rimozione elemento per saldo punti insufficiente sul server.');
-          } else {
-            remainingItems.push(item);
+        } 
+        else if (item.type === 'CHECKIN_GPS') {
+          const { poiId, lat, lng } = item.payload;
+          // Usa la nuova RPC anti-spoofing appena scritta!
+          const { data, error } = await supabase.rpc('scan_poi_gps', { 
+             p_poi_id: poiId, p_lat: lat, p_lng: lng 
+          });
+          
+          if (error) {
+             // Se è un errore di cooldown (12h), lo scartiamo perché è ormai inutile
+             if (error.message.includes('Cooldown')) {
+                console.warn('[OfflineQueue] Scartato check-in per Cooldown attivo.');
+                continue;
+             }
+             throw error;
           }
         }
 
       } catch (err) {
-        console.error(`[OfflineQueue] Eccezione durante la sincronizzazione di ${item.poiName}:`, err);
+        console.error(`[OfflineQueue] Fallimento transitorio per ${item.id}:`, err);
         remainingItems.push(item);
       }
     }
 
-    // Aggiorna AsyncStorage con gli elementi rimasti (se presenti)
     await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remainingItems));
     this.isSyncing = false;
 
     if (remainingItems.length > 0) {
-      console.log(`[OfflineQueue] Riconciliazione parziale completata. Rimangono ${remainingItems.length} elementi.`);
       this.notifyListeners('error', remainingItems.length);
     } else {
-      console.log('[OfflineQueue] Riconciliazione completata con successo! Coda svuotata.');
       this.notifyListeners('synced', 0);
     }
   }
 
-  /**
-   * Inizializza l'ascolto dello stato di connettività per la sincronizzazione automatica
-   */
   static init(): void {
-    console.log('[OfflineQueue] Inizializzazione manager coda offline...');
-    
     NetInfo.addEventListener(state => {
-      console.log('[OfflineQueue] Rete cambiata - Connesso:', state.isConnected, '| Tipo:', state.type);
       if (state.isConnected) {
-        // Se siamo online, prova a processare la coda pendente
         this.processQueue();
       }
     });

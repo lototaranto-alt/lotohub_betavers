@@ -210,7 +210,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
 
         // Coda offline
         const offlineQueue = await OfflineQueueManager.getQueue();
-        const queuedIds = offlineQueue.map(item => item.mediaId);
+        const queuedIds = offlineQueue.filter((i: any) => i.type === 'UNLOCK_MEDIA').map((item: any) => item.payload.mediaId);
 
         for (const media of finalData) {
           const fileName = media.media_path?.split('/').pop() || `${media.id}.mp4`;
