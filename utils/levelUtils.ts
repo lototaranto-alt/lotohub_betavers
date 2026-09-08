@@ -151,59 +151,72 @@ export const getLevelInfo = (level: number, theme?: any) => {
 };
 
 export const getAvatarFrameStyle = (level: number) => {
+  // Calcoliamo quanto siamo vicini al prossimo Rank (da 1 a 10)
+  // Esempio: Livello 14 -> progress = 4. Livello 20 -> progress = 10.
+  const progressInRank = ((level - 1) % 10) + 1;
+  
+  // L'anello attorno all'avatar "scatta" e cresce a ogni singolo livello! (da 2 a 6.5)
+  const dynamicBorderWidth = 1.5 + (progressInRank * 0.5);
+  // Anche l'Aura (shadow) pulsa diventando più intensa a ogni livello
+  const dynamicGlowOpacity = 0.2 + (progressInRank * 0.07);
+
   // Tier 5: L'Aura Dorata (Liv 41+)
   if (level >= 41) {
     return {
-      borderWidth: 4,
-      borderColor: '#FFD700', // Oro brillante
+      borderWidth: dynamicBorderWidth + 1,
+      borderColor: '#FFD700',
       shadowColor: '#FFD700',
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.9,
-      shadowRadius: 15,
-      elevation: 12,
+      shadowOpacity: dynamicGlowOpacity + 0.1,
+      shadowRadius: 5 + progressInRank,
+      elevation: 5 + (progressInRank / 2),
     };
   }
   // Tier 4: La Fioritura del Loto (Liv 31-40)
   if (level >= 31) {
     return {
-      borderWidth: 3.5,
-      borderColor: '#00CED1', // Turchese / Eroe
+      borderWidth: dynamicBorderWidth,
+      borderColor: '#00CED1',
       shadowColor: '#00CED1',
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.7,
-      shadowRadius: 10,
-      elevation: 10,
+      shadowOpacity: dynamicGlowOpacity,
+      shadowRadius: 4 + progressInRank,
+      elevation: 4 + (progressInRank / 2),
     };
   }
   // Tier 3: La Linfa Vitale (Liv 21-30)
   if (level >= 21) {
     return {
-      borderWidth: 3,
-      borderColor: '#D4AF37', // Oro antico / Linfa
+      borderWidth: dynamicBorderWidth,
+      borderColor: '#D4AF37',
       shadowColor: '#D4AF37',
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.5,
-      shadowRadius: 8,
-      elevation: 8,
+      shadowOpacity: dynamicGlowOpacity,
+      shadowRadius: 3 + progressInRank,
+      elevation: 3 + (progressInRank / 2),
     };
   }
   // Tier 2: Le Radici Antiche (Liv 11-20)
   if (level >= 11) {
     return {
-      borderWidth: 2.5,
-      borderColor: '#2A9D8F', // Verde Radice
+      borderWidth: dynamicBorderWidth,
+      borderColor: '#2A9D8F',
       shadowColor: '#2A9D8F',
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
-      elevation: 5,
+      shadowOpacity: dynamicGlowOpacity,
+      shadowRadius: 2 + progressInRank,
+      elevation: 2 + (progressInRank / 2),
     };
   }
   // Tier 1: Il Risveglio del Seme (Liv 1-10)
   return {
-    borderWidth: 2,
-    borderColor: '#8D6E63', // Marrone Terra / Seme
-    elevation: 3,
+    borderWidth: dynamicBorderWidth,
+    borderColor: '#8D6E63',
+    shadowColor: '#8D6E63',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: dynamicGlowOpacity,
+    shadowRadius: 1 + progressInRank,
+    elevation: 1 + (progressInRank / 2),
   };
 };
 
