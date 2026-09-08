@@ -63,8 +63,8 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
             <TouchableOpacity style={[styles.tab, activeTab === 'identity' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => setActiveTab('identity')}>
               <Text style={[styles.tabText, { color: activeTab === 'identity' ? theme.accent : theme.textMuted }]}>IDENTITÀ</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.tab, activeTab === 'squad' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => setActiveTab('squad')}>
-              <Text style={[styles.tabText, { color: activeTab === 'squad' ? theme.accent : theme.textMuted }]}>CO-EXPERIENCE</Text>
+            <TouchableOpacity style={[styles.tab, activeTab === 'squad' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => { if (computedLevel >= 20) setActiveTab('squad'); else alert('Sblocca la Sincro-Avventura al Livello 20!'); }}>
+              <Text style={[styles.tabText, { color: activeTab === 'squad' ? theme.accent : theme.textMuted }]}>{computedLevel >= 20 ? 'CO-EXPERIENCE' : '??? (LV.20)'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -130,7 +130,19 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                     backgroundColor="#F8FAF5"
                   />
                 </View>
-                <Text style={[styles.squadTitle, { color: theme.text }]}>Sincronia di Squadra</Text>
+                
+                {computedLevel < 20 ? (
+                  <View style={{ alignItems: 'center', padding: 20, marginTop: 40 }}>
+                    <MaterialIcons name="lock" size={60} color={theme.textMuted} />
+                    <Text style={[styles.squadTitle, { color: theme.text, marginTop: 20 }]}>Sincronia Bloccata</Text>
+                    <Text style={[styles.squadDesc, { color: theme.textMuted }]}>
+                      La Co-Experience  un privilegio riservato ai Cittadini di L.O.T.O. Raggiungi il Livello 20 per sbloccare la sincronizzazione di gruppo e moltiplicare i tuoi Punti.
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={[styles.squadTitle, { color: theme.text }]}>Sincronia di Squadra</Text>
+
                 <Text style={[styles.squadDesc, { color: theme.textMuted }]}>
                   Fai scansionare questo LOTO Pass temporaneo a un altro utente. Esplorando assieme e facendo check-in sugli stessi punti di interesse, guadagnerete entrambi il Bonus Sincronia (+10% XP).
                 </Text>
@@ -142,8 +154,10 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
 
                 <View style={styles.privacyNote}>
                   <MaterialIcons name="shield" size={12} color={theme.textMuted} />
-                  <Text style={[styles.privacyText, { color: theme.textMuted }]}>Zero PII: la sincronia è 100% anonima e dura 24 ore.</Text>
+                  <Text style={[styles.privacyText, { color: theme.textMuted }]}>Zero PII: la sincronia è 100% anonima e dura 2 ore.</Text>
                 </View>
+                  </>
+                )}
               </View>
             )}
 

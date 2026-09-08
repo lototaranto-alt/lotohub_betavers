@@ -82,7 +82,7 @@ export default function RootLayout() {
       setIsFirstLaunch(!hasForcedOnboarding);
       setShowOnboarding(true);
 
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[Auth] Primo tentativo fallito. Avvio Deep Recovery...', err.message);
       try {
         await AsyncStorage.clear();
@@ -91,7 +91,7 @@ export default function RootLayout() {
         if (recoveryError) throw recoveryError;
         setIsFirstLaunch(true);
         setShowOnboarding(true);
-      } catch (fatalErr) {
+      } catch (fatalErr: any) {
         console.error('[Auth] Deep Recovery fallita:', fatalErr.message);
         Alert.alert(
           "Modalità Offline",

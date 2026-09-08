@@ -833,7 +833,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                   style={[styles.mainBtn, { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0', marginTop: 15 }]} 
                   onPress={async () => {
                     try {
-                      const url = poi.website_url || `https://www.google.com/search?q=${encodeURIComponent(poi.name + (currentTenant?.id ? ' ' + currentTenant.name : ' Taranto'))}`;
+                      const url = poi.website_url || `https://www.google.com/search?q=${encodeURIComponent(poi.name + (currentTenant?.id ? ' ' + currentTenant.displayName : ' Taranto'))}`;
                       await WebBrowser.openBrowserAsync(url);
                     } catch (e) {
                       Alert.alert('Errore', 'Impossibile aprire il browser');

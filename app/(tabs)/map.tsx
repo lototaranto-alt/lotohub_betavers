@@ -194,7 +194,7 @@ export default function MapScreen() {
         <Mapbox.Camera
           ref={cameraRef}
           zoomLevel={14.5}
-          centerCoordinate={hasLocationPermission ? undefined : (currentTenant ? [currentTenant.longitude || 17.24, currentTenant.latitude || 40.47] : INITIAL_COORDS)}
+          centerCoordinate={hasLocationPermission ? undefined : (currentTenant ? [currentTenant.centerLng || 17.24, currentTenant.centerLat || 40.47] : INITIAL_COORDS)}
           animationMode="flyTo"
           animationDuration={2000}
         />

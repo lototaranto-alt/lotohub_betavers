@@ -2,7 +2,7 @@
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, Animated, Easing, Dimensions, ScrollView, Share } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import * as Clipboard from 'expo-clipboard';
+// import * as Clipboard from 'expo-clipboard'; // BYPASS
 import { Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -101,7 +101,7 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
   const handleShare = async (message: string) => {
     try {
       // 1. Copia subito il testo narrativo negli appunti in modo che l'utente possa incollarlo
-      await Clipboard.setStringAsync(message);
+      // await Clipboard.setStringAsync(message);
       
       if (viewRef.current) {
         // 2. Cattura l'asset
