@@ -4,6 +4,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
 import { getAvatarFrameStyle } from '../utils/levelUtils';
 import QRCode from 'react-native-qrcode-svg';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Alert } from 'react-native';
 
 interface ProfileModalProps {
   visible: boolean;
@@ -20,6 +22,8 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
   const [editingNickname, setEditingNickname] = useState(false);
   const [tempNickname, setTempNickname] = useState(userProfile?.nickname || 'ESPLORATORE');
   const [activeTab, setActiveTab] = useState<'identity' | 'squad'>('identity');
+  const [isScanning, setIsScanning] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
 
   React.useEffect(() => {
     if (visible && userProfile?.id) {
@@ -39,7 +43,25 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
     setEditingNickname(false);
   };
 
+  
+  const handleBarCodeScanned = async ({ data }: { data: string }) => {
+    setIsScanning(false);
+    if (data.startsWith('loto-squad:')) {
+      const leaderId = data.replace('loto-squad:', '');
+      try {
+        const { error } = await supabase.rpc('join_squad', { p_leader_id: leaderId });
+        if (error) throw error;
+        Alert.alert("Sincronia Riuscita", "Sei entrato in modalità Co-Experience!");
+      } catch (e: any) {
+        Alert.alert("Errore Sincronia", e.message || "Impossibile unire la squadra.");
+      }
+    } else {
+      Alert.alert("Errore", "QR Code non valido per L.O.T.O. Squad.");
+    }
+  };
+
   const computedLevel = levelInfo?.level || 1;
+
   const currentRank = Math.min(5, Math.floor(computedLevel / 10) + 1);
   const avatarStyle = getAvatarFrameStyle(computedLevel);
 
@@ -147,10 +169,32 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                   Fai scansionare questo LOTO Pass temporaneo a un altro utente. Esplorando assieme e facendo check-in sugli stessi punti di interesse, guadagnerete entrambi il Bonus Sincronia (+10% XP).
                 </Text>
 
-                <TouchableOpacity style={[styles.scanBtn, { backgroundColor: theme.primary }]}>
-                  <MaterialIcons name="qr-code-scanner" size={20} color="#FFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.scanBtnText}>Scansiona un amico</Text>
-                </TouchableOpacity>
+                
+                {!isScanning ? (
+                  <TouchableOpacity 
+                    style={[styles.scanBtn, { backgroundColor: theme.primary }]}
+                    onPress={async () => {
+                      if (!permission?.granted) await requestPermission();
+                      setIsScanning(true);
+                    }}
+                  >
+                    <MaterialIcons name="qr-code-scanner" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                    <Text style={styles.scanBtnText}>Scansiona un amico</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ width: 250, height: 250, borderRadius: 20, overflow: 'hidden', marginTop: 20 }}>
+                    <CameraView
+                      style={{ flex: 1 }}
+                      facing="back"
+                      barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+                      onBarcodeScanned={handleBarCodeScanned}
+                    />
+                    <TouchableOpacity style={{ position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 20 }} onPress={() => setIsScanning(false)}>
+                      <MaterialIcons name="close" size={20} color="#FFF" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
 
                 <View style={styles.privacyNote}>
                   <MaterialIcons name="shield" size={12} color={theme.textMuted} />
