@@ -124,6 +124,14 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
      setIsGpsValidating(true);
      try {
        const loc = await Location.getCurrentPositionAsync({});
+       
+       // FIRE & FORGET: Avviamo il Radar BLE in background per mappare la folla e 
+       // cercare ancore di validazione. Non usiamo "await" per rispettare la regola 
+       // dell'Optimistic UI (Niente caricamenti bloccanti di 5 secondi per l'utente).
+       import('../../utils/bleManager').then(module => {
+         module.startCrowdRadarScan(poi.id).catch(err => console.log('BLE Error', err));
+       });
+
        const { data, error } = await supabase.rpc('scan_poi_gps', { 
          p_poi_id: poi.id,
          p_lat: loc.coords.latitude,
