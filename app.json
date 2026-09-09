@@ -131,7 +131,8 @@
           ],
           "bluetoothAlwaysPermission": "L.O.T.O. HUB utilizza il Bluetooth per comunicare con i beacon interni (Musei/B&B) permettendoti check-in automatici e accessibilita indoor anche senza GPS."
         }
-      ]
+      ],
+      "./withNotifee.js"
     ],
     "experiments": {
       "typedRoutes": true
