@@ -31,6 +31,7 @@ import { useMobility } from '../../context/MobilityContext';
 import { useGamification } from '../../context/GamificationContext';
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
+import i18n from '../../locales/i18n';
 
 import { useScanner } from './_layout';
 const { width, height } = Dimensions.get('window');
@@ -683,7 +684,7 @@ export default function VetrinaScreen() {
                 </Text>
               </View>
               <View style={{ backgroundColor: '#FDFBF7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: levelProgress.color || '#D4AF37', marginTop: 2, elevation: 5 }}>
-                <Text style={{ color: '#333', fontSize: 8, fontWeight: 'bold' }}>LIVELLO {levelProgress.currentLevel}</Text>
+                <Text style={{ color: '#333', fontSize: 8, fontWeight: 'bold' }}>{i18n.t('levelPrefix')} {levelProgress.currentLevel}</Text>
               </View>
             </TouchableOpacity>
 
@@ -700,7 +701,7 @@ export default function VetrinaScreen() {
             activeOpacity={0.9}
             style={{ width: '48%', backgroundColor: '#2D4A22', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
           >
-            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Indizi Trovati</Text>
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>{i18n.t('dashboardClues')}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialIcons name="search" size={24} color="#D4AF37" />
               <Text style={{ color: '#FFF', fontSize: 24, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold', marginLeft: 10 }}>
@@ -715,7 +716,7 @@ export default function VetrinaScreen() {
             activeOpacity={0.9} 
             style={{ width: '48%', backgroundColor: '#476537', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
           >
-            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Impatto & Punti</Text>
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>{i18n.t('dashboardImpact')}</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
@@ -751,11 +752,11 @@ export default function VetrinaScreen() {
             activeOpacity={0.9}
             style={{ width: '48%', backgroundColor: '#D6734E', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
           >
-            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Archivio Storico</Text>
-            <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>Documenti Storici</Text>
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>{i18n.t('dashboardArchive')}</Text>
+            <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>{i18n.t('dashboardDocs')}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialIcons name="photo-library" size={14} color="#FFF" />
-              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>Esplora i segreti rivelati</Text>
+              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>{i18n.t('dashboardExplore')}</Text>
             </View>
           </TouchableOpacity>
 
@@ -765,13 +766,13 @@ export default function VetrinaScreen() {
             activeOpacity={0.9}
             style={{ width: '48%', backgroundColor: '#DFAB55', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
           >
-            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>Traguardi</Text>
+            <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>{i18n.t('dashboardMilestones')}</Text>
             <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>{levelInfo.title}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialIcons name="emoji-events" size={14} color="#FFF" />
-              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>{userBadges.length} Badge Sbloccati</Text>
+              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>{userBadges.length} {i18n.t('dashboardBadges')}</Text>
             </View>
-            <Text style={{ color: '#FFF', fontSize: 9, marginTop: 8, fontWeight: 'bold' }}>Sfida attiva: Sfida Mappatura Civica</Text>
+            <Text style={{ color: '#FFF', fontSize: 9, marginTop: 8, fontWeight: 'bold' }}>{i18n.t('dashboardChallenge')}</Text>
           </TouchableOpacity>
 
         </View>
@@ -846,7 +847,7 @@ export default function VetrinaScreen() {
           )}
           ListEmptyComponent={
             <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
-               <Text style={{ color: theme.textMuted, fontStyle: 'italic' }}>Nessuna meta disponibile in questa categoria.</Text>
+               <Text style={{ color: theme.textMuted, fontStyle: 'italic' }}>{i18n.t('noSpots')}</Text>
             </View>
           }
           contentContainerStyle={{ paddingLeft: 10, paddingRight: 20 }}
@@ -869,7 +870,7 @@ export default function VetrinaScreen() {
           </Text>
           {!isEventsUnlocked && (
             <View style={{ backgroundColor: 'rgba(0,0,0,0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
-              <Text style={{ fontSize: 10, fontWeight: 'bold', color: theme.textMuted }}>SBLOCCA AL LIV 2</Text>
+              <Text style={{ fontSize: 10, fontWeight: 'bold', color: theme.textMuted }}>{i18n.t('unlockLv2')}</Text>
             </View>
           )}
         </View>

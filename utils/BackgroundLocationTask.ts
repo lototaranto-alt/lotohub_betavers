@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
@@ -35,6 +36,21 @@ TaskManager.defineTask(POI_GEOFENCE_TASK, async ({ data, error }: any): Promise<
     // 2 = EXIT (Utente uscito)
     if (eventType === Location.GeofencingEventType.Enter) {
       console.log('[GeofenceTask] Entrato nel POI:', region.identifier);
+
+      // Debounce: Evita spam di notifiche (Max 1 ogni 10 minuti)
+      const DEBOUNCE_MS = 10 * 60 * 1000;
+      const lastNotifyStr = await AsyncStorage.getItem('@last_geofence_notify');
+      const now = Date.now();
+      
+      if (lastNotifyStr) {
+        const lastNotify = parseInt(lastNotifyStr, 10);
+        if (now - lastNotify < DEBOUNCE_MS) {
+           console.log('[GeofenceTask] Debounce attivo. Notifica silenziata per evitare spam.');
+           return;
+        }
+      }
+      
+      await AsyncStorage.setItem('@last_geofence_notify', now.toString());
       
       // Spara notifica locale gratuita e offline
       await Notifications.scheduleNotificationAsync({
