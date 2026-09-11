@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, ScrollView, Alert, Linking, Dimensions, ActivityIndicator } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -85,8 +85,8 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
         }
 
         sub = await Location.watchPositionAsync({ distanceInterval: 10 }, (loc) => {
-           if (poi.lat && poi.lng) {
-              const dist = calculateDistanceRaw(loc.coords.latitude, loc.coords.longitude, poi.lat, poi.lng);
+           if ((poi.lat || poi.latitude) && (poi.lng || poi.longitude)) {
+              const dist = calculateDistanceRaw(loc.coords.latitude, loc.coords.longitude, (poi.lat || poi.latitude), (poi.lng || poi.longitude));
               setGpsDistance(dist); // giÃ  in metri
            }
         });
@@ -384,7 +384,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
 
   const handleNavigate = (type: 'driving' | 'walking' | 'transit' | 'bicycling', isParking: boolean = false) => {
     // Coordinate fittizie per il parcheggio se isParking Ã¨ vero, altrimenti coordinate del POI
-    const destLat = isParking ? 40.4720 : poi.latitude;
+    const destLat = isParking ? 40.4720 : (poi.lat || poi.latitude)itude;
     const destLng = isParking ? 17.2285 : poi.longitude;
     const url = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=${type}`;
     Linking.openURL(url).catch(err => console.error("Impossibile aprire le mappe", err));
@@ -503,46 +503,22 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
                 </>
               ) : (
                 <>
-                  {checkinStartTime ? (
-                    timerLeft > 0 ? (
-                      <View style={[styles.mainBtn, { backgroundColor: '#F59E0B', marginTop: 15 }]}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <MaterialIcons name="timer" size={20} color="#FFF" style={{ marginRight: 8 }} />
-                          <Text style={[styles.mainBtnText, { color: '#FFF' }]}>
-                            Visita in corso... {Math.floor(timerLeft / 60)}:{(timerLeft % 60).toString().padStart(2, '0')}
-                          </Text>
-                        </View>
-                      </View>
-                    ) : (
-                      <TouchableOpacity 
-                        style={[styles.mainBtn, { backgroundColor: '#10B981', elevation: 4, marginTop: 15 }]}
-                        onPress={handleRiscattaVisitaGPS}
-                        disabled={isGpsValidating}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          {isGpsValidating ? <ActivityIndicator color="#FFF" /> : <MaterialIcons name="check-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />}
-                          <Text style={[styles.mainBtnText, { color: '#FFF', marginLeft: isGpsValidating ? 8 : 0 }]}>Riscatta Visita</Text>
-                        </View>
-                      </TouchableOpacity>
-                    )
-                  ) : (
-                    <TouchableOpacity 
-                      style={[styles.mainBtn, { 
-                        backgroundColor: (gpsDistance !== null && gpsDistance < 80) ? theme.primary : '#E2E8F0', 
-                        elevation: 4, 
-                        marginTop: 15 
-                      }]}
-                      onPress={handleStartVisitaGPS}
-                      disabled={gpsDistance === null || gpsDistance >= 80}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <MaterialIcons name="gps-fixed" size={20} color={(gpsDistance !== null && gpsDistance < 80) ? '#FFF' : '#94A3B8'} style={{ marginRight: 8 }} />
-                        <Text style={[styles.mainBtnText, { color: (gpsDistance !== null && gpsDistance < 80) ? '#FFF' : '#94A3B8' }]}>
-                          Inizia Visita (GPS)
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity 
+                    style={[styles.mainBtn, { 
+                      backgroundColor: (gpsDistance !== null && gpsDistance < 80) ? '#10B981' : '#E2E8F0', 
+                      elevation: 4, 
+                      marginTop: 15 
+                    }]}
+                    onPress={handleRiscattaVisitaGPS}
+                    disabled={isGpsValidating || gpsDistance === null || gpsDistance >= 80}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      {isGpsValidating ? <ActivityIndicator color="#FFF" /> : <MaterialIcons name={(gpsDistance !== null && gpsDistance < 80) ? "check-circle" : "gps-not-fixed"} size={20} color={(gpsDistance !== null && gpsDistance < 80) ? '#FFF' : '#94A3B8'} style={{ marginRight: 8 }} />}
+                      <Text style={[styles.mainBtnText, { color: (gpsDistance !== null && gpsDistance < 80) ? '#FFF' : '#94A3B8', marginLeft: isGpsValidating ? 8 : 0 }]}>
+                        {(gpsDistance !== null && gpsDistance < 80) ? 'Convalida Visita (GPS + BLE)' : 'Avvicinati per Convalidare'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
                   <Text style={{ textAlign: 'center', fontSize: 11, color: theme.textMuted, marginTop: 6 }}>
                     {gpsDistance === null 
                       ? "Calcolo posizione in corso..." 

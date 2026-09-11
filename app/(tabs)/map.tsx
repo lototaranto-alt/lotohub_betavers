@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import * as Location from 'expo-location';
@@ -27,6 +28,8 @@ const { width, height } = Dimensions.get('window');
 const INITIAL_COORDS = [17.234050, 40.472850];
 
 export default function MapScreen() {
+  const tabBarHeight = useBottomTabBarHeight();
+
   const insets = useSafeAreaInsets();
   const { currentTenant } = useTenant();
   const { theme } = useTheme();
@@ -74,8 +77,8 @@ export default function MapScreen() {
     });
   }, []);
 
-  // [MODIFICA UX] Il pedometro NON si avvia più in automatico all'apertura della mappa
-  // Verrà spostato in un trigger manuale (es. Onboarding Tips) per azzerare la frizione.
+  // [MODIFICA UX] Il pedometro NON si avvia piÃ¹ in automatico all'apertura della mappa
+  // VerrÃ  spostato in un trigger manuale (es. Onboarding Tips) per azzerare la frizione.
   useEffect(() => {
     // Sincro-Avventura rimossa dall'auto-avvio
   }, [isAccessibleMode, userId]);
@@ -177,13 +180,13 @@ export default function MapScreen() {
       },
       geometry: {
         type: 'Point',
-        coordinates: [poi.lng, poi.lat],
+        coordinates: [(poi.longitude || poi.lng), (poi.latitude || poi.lat)],
       },
     })),
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Mapbox.MapView 
         style={styles.map} 
         styleURL={Mapbox.StyleURL.Light}
@@ -236,6 +239,24 @@ export default function MapScreen() {
                 circlePitchAlignment: 'map',
               }}
             />
+
+          {filteredPois.map(poi => (
+            <Mapbox.PointAnnotation
+              key={icon- + poi.id}
+              id={icon- + poi.id}
+              coordinate={[poi.longitude, poi.latitude]}
+            >
+              <View style={{ backgroundColor: poi.category === 'partner' ? '#0056D2' : (poi.category === 'event' ? '#D4AF37' : theme.primary), borderRadius: 20, padding: 4, borderWidth: 1, borderColor: '#FFF', transform: [{ scale: 0.8 }] }}>
+                <MaterialIcons name={poi.category === 'partner' ? 'store' : (poi.category === 'event' ? 'star' : 'account-balance')} size={16} color="#FFF" />
+              </View>
+            </Mapbox.PointAnnotation>
+          ))}
+
+          
+
+          
+
+          
           ) : <></>}
           <Mapbox.SymbolLayer
             id="pois-core"
@@ -284,7 +305,7 @@ export default function MapScreen() {
 
       {/* TOP FILTERS (Floating Bar) */}
       
-      <View style={styles.floatingBarWrapper}>
+      <View style={[styles.floatingBarWrapper, { top: Math.max(insets.top, 20) + 10 }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.floatingBarScroll}>
           
           <TouchableOpacity 
@@ -292,7 +313,7 @@ export default function MapScreen() {
             onPress={() => { setHeatmapOn(!heatmapOn); setIsLayerDropdownOpen(false); }}
           >
             <MaterialIcons name="local-fire-department" size={16} color={heatmapOn ? '#E63946' : theme.primary} />
-            <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text }]} numberOfLines={1}>DensitÃ </Text>
+            <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text }]} numberOfLines={1}>DensitÃƒÂ </Text>
           </TouchableOpacity>
           
           <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 8 }} />
@@ -345,9 +366,9 @@ export default function MapScreen() {
 
 
       {/* FAB GROUP (Bottom Right) */}
-      <View style={{ position: 'absolute', bottom: 85 + insets.bottom, right: 20, alignItems: 'flex-end' }}>
+      <View style={{ position: 'absolute', bottom: tabBarHeight + 20, right: 20, alignItems: 'flex-end' }}>
         
-        {/* FAB 1: AccessibilitÃ  */}
+        {/* FAB 1: AccessibilitÃƒÂ  */}
         <TouchableOpacity 
           style={[styles.fabCircle, isAccessibleMode && { backgroundColor: theme.primary }]}
           onPress={() => toggleAccessibleMode()}
@@ -371,7 +392,7 @@ export default function MapScreen() {
 <TouchableOpacity 
           style={[styles.fabCircle, { backgroundColor: routePois.length > 0 ? theme.primary : theme.surface }]}
           onPress={() => {
-            // Qui andrÃ  la logica per aprire la bottom sheet dell'itinerario
+            // Qui andrÃƒÂ  la logica per aprire la bottom sheet dell'itinerario
             console.log('Apri Itinerario');
           }}
           activeOpacity={0.8}
@@ -400,7 +421,7 @@ export default function MapScreen() {
         
         
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -409,7 +430,7 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   floatingBarWrapper: { 
     position: 'absolute', 
-    top: Constants.statusBarHeight + 10, 
+     
     left: 10, 
     right: 10, 
     paddingBottom: 10, 
@@ -476,4 +497,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.05)' 
   }
 });
+
+
+
+
+
 

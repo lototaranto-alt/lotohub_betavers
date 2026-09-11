@@ -1,4 +1,4 @@
-﻿import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
@@ -326,7 +326,7 @@ export default function VetrinaScreen() {
   const caricaDati = async () => {
     try {
       let fetchedPois: any[] = [];
-      const { data: poiData, error } = await supabase.rpc('get_pois');
+      const { data: poiData, error } = await supabase.from('vw_pois_frontend').select('*').eq('is_active', true);
       if (error) {
         console.log("ERRORE RPC get_pois:", error);
       }
@@ -636,7 +636,7 @@ export default function VetrinaScreen() {
             {/* Left Side: Info & XP */}
             <View style={{ flex: 1, paddingRight: 10 }}>
               <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 11, color: '#D4AF37', letterSpacing: 1, marginBottom: 2 }}>
-                BENTORNATO, TARANTO
+                BENTORNATO, TARANTO (POIS: {pois.length})
               </Text>
               <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 20, color: '#FFF', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 }} numberOfLines={1}>
                 {userProfile?.nickname || t.guest}

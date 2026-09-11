@@ -40,7 +40,7 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
     badgeColor = theme.accent;
     badgeIcon = 'workspace-premium';
   } else {
-    badgeText = `CAPACITÀ: ${isCrowded ? 'ALTA' : 'MEDIA'}`;
+    badgeText = `CAPACITÃ€: ${isCrowded ? 'ALTA' : 'MEDIA'}`;
     badgeColor = isCrowded ? '#D32F2F' : '#F57C00';
     badgeIcon = 'groups';
   }
@@ -71,7 +71,7 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
         <Text style={[styles.poiNameHarmonious, { color: theme.text, fontFamily: 'PlayfairDisplay_700Bold' }]} numberOfLines={1}>{item.name}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
           <MaterialIcons name="place" size={14} color={theme.primary} />
-          <Text style={[styles.poiDistHarmonious, { fontFamily: 'Raleway_600SemiBold' }]}> {userLocation && item.latitude && item.longitude ? calculateDistance(userLocation.coords.latitude, userLocation.coords.longitude, item.latitude, item.longitude) : 'Calcolo distanza...'} </Text>
+          <Text style={[styles.poiDistHarmonious, { fontFamily: 'Raleway_600SemiBold' }]}> {userLocation && (item.latitude || item.lat) && (item.longitude || item.lng) ? calculateDistance(userLocation.coords.latitude, userLocation.coords.longitude, (item.latitude || item.lat), (item.longitude || item.lng)) : 'Calcolo distanza...'} </Text>
         </View>
         
         {showAccessibilityWarning && (
