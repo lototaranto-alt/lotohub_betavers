@@ -111,7 +111,7 @@ export default function ImpactStatsModal({ visible, onClose, userProfile, userTr
                 <Text style={styles.statLabel}>Distanza Registrata Oggi</Text>
                 
                 <View style={{ width: '100%', marginTop: 30 }}>
-                  <Text style={[styles.sectionTitle, { color: theme.text }]}>DETTAGLIO SINCRO-AVVENTURA</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>DETTAGLIO ECO-PASSI</Text>
                   <View style={{ backgroundColor: theme.surface, padding: 15, borderRadius: 15, marginTop: 10 }}>
                     <Text style={{ fontSize: 14, color: theme.textMuted, lineHeight: 22, textAlign: 'center' }}>
                       Stiamo utilizzando il sensore di movimento locale per tracciare i tuoi spostamenti a zero impatto. 

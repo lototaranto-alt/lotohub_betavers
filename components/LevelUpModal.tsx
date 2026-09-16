@@ -2,31 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, Animated, Easing, Dimensions, ImageBackground } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
+import { getRankInfo } from '../utils/levelUtils';
 
 const { width, height } = Dimensions.get('window');
 
-// 1. Funzione di Risoluzione Rango
-const getRankInfo = (level: number) => {
-  if (level <= 4) return { 
-    title: 'TURISTA CURIOSO', 
-    asset: require('../assets/images/ranks/rank1_turista_curioso_organic.jpg') 
-  };
-  if (level <= 8) return { 
-    title: 'CITTADINO ATTIVO', 
-    asset: require('../assets/images/ranks/rank2_cittadino_attivo_organic.jpg') 
-  };
-  if (level <= 12) return { 
-    title: 'CUSTODE URBANO', 
-    asset: require('../assets/images/ranks/rank3_custode_urbano_organic.jpg') 
-  };
-  if (level <= 16) return { 
-    title: 'EROE JONICO', 
-    asset: require('../assets/images/ranks/rank4_eroe_jonico_organic.jpg') 
-  };
-  return { 
-    title: 'LEGGENDA L.O.T.O.', 
-    asset: require('../assets/images/ranks/rank5_leggenda_loto_organic.jpg') 
-  };
+// 1. Emblema visuale per Tier di Rango (il nome viene dal Centro di Comando levelUtils)
+const getRankAsset = (level: number) => {
+  if (level < 11) return require('../assets/images/ranks/rank1_turista_curioso_organic.jpg');
+  if (level < 21) return require('../assets/images/ranks/rank2_cittadino_attivo_organic.jpg');
+  if (level < 31) return require('../assets/images/ranks/rank3_custode_urbano_organic.jpg');
+  if (level < 41) return require('../assets/images/ranks/rank4_eroe_jonico_organic.jpg');
+  return require('../assets/images/ranks/rank5_leggenda_loto_organic.jpg');
 };
 
 // 2. Mock del JSON Narrativo (Whispers)
@@ -90,6 +76,7 @@ export default function LevelUpModal({ visible, level, onClose }: LevelUpModalPr
   if (!visible) return null;
 
   const rankInfo = getRankInfo(level);
+  const rankAsset = getRankAsset(level);
   const whisper = WHISPERS_DB[level] || { text: "La saggezza dei Custodi antichi risuona attraverso di te. Scopri nuovi misteri." };
 
   return (
@@ -120,14 +107,14 @@ export default function LevelUpModal({ visible, level, onClose }: LevelUpModalPr
           ]}>
             {/* L'asset rigenerato dalla logica (organico) */}
             <Image 
-              source={rankInfo.asset} 
+              source={rankAsset} 
               style={styles.rankImage} 
               defaultSource={require('../assets/images/ranks/rank1_turista_curioso_organic.jpg')} // Fallback in caso di mancanza file locali
             />
             
             {/* TESTO DINAMICO INIETTATO SOPRA */}
             <Text style={styles.levelText}>LIVELLO {level} RAGGIUNTO</Text>
-            <Text style={styles.rankTitle}>{rankInfo.title}</Text>
+            <Text style={styles.rankTitle}>{rankInfo.rankName}</Text>
           </Animated.View>
 
           {/* FASE 1: Istruzione di Tap */}

@@ -2,7 +2,7 @@
 import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LEVEL_UP_LORE } from '../utils/LevelUpLore';
-import { LEVEL_THRESHOLDS } from '../utils/levelUtils';
+import { LEVEL_THRESHOLDS, getLevelProgress } from '../utils/levelUtils';
 import SingleBadgeSheet from './SingleBadgeSheet';
 
 const { height } = Dimensions.get('window');
@@ -19,11 +19,12 @@ export default function TraguardiModal({ visible, onClose, userBadges, userProfi
   const [activeTab, setActiveTab] = useState<'livelli' | 'badge' | 'rank'>('livelli');
   const [selectedBadge, setSelectedBadge] = useState<any>(null);
 
-  // --- CALCOLI BASE ---
-  const currentLevel = Math.max(1, Math.floor((userProfile?.total_xp || 0) / 100) + 1); // Mock calculation, normally you'd pass levelInfo
-  const nextXp = currentLevel * 100;
+// --- CALCOLI BASE (SSOT da levelUtils) ---
+  const levelProgress = getLevelProgress(userProfile?.total_xp || 0);
+  const currentLevel = levelProgress.currentLevel;
+  const nextXp = levelProgress.nextXp;
   const currentXp = userProfile?.total_xp || 0;
-  const percent = Math.min(100, (currentXp / nextXp) * 100);
+  const percent = levelProgress.percent;
 
   // I 5 Rank base
   const baseRanks = LEVEL_THRESHOLDS.filter(l => [1, 11, 21, 31, 41].includes(l.level)); // Adjust if needed
@@ -32,7 +33,7 @@ export default function TraguardiModal({ visible, onClose, userBadges, userProfi
   const ALL_BADGES_CATALOG = [
     { id: 'badge_first_scan', name: 'Battesimo', icon: 'location-on', color: '#2ECC71', target: 1, unit: 'Scan' },
     { id: 'badge_civic_3', name: 'Sentinella', icon: 'security', color: '#2196F3', target: 3, unit: 'Eventi' },
-    { id: 'badge_explorer_5', name: 'Esploratore', icon: 'explore', color: '#9B59B6', target: 5, unit: 'Segreti' },
+    { id: 'badge_explorer_5', name: 'Pioniere', icon: 'explore', color: '#9B59B6', target: 5, unit: 'Segreti' },
     { id: 'badge_eco_5kg', name: 'Anima Green', icon: 'eco', color: '#4CAF50', target: 5, unit: 'Kg CO2' },
     { id: 'badge_marathon_3', name: 'Maratoneta', icon: 'directions-run', color: '#FF9800', target: 3, unit: 'Itinerari' },
     { id: 'badge_level_5', name: 'Cittadino', icon: 'stars', color: '#FFD700', target: 5, unit: 'Livelli' }

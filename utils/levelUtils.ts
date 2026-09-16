@@ -10,46 +10,46 @@ export interface LevelThreshold {
 }
 
 export const LEVEL_THRESHOLDS: LevelThreshold[] = [
-  { level: 1, minXp: 0, nextXp: 30, title: "TURISTA CURIOSO", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 1' },
-  { level: 2, minXp: 30, nextXp: 90, title: "TURISTA CURIOSO", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 2' },
-  { level: 3, minXp: 90, nextXp: 180, title: "TURISTA CURIOSO", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 3' },
-  { level: 4, minXp: 180, nextXp: 300, title: "TURISTA CURIOSO", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 4' },
-  { level: 5, minXp: 300, nextXp: 450, title: "TURISTA CURIOSO", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 5' },
-  { level: 6, minXp: 450, nextXp: 630, title: "TURISTA CURIOSO", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 6' },
-  { level: 7, minXp: 630, nextXp: 840, title: "TURISTA CURIOSO", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 7' },
-  { level: 8, minXp: 840, nextXp: 1080, title: "TURISTA CURIOSO", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 8' },
-  { level: 9, minXp: 1080, nextXp: 1350, title: "TURISTA CURIOSO", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 9' },
-  { level: 10, minXp: 1350, nextXp: 1650, title: "TURISTA CURIOSO", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 10' },
-  { level: 11, minXp: 1650, nextXp: 2080, title: "CITTADINO ATTIVO", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 11' },
-  { level: 12, minXp: 2080, nextXp: 2540, title: "CITTADINO ATTIVO", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 12' },
-  { level: 13, minXp: 2540, nextXp: 3030, title: "CITTADINO ATTIVO", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 13' },
-  { level: 14, minXp: 3030, nextXp: 3550, title: "CITTADINO ATTIVO", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 14' },
-  { level: 15, minXp: 3550, nextXp: 4100, title: "CITTADINO ATTIVO", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 15' },
-  { level: 16, minXp: 4100, nextXp: 4680, title: "CITTADINO ATTIVO", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 16' },
-  { level: 17, minXp: 4680, nextXp: 5290, title: "CITTADINO ATTIVO", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 17' },
-  { level: 18, minXp: 5290, nextXp: 5930, title: "CITTADINO ATTIVO", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 18' },
-  { level: 19, minXp: 5930, nextXp: 6600, title: "CITTADINO ATTIVO", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 19' },
-  { level: 20, minXp: 6600, nextXp: 7300, title: "CITTADINO ATTIVO", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 20' },
-  { level: 21, minXp: 7300, nextXp: 8230, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 21' },
-  { level: 22, minXp: 8230, nextXp: 9190, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 22' },
-  { level: 23, minXp: 9190, nextXp: 10180, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 23' },
-  { level: 24, minXp: 10180, nextXp: 11200, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 24' },
-  { level: 25, minXp: 11200, nextXp: 12250, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 25' },
-  { level: 26, minXp: 12250, nextXp: 13330, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 26' },
-  { level: 27, minXp: 13330, nextXp: 14440, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 27' },
-  { level: 28, minXp: 14440, nextXp: 15580, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 28' },
-  { level: 29, minXp: 15580, nextXp: 16750, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 29' },
-  { level: 30, minXp: 16750, nextXp: 17950, title: "CUSTODE URBANO", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 30' },
-  { level: 31, minXp: 17950, nextXp: 19180, title: "EROE JONICO", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 31' },
-  { level: 32, minXp: 19180, nextXp: 20440, title: "EROE JONICO", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 32' },
-  { level: 33, minXp: 20440, nextXp: 21730, title: "EROE JONICO", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 33' },
-  { level: 34, minXp: 21730, nextXp: 23050, title: "EROE JONICO", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 34' },
-  { level: 35, minXp: 23050, nextXp: 24400, title: "EROE JONICO", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 35' },
-  { level: 36, minXp: 24400, nextXp: 25780, title: "EROE JONICO", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 36' },
-  { level: 37, minXp: 25780, nextXp: 27190, title: "EROE JONICO", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 37' },
-  { level: 38, minXp: 27190, nextXp: 28630, title: "EROE JONICO", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 38' },
-  { level: 39, minXp: 28630, nextXp: 30100, title: "EROE JONICO", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 39' },
-  { level: 40, minXp: 30100, nextXp: 31600, title: "EROE JONICO", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 40' },
+  { level: 1, minXp: 0, nextXp: 30, title: "TURISTA OCCASIONALE", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 1' },
+  { level: 2, minXp: 30, nextXp: 90, title: "TURISTA OCCASIONALE", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 2' },
+  { level: 3, minXp: 90, nextXp: 180, title: "TURISTA OCCASIONALE", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 3' },
+  { level: 4, minXp: 180, nextXp: 300, title: "TURISTA OCCASIONALE", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 4' },
+  { level: 5, minXp: 300, nextXp: 450, title: "TURISTA OCCASIONALE", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 5' },
+  { level: 6, minXp: 450, nextXp: 630, title: "TURISTA OCCASIONALE", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 6' },
+  { level: 7, minXp: 630, nextXp: 840, title: "TURISTA OCCASIONALE", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 7' },
+  { level: 8, minXp: 840, nextXp: 1080, title: "TURISTA OCCASIONALE", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 8' },
+  { level: 9, minXp: 1080, nextXp: 1350, title: "TURISTA OCCASIONALE", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 9' },
+  { level: 10, minXp: 1350, nextXp: 1650, title: "TURISTA OCCASIONALE", stemma: 'explore', gemColor: '#D4AF37', gemName: 'Gemma 10' },
+  { level: 11, minXp: 1650, nextXp: 2080, title: "ESPLORATORE", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 11' },
+  { level: 12, minXp: 2080, nextXp: 2540, title: "ESPLORATORE", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 12' },
+  { level: 13, minXp: 2540, nextXp: 3030, title: "ESPLORATORE", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 13' },
+  { level: 14, minXp: 3030, nextXp: 3550, title: "ESPLORATORE", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 14' },
+  { level: 15, minXp: 3550, nextXp: 4100, title: "ESPLORATORE", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 15' },
+  { level: 16, minXp: 4100, nextXp: 4680, title: "ESPLORATORE", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 16' },
+  { level: 17, minXp: 4680, nextXp: 5290, title: "ESPLORATORE", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 17' },
+  { level: 18, minXp: 5290, nextXp: 5930, title: "ESPLORATORE", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 18' },
+  { level: 19, minXp: 5930, nextXp: 6600, title: "ESPLORATORE", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 19' },
+  { level: 20, minXp: 6600, nextXp: 7300, title: "ESPLORATORE", stemma: 'shield', gemColor: '#D4AF37', gemName: 'Gemma 20' },
+  { level: 21, minXp: 7300, nextXp: 8230, title: "CUSTODE DELLA CITTÀ", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 21' },
+  { level: 22, minXp: 8230, nextXp: 9190, title: "CUSTODE DELLA CITTÀ", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 22' },
+  { level: 23, minXp: 9190, nextXp: 10180, title: "CUSTODE DELLA CITTÀ", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 23' },
+  { level: 24, minXp: 10180, nextXp: 11200, title: "CUSTODE DELLA CITTÀ", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 24' },
+  { level: 25, minXp: 11200, nextXp: 12250, title: "CUSTODE DELLA CITTÀ", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 25' },
+  { level: 26, minXp: 12250, nextXp: 13330, title: "CUSTODE DELLA CITTÀ", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 26' },
+  { level: 27, minXp: 13330, nextXp: 14440, title: "CUSTODE DELLA CITTÀ", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 27' },
+  { level: 28, minXp: 14440, nextXp: 15580, title: "CUSTODE DELLA CITTÀ", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 28' },
+  { level: 29, minXp: 15580, nextXp: 16750, title: "CUSTODE DELLA CITTÀ", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 29' },
+  { level: 30, minXp: 16750, nextXp: 17950, title: "CUSTODE DELLA CITTÀ", stemma: 'security', gemColor: '#D4AF37', gemName: 'Gemma 30' },
+  { level: 31, minXp: 17950, nextXp: 19180, title: "EROE DEL MARE", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 31' },
+  { level: 32, minXp: 19180, nextXp: 20440, title: "EROE DEL MARE", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 32' },
+  { level: 33, minXp: 20440, nextXp: 21730, title: "EROE DEL MARE", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 33' },
+  { level: 34, minXp: 21730, nextXp: 23050, title: "EROE DEL MARE", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 34' },
+  { level: 35, minXp: 23050, nextXp: 24400, title: "EROE DEL MARE", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 35' },
+  { level: 36, minXp: 24400, nextXp: 25780, title: "EROE DEL MARE", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 36' },
+  { level: 37, minXp: 25780, nextXp: 27190, title: "EROE DEL MARE", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 37' },
+  { level: 38, minXp: 27190, nextXp: 28630, title: "EROE DEL MARE", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 38' },
+  { level: 39, minXp: 28630, nextXp: 30100, title: "EROE DEL MARE", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 39' },
+  { level: 40, minXp: 30100, nextXp: 31600, title: "EROE DEL MARE", stemma: 'anchor', gemColor: '#D4AF37', gemName: 'Gemma 40' },
   { level: 41, minXp: 31600, nextXp: 33130, title: "LEGGENDA L.O.T.O.", stemma: 'public', gemColor: '#D4AF37', gemName: 'Gemma 41' },
   { level: 42, minXp: 33130, nextXp: 34690, title: "LEGGENDA L.O.T.O.", stemma: 'public', gemColor: '#D4AF37', gemName: 'Gemma 42' },
   { level: 43, minXp: 34690, nextXp: 36280, title: "LEGGENDA L.O.T.O.", stemma: 'public', gemColor: '#D4AF37', gemName: 'Gemma 43' },
@@ -80,13 +80,13 @@ export interface RankInfo {
 
 export const getRankInfo = (lvl: number): RankInfo => {
   if (lvl < 11) {
-    return { rankName: 'TURISTA CURIOSO', nextRank: 'CITTADINO ATTIVO', color: '#8D6E63', requiredLvl: 11 };
+    return { rankName: 'TURISTA OCCASIONALE', nextRank: 'ESPLORATORE', color: '#8D6E63', requiredLvl: 11 };
   } else if (lvl < 21) {
-    return { rankName: 'CITTADINO ATTIVO', nextRank: 'CUSTODE URBANO', color: '#2A9D8F', requiredLvl: 21 };
+    return { rankName: 'ESPLORATORE', nextRank: 'CUSTODE DELLA CITTÃ€', color: '#2A9D8F', requiredLvl: 21 };
   } else if (lvl < 31) {
-    return { rankName: 'CUSTODE URBANO', nextRank: 'EROE JONICO', color: '#D4AF37', requiredLvl: 31 };
+    return { rankName: 'CUSTODE DELLA CITTÃ€', nextRank: 'EROE DEL MARE', color: '#D4AF37', requiredLvl: 31 };
   } else if (lvl < 41) {
-    return { rankName: 'EROE JONICO', nextRank: 'LEGGENDA L.O.T.O.', color: '#00CED1', requiredLvl: 41 };
+    return { rankName: 'EROE DEL MARE', nextRank: 'LEGGENDA L.O.T.O.', color: '#00CED1', requiredLvl: 41 };
   } else {
     return { rankName: 'LEGGENDA L.O.T.O.', nextRank: 'MAX', color: '#FF69B4', requiredLvl: 99 };
   }
@@ -157,7 +157,7 @@ export const getAvatarFrameStyle = (level: number) => {
   
   // L'anello attorno all'avatar "scatta" e cresce a ogni singolo livello! (da 2 a 6.5)
   const dynamicBorderWidth = 1.5 + (progressInRank * 0.5);
-  // Anche l'Aura (shadow) pulsa diventando più intensa a ogni livello
+  // Anche l'Aura (shadow) pulsa diventando piÃ¹ intensa a ogni livello
   const dynamicGlowOpacity = 0.2 + (progressInRank * 0.07);
 
   // Tier 5: L'Aura Dorata (Liv 41+)

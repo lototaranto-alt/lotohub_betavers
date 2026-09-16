@@ -27,7 +27,7 @@ export default function VaultModal({ visible, onClose, userProfile, theme }: Vau
       const { data: userPois } = await supabase
         .from('user_pois')
         .select('poi_id')
-        .eq('user_id', userProfile.id);
+        .eq('profile_id', userProfile.id);
 
       const unlockedPoiIds = userPois ? userPois.map(p => p.poi_id) : [];
 
