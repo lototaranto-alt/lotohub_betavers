@@ -240,17 +240,7 @@ export default function MapScreen() {
               }}
             />
 
-          {filteredPois.map(poi => (
-            <Mapbox.PointAnnotation
-              key={icon- + poi.id}
-              id={icon- + poi.id}
-              coordinate={[poi.longitude, poi.latitude]}
-            >
-              <View style={{ backgroundColor: poi.category === 'partner' ? '#0056D2' : (poi.category === 'event' ? '#D4AF37' : theme.primary), borderRadius: 20, padding: 4, borderWidth: 1, borderColor: '#FFF', transform: [{ scale: 0.8 }] }}>
-                <MaterialIcons name={poi.category === 'partner' ? 'store' : (poi.category === 'event' ? 'star' : 'account-balance')} size={16} color="#FFF" />
-              </View>
-            </Mapbox.PointAnnotation>
-          ))}
+          
 
           
 
@@ -301,6 +291,17 @@ export default function MapScreen() {
             />
           ) : <></>}
         </Mapbox.ShapeSource>
+      {filteredPois.map(poi => (
+            <Mapbox.PointAnnotation
+              key={"icon-" + poi.id}
+              id={"icon-" + poi.id}
+              coordinate={[poi.longitude, poi.latitude]}
+            >
+              <View style={{ backgroundColor: poi.category === 'partner' ? '#0056D2' : (poi.category === 'event' ? '#D4AF37' : theme.primary), borderRadius: 20, padding: 4, borderWidth: 1, borderColor: '#FFF', transform: [{ scale: 0.8 }] }}>
+                <MaterialIcons name={poi.category === 'partner' ? 'store' : (poi.category === 'event' ? 'star' : 'account-balance')} size={16} color="#FFF" />
+              </View>
+            </Mapbox.PointAnnotation>
+          ))}
       </Mapbox.MapView>
 
       {/* TOP FILTERS (Floating Bar) */}
@@ -497,6 +498,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.05)' 
   }
 });
+
 
 
 

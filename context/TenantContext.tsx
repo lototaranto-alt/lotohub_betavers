@@ -211,10 +211,13 @@ export const TenantProvider: React.FC<{
                 }
               }
 
-              // Se siamo entro 50km da un Comune convenzionato, carichiamo quello
-              if (minDist < 50) {
-                targetId = closest.id;
-              }
+                            // --- DEBITO TECNICO DOC 1: HARD-LOCK SU TARANTO (Alpha) ---
+              // Sospensione temporanea della logica di auto-switch dinamico entro 50km 
+              // per garantire la stabilità assoluta del tenant durante i test Guerrilla.
+              // if (minDist < 50) {
+              //   targetId = closest.id;
+              // }
+              targetId = fallbackTenant?.id;
             }
           } else {
             // Se i permessi NON sono ancora concessi, non forziamo la richiesta qui!
@@ -304,4 +307,5 @@ export const useTenant = (): TenantContextType => {
   if (!ctx) throw new Error('useTenant must be used inside TenantProvider');
   return ctx;
 };
+
 

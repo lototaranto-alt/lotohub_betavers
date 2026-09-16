@@ -139,8 +139,12 @@ export async function startBackgroundTracking(userId: string): Promise<void> {
           newLocation.coords.longitude
         );
 
-        // Filtro antirumore GPS (escludiamo salti assurdi > 100m in 5 sec, o micro-rumori < 2m)
-        if (deltaMeters >= 10 && deltaMeters < 100) {
+        // FILTRO ANTI-DRIFT (Kalman povero)
+        // Se l'accuratezza del GPS in questo istante è pessima (> 25 metri) o il movimento è irrisorio (< 8 metri)
+        // ignoriamo il dato perché è solo rumore (drift) da fermo.
+        if (newLocation.coords.accuracy > 25) return;
+
+        if (deltaMeters >= 8 && deltaMeters < 100) {
           incrementDistance(userId, deltaMeters);
           lastLocation = newLocation.coords;
         }
@@ -161,3 +165,4 @@ export async function stopBackgroundTracking(): Promise<void> {
     await notifee.stopForegroundService();
   }
 }
+
