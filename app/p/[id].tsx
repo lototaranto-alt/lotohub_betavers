@@ -61,8 +61,8 @@ export default function DeepLinkPoiScreen() {
 
     let crowdCount = 1;
     try {
-      // Aspettiamo esattamente i 5 secondi del radar
-      crowdCount = await startCrowdRadarScan();
+      const result = await startCrowdRadarScan(poiData.id);
+      crowdCount = result?.crowdCount ?? 1;
     } catch (e) {
       console.warn('Radar BLE fallito o non supportato:', e);
     }

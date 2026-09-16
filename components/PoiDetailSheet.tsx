@@ -120,15 +120,21 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
      setTimerLeft(10 * 60);
   };
 
-  const handleRiscattaVisitaGPS = async () => {
+const handleRiscattaVisitaGPS = async () => {
      setIsGpsValidating(true);
      try {
        const loc = await Location.getCurrentPositionAsync({});
-       
-       // FIRE & FORGET: Avviamo il Radar BLE in background per mappare la folla e 
-       // cercare ancore di validazione. Non usiamo "await" per rispettare la regola 
-       // dell'Optimistic UI (Niente caricamenti bloccanti di 5 secondi per l'utente).
-       import('../../utils/bleManager').then(module => {
+
+       // Recupera XP precedente per calcolare eventuale level-up
+       const { data: { user } } = await supabase.auth.getUser();
+       let oldXp = 0;
+       if (user) {
+         const { data: prof } = await supabase.from('profiles').select('total_xp').eq('id', user.id).single();
+         oldXp = prof?.total_xp || 0;
+       }
+
+       // FIRE & FORGET: Avviamo il Radar BLE in background per mappare la folla.
+       import('../utils/bleManager').then(module => {
          module.startCrowdRadarScan(poi.id).catch(err => console.log('BLE Error', err));
        });
 
@@ -139,7 +145,16 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
        });
        
        if (error) throw error;
-       Alert.alert('Ottimo!', `Hai ottenuto i punti di questo POI. I tuoi XP sono ora ${data.new_total_xp}.`);
+
+       // Calcola e coda gli eventi di level-up come SSOT
+       const newXp = data.new_total_xp;
+       const oldLevel = calculateLevel(oldXp);
+       const newLevel = calculateLevel(newXp);
+       const events = buildLevelUpEvents(oldLevel, newLevel, 'it');
+       if (events.length > 0) {
+         queueEvents(events);
+       }
+
        await AsyncStorage.removeItem(`@checkin_start_${poi.id}`);
        setCheckinStartTime(null);
        onCheckIn(poi);
@@ -148,7 +163,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
      } finally {
        setIsGpsValidating(false);
      }
-  };
+   };
 
   useEffect(() => {
     if (visible && poi) {
@@ -384,7 +399,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
 
   const handleNavigate = (type: 'driving' | 'walking' | 'transit' | 'bicycling', isParking: boolean = false) => {
     // Coordinate fittizie per il parcheggio se isParking Ã¨ vero, altrimenti coordinate del POI
-    const destLat = isParking ? 40.4720 : (poi.lat || poi.latitude)itude;
+    const destLat = isParking ? 40.4720 : (poi.lat || poi.latitude);
     const destLng = isParking ? 17.2285 : poi.longitude;
     const url = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=${type}`;
     Linking.openURL(url).catch(err => console.error("Impossibile aprire le mappe", err));
