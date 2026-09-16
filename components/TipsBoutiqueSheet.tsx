@@ -86,7 +86,7 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: Math.max(40, insets.bottom + 10) }}>
             
             {/* SEZIONE 1: I SENSI DEL CAMALEONTE (PERMESSI HARDWARE) */}
-            <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 10 }]}>Sincro-Avventura</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 10 }]}>Eco-Passi</Text>
             <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>
               Sincronizza il tuo dispositivo per sbloccare il pieno potenziale dell'ecosistema L.O.T.O.
             </Text>
@@ -117,7 +117,7 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
                 <MaterialIcons name="explore" size={24} color={bgGpsGranted ? '#2ECC71' : theme.primary} />
               </View>
               <View style={styles.permissionText}>
-                <Text style={[styles.permTitle, { color: theme.text }]}>Sincro-Avventura (GPS)</Text>
+                <Text style={[styles.permTitle, { color: theme.text }]}>Eco-Passi (GPS)</Text>
                 <Text style={[styles.permDesc, { color: theme.textMuted }]}>Esplora in background e sblocca ricompense con la distanza percorsa.</Text>
               </View>
               <MaterialIcons name={bgGpsGranted ? "check-circle" : "add-circle-outline"} size={24} color={bgGpsGranted ? '#2ECC71' : theme.primary} />

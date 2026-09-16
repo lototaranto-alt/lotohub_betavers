@@ -10,7 +10,6 @@ import { supabase } from '../../utils/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { calculateLevel } from '../../utils/levelUtils';
 import * as Location from 'expo-location';
-import { startBackgroundTracking } from '../../utils/SincroAvventura';
 
 // Inizializza NFC
 try {
@@ -29,28 +28,6 @@ const ScannerContext = createContext({
 export const useScanner = () => useContext(ScannerContext);
 
 export default function TabLayout() {
-  const [isTrackingInitialized, setIsTrackingInitialized] = useState(false);
-
-  useEffect(() => {
-    const checkAndStartTracking = async () => {
-      if (isTrackingInitialized) return;
-      try {
-        const { status } = await Location.getBackgroundPermissionsAsync();
-        if (status === 'granted') {
-          const session = await supabase.auth.getSession();
-          const userId = session.data.session?.user?.id;
-          if (userId) {
-            console.log('[Boot] Permessi Background attivi, auto-innesco SincroAvventura...');
-            startBackgroundTracking(userId);
-            setIsTrackingInitialized(true);
-          }
-        }
-      } catch (e) {
-        console.warn('[Boot] Errore auto-innesco tracking:', e);
-      }
-    };
-    checkAndStartTracking();
-  }, [isTrackingInitialized]);
   const insets = useSafeAreaInsets();
   const { theme, isElite } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
@@ -124,8 +101,10 @@ export default function TabLayout() {
             backgroundColor: isElite ? '#0A0F14' : theme.background,
             borderTopWidth: isElite ? 1 : 0.5,
             borderTopColor: isElite ? '#00F0FF' : theme.border,
-            height: 65,
-            paddingBottom: 12,
+            // Cuscinetti dinamici: la Tab Bar si adatta ai tasti di sistema
+            // trasparenti (Immersive Mode) spingendo le icone LOTO verso l'alto.
+            height: 62 + insets.bottom,
+            paddingBottom: Math.max(12, insets.bottom),
             paddingTop: 8,
             ...(isElite ? {
               shadowColor: '#00F0FF',

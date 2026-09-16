@@ -54,10 +54,10 @@ async function incrementDistance(userId: string, meters: number): Promise<void> 
     DeviceEventEmitter.emit('onDistanceIncrement', { total: Math.round(totalLocal) });
     
     if (Platform.OS === 'android') {
-      const displayDistance = totalLocal > 1000 ? (totalLocal/1000).toFixed(2) + ' Km' : Math.round(totalLocal) + ' m';
+const displayDistance = totalLocal > 1000 ? (totalLocal/1000).toFixed(2) + ' Km' : Math.round(totalLocal) + ' m';
       await notifee.displayNotification({
         id: 'sincro-avventura',
-        title: 'Sincro-Avventura Attiva',
+        title: 'Eco-Passi Attivi',
         body: `Distanza esplorata: ${displayDistance}`,
         android: {
           channelId: 'sincro-avventura',
@@ -80,16 +80,16 @@ async function incrementDistance(userId: string, meters: number): Promise<void> 
 }
 
 export async function startBackgroundTracking(userId: string): Promise<void> {
-  if (Platform.OS === 'android') {
+if (Platform.OS === 'android') {
     const channelId = await notifee.createChannel({
       id: 'sincro-avventura',
-      name: 'Sincro Avventura Tracking',
+      name: 'Eco-Passi Tracking',
       importance: AndroidImportance.HIGH,
     });
 
     await notifee.displayNotification({
       id: 'sincro-avventura',
-      title: 'Sincro-Avventura Avviata',
+      title: 'Eco-Passi Avviati',
       body: 'In attesa di segnale GPS...',
       android: {
         channelId,
@@ -139,12 +139,12 @@ export async function startBackgroundTracking(userId: string): Promise<void> {
           newLocation.coords.longitude
         );
 
-        // FILTRO ANTI-DRIFT (Kalman povero)
-        // Se l'accuratezza del GPS in questo istante è pessima (> 25 metri) o il movimento è irrisorio (< 8 metri)
+// FILTRO ANTI-DRIFT (Kalman povero)
+        // Se l'accuratezza del GPS in questo istante è pessima (> 20 metri) o il movimento è irrisorio (< 15 metri)
         // ignoriamo il dato perché è solo rumore (drift) da fermo.
-        if (newLocation.coords.accuracy > 25) return;
+        if (newLocation.coords.accuracy !== null && newLocation.coords.accuracy !== undefined && newLocation.coords.accuracy > 20) return;
 
-        if (deltaMeters >= 8 && deltaMeters < 100) {
+        if (deltaMeters >= 15 && deltaMeters < 100) {
           incrementDistance(userId, deltaMeters);
           lastLocation = newLocation.coords;
         }

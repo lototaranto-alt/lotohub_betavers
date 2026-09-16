@@ -85,7 +85,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
             <TouchableOpacity style={[styles.tab, activeTab === 'identity' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => setActiveTab('identity')}>
               <Text style={[styles.tabText, { color: activeTab === 'identity' ? theme.accent : theme.textMuted }]}>IDENTITÀ</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.tab, activeTab === 'squad' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => { if (computedLevel >= 20) setActiveTab('squad'); else alert('Sblocca la Sincro-Avventura al Livello 20!'); }}>
+            <TouchableOpacity style={[styles.tab, activeTab === 'squad' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => { if (computedLevel >= 20) setActiveTab('squad'); else alert('Sblocca gli Eco-Passi al Livello 20!'); }}>
               <Text style={[styles.tabText, { color: activeTab === 'squad' ? theme.accent : theme.textMuted }]}>{computedLevel >= 20 ? 'CO-EXPERIENCE' : '??? (LV.20)'}</Text>
             </TouchableOpacity>
           </View>
@@ -109,7 +109,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                       onSubmitEditing={salvaNickname} 
                     />
                   ) : (
-                    <Text style={[styles.nickname, { color: theme.text }]}>{userProfile?.nickname || 'ESPLORATORE'}</Text>
+                    <Text style={[styles.nickname, { color: theme.text }]}>{userProfile?.nickname || 'VIAGGIATORE'}</Text>
                   )}
                   <TouchableOpacity onPress={() => editingNickname ? salvaNickname() : setEditingNickname(true)} style={{ marginLeft: 10 }}>
                     <MaterialIcons name={editingNickname ? "check" : "edit"} size={20} color={theme.accent} />
@@ -117,7 +117,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                 </View>
                 
                 <Text style={[styles.rankTitle, { color: avatarStyle.borderColor || '#D4AF37' }]}>
-                  RANK {currentRank}   {levelInfo.title || 'Turista Curioso'}
+                  RANK {currentRank}   {levelInfo.title || 'Turista Occasionale'}
                 </Text>
                 
                 <View style={styles.statsRow}>
