@@ -10,7 +10,7 @@ import { Raleway_400Regular, Raleway_600SemiBold } from '@expo-google-fonts/rale
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { Alert, Linking, Platform } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { supabase } from '@/utils/supabase';
@@ -24,6 +24,7 @@ import MobilityWizard from '../components/MobilityWizard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingCarousel from '../components/OnboardingCarousel';
 import { registerForPushNotificationsAsync } from '../utils/notifications';
+import LotoHardwareGate from '../components/LotoHardwareGate';
 
 // Inizializzazione Globale Hardware NFC (Commentato per Expo Go Demo)
 import NfcManager from 'react-native-nfc-manager';
@@ -34,20 +35,6 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-
-  useEffect(() => {
-    async function setImmersive() {
-      try {
-        if (Platform.OS === 'android') {
-          await NavigationBar.setVisibilityAsync('hidden');
-          await NavigationBar.setBehaviorAsync('overlay-swipe');
-        }
-      } catch (e) {
-        console.log('NavigationBar error:', e);
-      }
-    }
-    setImmersive();
-  }, []);
 
   useEffect(() => {
     /* if (Application.nativeBuildVersion === '1') { 
@@ -149,7 +136,7 @@ export default function RootLayout() {
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FDFBF2' }}>
         <ActivityIndicator size="large" color="#5F713D" style={{ marginBottom: 20 }} />
         <Text style={{ fontSize: 20, fontWeight: '900', color: '#5F713D', fontFamily: 'serif', letterSpacing: 2 }}>L.O.T.O.</Text>
-        <Text style={{ fontSize: 12, color: '#1A1C1E', marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Sincronizzazione IdentitÃ Â ...</Text>
+        <Text style={{ fontSize: 12, color: '#1A1C1E', marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Sincronizzazione Identità...</Text>
       </View>
     );
   }
@@ -171,6 +158,7 @@ export default function RootLayout() {
                 </Stack>
                 <StatusBar style="auto" />
                 <MobilityWizard />
+                <LotoHardwareGate />
                 {showOnboarding && <OnboardingCarousel onComplete={handleOnboardingComplete} isFirstLaunch={isFirstLaunch} />}
               </ThemeProvider>
             </RouteProvider>
