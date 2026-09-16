@@ -1,27 +1,50 @@
 ﻿import React from 'react';
 import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity, Image, Modal } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
 
 const { height } = Dimensions.get('window');
+
+const PATRIMONIO_CATEGORIES = ['park', 'fountain', 'monument', 'museum', 'attraction'];
+const CUSTODI_CATEGORIES = ['partner', 'custodian', 'b2b'];
+const EVENTI_CATEGORIES = ['event', 'community', 'cleanup'];
 
 interface ScannedPoisSheetProps {
   visible: boolean;
   onClose: () => void;
   scannedPois: any[];
   theme: any;
+  onSelectPoi?: (poi: any) => void;
 }
 
-export default function ScannedPoisSheet({ visible, onClose, scannedPois, theme }: ScannedPoisSheetProps) {
-  const router = useRouter();
+type FilterKey = 'patrimonio' | 'custodi' | 'eventi';
+
+export default function ScannedPoisSheet({ visible, onClose, scannedPois, theme, onSelectPoi }: ScannedPoisSheetProps) {
+  const [activeFilter, setActiveFilter] = React.useState<FilterKey | null>(null);
+
+  const filteredPois = activeFilter === 'patrimonio'
+    ? scannedPois.filter(p => PATRIMONIO_CATEGORIES.includes(p.category))
+    : activeFilter === 'custodi'
+      ? scannedPois.filter(p => CUSTODI_CATEGORIES.includes(p.category))
+      : activeFilter === 'eventi'
+        ? scannedPois.filter(p => EVENTI_CATEGORIES.includes(p.category))
+        : scannedPois;
 
   // Calculate counters
-  const countNatura = scannedPois.filter(p => p.category === 'park' || p.category === 'fountain').length;
-  const countCultura = scannedPois.filter(p => p.category === 'monument' || p.category === 'museum').length;
-  const countPartner = scannedPois.filter(p => p.category === 'partner' || p.category === 'attraction').length;
+  const countPatrimonio = scannedPois.filter(p => PATRIMONIO_CATEGORIES.includes(p.category)).length;
+  const countCustodi = scannedPois.filter(p => CUSTODI_CATEGORIES.includes(p.category)).length;
+  const countEventi = scannedPois.filter(p => EVENTI_CATEGORIES.includes(p.category)).length;
 
   const renderPoiItem = ({ item }: { item: any }) => (
-    <View style={[styles.poiItem, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+    <TouchableOpacity
+      style={[styles.poiItem, { backgroundColor: theme.surface, borderColor: theme.border }]}
+      activeOpacity={0.8}
+      onPress={() => {
+        if (onSelectPoi) {
+          onClose();
+          onSelectPoi(item);
+        }
+      }}
+    >
       <View style={styles.poiImageContainer}>
         {item.image_url ? (
           <Image source={{ uri: item.image_url }} style={styles.poiImage} />
@@ -30,13 +53,14 @@ export default function ScannedPoisSheet({ visible, onClose, scannedPois, theme 
         )}
       </View>
       <View style={styles.poiInfo}>
-        <Text style={[styles.poiTitle, { color: theme.text }]} numberOfLines={1}>{item.title}</Text>
+        <Text style={[styles.poiTitle, { color: theme.text }]} numberOfLines={1}>{item.title || item.name}</Text>
         <Text style={[styles.poiCategory, { color: theme.textMuted }]}>{item.category || 'Mete'}</Text>
       </View>
       <View style={[styles.xpBadge, { backgroundColor: theme.accent + '20' }]}>
         <Text style={[styles.xpText, { color: theme.accent }]}>+{item.xp_reward || 15} XP</Text>
       </View>
-    </View>
+      <MaterialIcons name="chevron-right" size={22} color={theme.textMuted} style={{ marginLeft: 6 }} />
+    </TouchableOpacity>
   );
 
   return (
@@ -55,43 +79,45 @@ export default function ScannedPoisSheet({ visible, onClose, scannedPois, theme 
               Hai scansionato {scannedPois.length} luoghi di interesse.
             </Text>
 
-            {/* Counters Section from Old ProfileModal */}
+            {/* 3 Macro-Categorie Interattive */}
             {scannedPois.length > 0 && (
               <View style={[styles.statsCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <View style={styles.statsRow}>
-                  <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#2ECC71' }}>{countNatura}</Text>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Natura</Text>
-                  </View>
-                  <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#3498DB' }}>{countCultura}</Text>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Cultura</Text>
-                  </View>
-                  <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#E67E22' }}>{countPartner}</Text>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Partner</Text>
-                  </View>
-                  <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#9B59B6' }}>{scannedPois.length}</Text>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, textTransform: 'uppercase' }}>Segreti</Text>
-                  </View>
+                  <TouchableOpacity
+                    style={[styles.counterBtn, activeFilter === 'patrimonio' && { backgroundColor: theme.accent + '20', borderColor: theme.accent }]}
+                    onPress={() => setActiveFilter(activeFilter === 'patrimonio' ? null : 'patrimonio')}
+                  >
+                    <Text style={[styles.counterNum, { color: '#2ECC71' }]}>{countPatrimonio}</Text>
+                    <Text style={[styles.counterLabel, { color: theme.textMuted }]}>Patrimonio</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.counterBtn, activeFilter === 'custodi' && { backgroundColor: theme.accent + '20', borderColor: theme.accent }]}
+                    onPress={() => setActiveFilter(activeFilter === 'custodi' ? null : 'custodi')}
+                  >
+                    <Text style={[styles.counterNum, { color: '#E67E22' }]}>{countCustodi}</Text>
+                    <Text style={[styles.counterLabel, { color: theme.textMuted }]}>Custodi</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.counterBtn, activeFilter === 'eventi' && { backgroundColor: theme.accent + '20', borderColor: theme.accent }]}
+                    onPress={() => setActiveFilter(activeFilter === 'eventi' ? null : 'eventi')}
+                  >
+                    <Text style={[styles.counterNum, { color: '#3498DB' }]}>{countEventi}</Text>
+                    <Text style={[styles.counterLabel, { color: theme.textMuted }]}>Eventi</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.counterBtn, activeFilter === null && { backgroundColor: theme.accent + '20', borderColor: theme.accent }]}
+                    onPress={() => setActiveFilter(null)}
+                  >
+                    <Text style={[styles.counterNum, { color: '#9B59B6' }]}>{scannedPois.length}</Text>
+                    <Text style={[styles.counterLabel, { color: theme.textMuted }]}>Segreti</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity 
-                  style={{ backgroundColor: theme.accent, paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
-                  onPress={() => {
-                    onClose();
-                    router.push('/map');
-                  }}
-                >
-                  <MaterialIcons name="explore" size={16} color="#FFF" style={{ marginRight: 6 }} />
-                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Esplora ancora</Text>
-                </TouchableOpacity>
               </View>
             )}
 
-            {scannedPois.length > 0 ? (
+            {filteredPois.length > 0 ? (
               <FlatList
-                data={scannedPois}
+                data={filteredPois}
                 keyExtractor={(item, index) => item.id?.toString() || index.toString()}
                 renderItem={renderPoiItem}
                 contentContainerStyle={styles.listContent}
@@ -167,11 +193,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 5,
   },
-  statsRow: {
+statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    alignItems: 'center',
     width: '100%',
-    marginBottom: 15,
+  },
+  counterBtn: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  counterNum: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  counterLabel: {
+    fontSize: 9,
+    textTransform: 'uppercase',
+    marginTop: 2,
   },
   listContent: {
     paddingBottom: 40,

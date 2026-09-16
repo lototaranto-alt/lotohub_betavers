@@ -20,15 +20,15 @@ import SingleBadgeSheet from '../../components/SingleBadgeSheet';
 import TouristBaptismModal from '../../components/TouristBaptismModal';
 import XpToast from '../../components/XpToast';
 import LiveFeedBanner from '../../components/LiveFeedBanner';
-import MemoriesCameraModal from '../../components/MemoriesCameraModal';
 import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
+import PoiTrophyPassport from '../../components/PoiTrophyPassport';
 import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
 import ImpactStatsModal from '../../components/ImpactStatsModal';
 import VaultModal from '../../components/VaultModal';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
-import { useGamification } from '../../context/GamificationContext';
+
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
 import i18n from '../../locales/i18n';
@@ -43,7 +43,7 @@ const { width, height } = Dimensions.get('window');
 const DICTIONARY = {
   IT: {
     hello: 'Ciao',
-    guest: 'ESPLORATORE',
+    guest: 'VIAGGIATORE',
     impactTitle: 'IL TUO IMPATTO ECO-SOSTENIBILE',
     co2Lab: 'Kg CO2 Evitata',
     ptsLab: 'LOTO PTI',
@@ -205,6 +205,7 @@ export default function VetrinaScreen() {
   // STATI SPRINT B (Bottom Sheet e Accordion)
   const [selectedPoi, setSelectedPoi] = useState<any | null>(null);
   const [activeVaultPoiId, setActiveVaultPoiId] = useState<string | null>(null);
+  const [trophyPoi, setTrophyPoi] = useState<any | null>(null);
 
   const [distanceToday, setDistanceToday] = useState(0);
   const lastNotifiedDistance = useRef(0);
@@ -244,7 +245,6 @@ export default function VetrinaScreen() {
   const [openAccordion, setOpenAccordion] = useState<string | null>('recommended');
 
   const [isBaptismVisible, setIsBaptismVisible] = useState(false);
-  const [isCameraVisible, setIsCameraVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastData, setToastData] = useState({ xpAmount: 0, message: '' });
   const [localXpFallback, setLocalXpFallback] = useState(0);
@@ -539,10 +539,10 @@ export default function VetrinaScreen() {
     // Ricarica i dati per aggiornare UI (XP, Punti, ecc)
     caricaDati();
 
-    // Inoltra il POI reale selezionato al vero flusso NFC simulato
+    // Dopo mezzo secondo, appare in trionfo la Scheda Trofeo
     setTimeout(() => {
-      router.push(`/p/${poi.id}`);
-    }, 300);
+      setTrophyPoi(poi);
+    }, 500);
   };
 
   const trovaAlternativa = (poiAffollato: any) => {
@@ -557,17 +557,6 @@ export default function VetrinaScreen() {
   };
 
   const { openScanner } = useScanner();
-
-  const { queueEvents } = useGamification();
-  
-  const handleCheatGamification = () => {
-    queueEvents([
-      { type: 'BADGE', badge: { title: 'Guardiano del Tempo', desc: 'Hai sfidato le ere e sbloccato un potere nascosto.' } as any },
-      { type: 'LEVEL_UP', level: 25 },
-      { type: 'WHISPER', title: 'IL SUSSURRO DELLA CITTA', text: 'Le antiche pietre si ricordano di te. Sei un Custode ora.' }
-    ]);
-  };
-
 
   const renderHeader = () => {
     const nextLevelXp = levelInfo.title === t.levelBronze ? 100 : (levelInfo.title === t.levelSilver ? 500 : 1000);
@@ -617,7 +606,7 @@ export default function VetrinaScreen() {
         {/* --- 1. HEADER BOUTIQUE --- */}
         <View style={{ alignItems: 'center', marginBottom: 15, marginTop: 30 }}>
           <Text style={{ fontFamily: 'PlayfairDisplay_400Regular', fontSize: 48, color: '#1A3621', letterSpacing: 3, textAlign: 'center' }}>
-            L.O.T.O. HUB
+            LOTO MAP
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
             <MaterialIcons name="eco" size={18} color="#BCA37F" />
@@ -801,7 +790,7 @@ export default function VetrinaScreen() {
     });
 
     return [
-      { id: 'recommended', title: 'Mete Consigliate ✨', data: sorted.filter(p => p.is_recommended) },
+      { id: 'recommended', title: 'Mete Consigliate', icon: 'explore', data: sorted.filter(p => p.is_recommended) },
       { id: 'free', title: 'Culturali 🏛️', data: sorted.filter(p => (p.category === 'free' || p.category === 'museum' || p.category === 'attraction' || p.category === 'monument' || p.category === 'park') && !p.is_recommended) },
       { id: 'partner', title: 'Boutique & Partner 🛍️', data: sorted.filter(p => p.category === 'partner') },
       { id: 'secret', title: 'Mete Segrete 🤫', data: sorted.filter(p => p.category === 'secret') },
@@ -927,27 +916,8 @@ export default function VetrinaScreen() {
     <ContentWrapper {...wrapperProps}>
       <SafeAreaView style={styles.container}>
 
-          {/* CHEAT BUTTON */}
-          <TouchableOpacity 
-            onPress={handleCheatGamification} 
-            style={{ margin: 20, padding: 15, backgroundColor: '#FF0055', borderRadius: 10, alignItems: 'center' }}>
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>CHEAT: TESTA TRANSIZIONI GAMIFICATION</Text>
-          </TouchableOpacity>
-
         <StatusBar barStyle="dark-content" />
           
-          <TouchableOpacity 
-            onPress={() => setIsCameraVisible(true)}
-            style={{ position: 'absolute', bottom: 20, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', elevation: 10, zIndex: 100 }}>
-            <MaterialIcons name="camera" size={28} color="#FFF" />
-          </TouchableOpacity>
-
-          <MemoriesCameraModal 
-            visible={isCameraVisible} 
-            onClose={() => setIsCameraVisible(false)} 
-            userLevel={levelProgress.currentLevel} 
-            theme={theme} 
-          />
         <FlatList
           data={getDynamicPois()} // Scaffali Netflix
           ListHeaderComponent={renderHeader}
@@ -1006,8 +976,9 @@ export default function VetrinaScreen() {
         <ScannedPoisSheet
           visible={isScannedPoisVisible}
           onClose={() => setIsScannedPoisVisible(false)}
-          scannedPois={pois.slice(0, Math.max(userProfile?.pois_discovered || 0, localPoisFallback))}
+          scannedPois={pois.filter(p => userTransactions.some(t => t.poi_id === p.id))}
           theme={theme}
+          onSelectPoi={(poi) => setTrophyPoi(poi)}
         />
 
         <TouristBaptismModal
@@ -1032,6 +1003,13 @@ export default function VetrinaScreen() {
           poi={selectedPoi}
           onClose={() => setIsSheetVisible(false)}
           onCheckIn={handleCheckIn}
+        />
+
+        <PoiTrophyPassport
+          visible={trophyPoi !== null}
+          poi={trophyPoi}
+          userLevel={levelProgress.currentLevel}
+          onClose={() => setTrophyPoi(null)}
         />
 
       {/* BOTTONE TIPS ELIMINATO: spostato nell'header */}
