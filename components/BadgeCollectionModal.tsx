@@ -65,7 +65,7 @@ const ALL_BADGES_CATALOG = [
   },
   { 
     id: 'badge_level_5', 
-    name: 'Cittadino Attivo (Liv. 5)', 
+    name: 'Cittadino Attivo',
     icon: 'stars', 
     desc: 'Raggiungi il Livello 5 accumulando esperienza civica e sblocca il Rango Argento.', 
     actionLabel: 'Vedi Diario XP', 

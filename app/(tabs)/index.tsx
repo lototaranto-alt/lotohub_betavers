@@ -9,7 +9,7 @@ import { supabase } from '../../utils/supabase';
 import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
 import { ThemeProvider as AppThemeProvider } from '../../context/ThemeContext';
 import { useCity } from '../../context/CityContext';
-import { getLevelProgress } from '../../utils/levelUtils';
+import { calculateLevel, getLevelProgress } from '../../utils/levelUtils';
 import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
@@ -307,8 +307,8 @@ export default function VetrinaScreen() {
     if (userProfile && userProfile.total_xp !== undefined) {
       const currentXp = userProfile.total_xp;
       if (prevXp > 0 && currentXp > prevXp) {
-        const oldLevel = Math.floor(prevXp / 100);
-        const newLevel = Math.floor(currentXp / 100);
+        const oldLevel = calculateLevel(prevXp);
+        const newLevel = calculateLevel(currentXp);
         if (newLevel > oldLevel) {
           // LEVEL UP! Mostra i Tips per 3 minuti
           setIsTipsVisible(true);
@@ -563,8 +563,6 @@ export default function VetrinaScreen() {
   const { openScanner } = useScanner();
 
   const renderHeader = () => {
-    const nextLevelXp = levelInfo.title === t.levelBronze ? 100 : (levelInfo.title === t.levelSilver ? 500 : 1000);
-    const progressPerc = Math.min(100, Math.max(0, (userXp / nextLevelXp) * 100));
     const isPartner = userProfile?.flow_role === 'LOTO Partner';
 
     const mobilityConfig = getMobilityPillStyle(mobilityType || 'dolce');

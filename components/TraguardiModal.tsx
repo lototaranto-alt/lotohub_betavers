@@ -36,7 +36,7 @@ export default function TraguardiModal({ visible, onClose, userBadges, userProfi
     { id: 'badge_explorer_5', name: 'Pioniere', icon: 'explore', color: '#9B59B6', target: 5, unit: 'Segreti' },
     { id: 'badge_eco_5kg', name: 'Anima Green', icon: 'eco', color: '#4CAF50', target: 5, unit: 'Kg CO2' },
     { id: 'badge_marathon_3', name: 'Maratoneta', icon: 'directions-run', color: '#FF9800', target: 3, unit: 'Itinerari' },
-    { id: 'badge_level_5', name: 'Cittadino', icon: 'stars', color: '#FFD700', target: 5, unit: 'Livelli' }
+    { id: 'badge_level_5', name: 'Cittadino Attivo', icon: 'stars', color: '#FFD700', target: 5, unit: 'Livelli' }
   ];
 
   return (
