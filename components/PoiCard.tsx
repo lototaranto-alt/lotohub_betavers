@@ -40,7 +40,7 @@ export default function PoiCard({ item, userLocation, userProfile, onAction, onA
     badgeColor = theme.accent;
     badgeIcon = 'workspace-premium';
   } else {
-    badgeText = `CAPACITÃ€: ${isCrowded ? 'ALTA' : 'MEDIA'}`;
+    badgeText = `CAPACITÀ: ${isCrowded ? 'ALTA' : 'MEDIA'}`;
     badgeColor = isCrowded ? '#D32F2F' : '#F57C00';
     badgeIcon = 'groups';
   }

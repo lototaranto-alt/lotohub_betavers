@@ -14,19 +14,19 @@ const { width, height } = Dimensions.get('window');
 // 1. Funzione di Risoluzione Rango
 const getRankInfo = (level: number) => {
   if (level < 11) return { 
-    title: 'TURISTA CURIOSO', 
+    title: 'TURISTA OCCASIONALE',
     asset: require('../assets/images/logo-LOTO.png') 
   };
   if (level < 21) return { 
-    title: 'CITTADINO ATTIVO', 
+    title: 'ESPLORATORE',
     asset: require('../assets/images/logo-LOTO.png') 
   };
   if (level < 31) return { 
-    title: 'CUSTODE URBANO', 
+    title: 'CUSTODE DELLA CITTÀ',
     asset: require('../assets/images/logo-LOTO.png') 
   };
   if (level < 41) return { 
-    title: 'EROE JONICO', 
+    title: 'EROE DEL MARE',
     asset: require('../assets/images/logo-LOTO.png') 
   };
   return { 

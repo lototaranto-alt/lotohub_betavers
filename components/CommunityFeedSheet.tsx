@@ -15,10 +15,10 @@ interface FeedItem {
 }
 
 const MOCK_FEED: FeedItem[] = [
-  { id: '1', user: 'Esploratore Anonimo', action: 'ha scoperto il Museo MarTa', time: '2 min fa', icon: 'location-on', color: '#2ECC71' },
+  { id: '1', user: 'Viaggiatore Anonimo', action: 'ha scoperto il Museo MarTa', time: '2 min fa', icon: 'location-on', color: '#2ECC71' },
   { id: '2', user: 'Marco', action: 'ha raggiunto la Fioritura del Loto', time: '15 min fa', icon: 'eco', color: '#D4AF37' },
   { id: '3', user: 'Anna', action: 'ha donato 50 PTI alla causa "Pulizia Spiagge"', time: '1 ora fa', icon: 'water-drop', color: '#3498DB' },
-  { id: '4', user: 'Esploratore Anonimo', action: 'ha rivelato un antico Whisper', time: '2 ore fa', icon: 'record-voice-over', color: '#9B59B6' },
+  { id: '4', user: 'Viaggiatore Anonimo', action: 'ha rivelato un antico Whisper', time: '2 ore fa', icon: 'record-voice-over', color: '#9B59B6' },
   { id: '5', user: 'Squadra LOTO', action: 'ha sbloccato il Bonus Sincronia a Taranto Vecchia', time: '3 ore fa', icon: 'people', color: '#E67E22' },
 ];
 

@@ -20,7 +20,7 @@ interface ProfileModalProps {
 
 export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userTokens, theme, setUserProfile }: ProfileModalProps) {
   const [editingNickname, setEditingNickname] = useState(false);
-  const [tempNickname, setTempNickname] = useState(userProfile?.nickname || 'ESPLORATORE');
+  const [tempNickname, setTempNickname] = useState(userProfile?.nickname || 'VIAGGIATORE');
   const [activeTab, setActiveTab] = useState<'identity' | 'squad'>('identity');
   const [isScanning, setIsScanning] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
@@ -28,7 +28,7 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
   React.useEffect(() => {
     if (visible && userProfile?.id) {
       setEditingNickname(false);
-      setTempNickname(userProfile.nickname || 'ESPLORATORE');
+      setTempNickname(userProfile.nickname || 'VIAGGIATORE');
       setActiveTab('identity');
     }
   }, [visible, userProfile?.id]);

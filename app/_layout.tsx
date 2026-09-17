@@ -95,8 +95,8 @@ export default function RootLayout() {
       } catch (fatalErr: any) {
         console.error('[Auth] Deep Recovery fallita:', fatalErr.message);
         Alert.alert(
-          "ModalitÃ  Offline",
-          "Connessione ai server instabile (Err: " + fatalErr.message + "). L'app funzionerÃ  offline.",
+          "Modalità Offline",
+          "Connessione ai server instabile (Err: " + fatalErr.message + "). L'app funzionerà offline.",
           [{ text: "OK" }]
         );
       }

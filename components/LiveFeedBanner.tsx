@@ -11,7 +11,7 @@ interface LiveFeedBannerProps {
 
 const MOCK_MESSAGES = [
   "Marco ha appena raggiunto la Fioritura del Loto! 🌸",
-  "Esploratore Anonimo ha scoperto il Museo MarTa",
+  "Viaggiatore Anonimo ha scoperto il Museo MarTa",
   "Anna ha donato 50 PTI per pulire le spiagge",
   "Squadra LOTO ha sbloccato il Bonus Sincronia 🤝",
   "Un antico Whisper è stato rivelato in Via Cava 🤫"

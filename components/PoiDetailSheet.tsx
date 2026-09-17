@@ -75,7 +75,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
     let sub: any;
     if (visible && poi) {
       (async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
+        let { status } = await Location.getForegroundPermissionsAsync();
         if (status !== 'granted') return;
         
         // Controlla se c'Ã¨ un timer in corso in AsyncStorage
@@ -87,7 +87,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
         sub = await Location.watchPositionAsync({ distanceInterval: 10 }, (loc) => {
            if ((poi.lat || poi.latitude) && (poi.lng || poi.longitude)) {
               const dist = calculateDistanceRaw(loc.coords.latitude, loc.coords.longitude, (poi.lat || poi.latitude), (poi.lng || poi.longitude));
-              setGpsDistance(dist); // giÃ  in metri
+              setGpsDistance(dist); // già in metri
            }
         });
       })();
@@ -310,7 +310,7 @@ const handleRiscattaVisitaGPS = async () => {
 
     if (!netState.isConnected) {
       Alert.alert(
-        "ModalitÃ  Offline",
+        "Modalità Offline",
         `Non hai connessione internet. Vuoi prenotare lo sblocco di "${media.title}"? I contenuti si scaricheranno appena ritrovi la rete.`,
         [
           { text: "Annulla", style: "cancel" },
@@ -319,7 +319,7 @@ const handleRiscattaVisitaGPS = async () => {
             onPress: async () => {
               await OfflineQueueManager.enqueueUnlock(media.id, 0, poi.name);
               setMediaStatus(prev => ({ ...prev, [media.id]: 'queued' }));
-              Alert.alert("Sblocco Prenotato", "Sblocco registrato in locale. Il file si scaricherÃ  in background quando tornerai online.");
+              Alert.alert("Sblocco Prenotato", "Sblocco registrato in locale. Il file si scaricherà in background quando tornerai online.");
             }
           }
         ]
@@ -361,7 +361,7 @@ const handleRiscattaVisitaGPS = async () => {
 
       if (localPath) {
         setMediaStatus(prev => ({ ...prev, [media.id]: 'ready' }));
-        Alert.alert("Successo!", `"${media.title}" Ã¨ stato sbloccato e scaricato localmente per l'ascolto offline.`);
+        Alert.alert("Successo!", `"${media.title}" è stato sbloccato e scaricato localmente per l'ascolto offline.`);
       } else {
         setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
         Alert.alert("Errore", "Salvataggio locale fallito.");
@@ -580,7 +580,7 @@ const handleRiscattaVisitaGPS = async () => {
                     onCheckIn(poi);
                   }
                 } catch(e: any) {
-                  Alert.alert('Errore', 'Non Ã¨ stato possibile validare la scansione sul server: ' + e.message);
+                  Alert.alert('Errore', 'Non è stato possibile validare la scansione sul server: ' + e.message);
                 }
               }}
             />
@@ -592,7 +592,7 @@ const handleRiscattaVisitaGPS = async () => {
                  setIsEventSheetVisible(false);
                  Alert.alert(
                    'âœ¨ Evento Completato!', 
-                   'Hai confermato la presenza alla Raccolta Rifiuti al Lido Azzurro. Ti Ã¨ stato conferito il badge \"Sentinella\"!'
+                   'Hai confermato la presenza alla Raccolta Rifiuti al Lido Azzurro. Ti è stato conferito il badge \"Sentinella\"!'
                  );
                  onCheckIn(poi); // Aggiorna la Home
                }}
@@ -647,7 +647,7 @@ const handleRiscattaVisitaGPS = async () => {
                       ) : (
                          <View style={{padding: 10, backgroundColor: theme.surface, borderRadius: 8, marginTop: 10, alignItems: 'center'}}>
                             <MaterialIcons name="vpn-key" size={16} color={theme.textMuted} />
-                            <Text style={{color: theme.textMuted, fontSize: 11, marginTop: 4}}>La storia si rivelerÃ  solo quando sarai sul posto.</Text>
+                            <Text style={{color: theme.textMuted, fontSize: 11, marginTop: 4}}>La storia si rivelerà solo quando sarai sul posto.</Text>
                          </View>
                       )}
                     </View>
@@ -819,7 +819,7 @@ const handleRiscattaVisitaGPS = async () => {
                       <Text style={[styles.governanceTitle, { color: theme.accent }]}>Suggerimento Sosta Strategica</Text>
                     </View>
                     <Text style={[styles.governanceText, { color: theme.textMuted }]}>
-                      La zona intorno a {poi.name} Ã¨ a traffico limitato o congestionata. Parcheggia comodamente a "Park Porto Antico" e guadagna <Text style={{fontWeight: 'bold', color: theme.accent}}>+10 PTI</Text>.
+                      La zona intorno a {poi.name} è a traffico limitato o congestionata. Parcheggia comodamente a "Park Porto Antico" e guadagna <Text style={{fontWeight: 'bold', color: theme.accent}}>+10 PTI</Text>.
                     </Text>
                     <TouchableOpacity style={[styles.navParkingBtn, { backgroundColor: theme.accent }]} onPress={() => handleNavigate('driving', true)}>
                       <MaterialIcons name="navigation" size={16} color={theme.background} style={{ marginRight: 5 }} />

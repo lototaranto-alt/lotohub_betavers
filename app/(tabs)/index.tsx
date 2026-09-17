@@ -60,7 +60,7 @@ const DICTIONARY = {
     modalTok: 'Token Accumulati',
     modalDev: 'DEV TOOLS ðŸ› ï¸ (Modalità Super User)',
     levelGold: 'EROE DEL MARE',
-    levelSilver: 'CUSTODE DELLA CITTÀ€',
+    levelSilver: 'CUSTODE DELLA CITTÀ',
     levelBronze: 'ECO-NAVIGATORE',
     refillBadge: 'ðŸš° 💧 STAZIONE REFILL: BONUS IDRICO',
     crowdWarning: 'ðŸ”´ 🔥 META MOLTO AFFOLLATA',
@@ -783,7 +783,7 @@ export default function VetrinaScreen() {
   // OFFLINE FALLBACK: Scegliamo il valore più alto tra il DB (se esiste) e la memoria locale
   const userXp = Math.max(userProfile?.total_xp ?? 0, localXpFallback);
   const levelProgress = getLevelProgress(userXp, theme);
-  const levelInfo = { title: levelProgress.levelTitle, stemma: levelProgress.stemma, color: levelProgress.color };
+  const levelInfo = { title: levelProgress.levelTitle, stemma: levelProgress.stemma, color: levelProgress.color, level: levelProgress.currentLevel };
 
   const getDynamicPois = () => {
     // Ordina tutti i POI per distanza

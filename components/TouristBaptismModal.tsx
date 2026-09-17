@@ -93,7 +93,7 @@ export default function TouristBaptismModal({ visible, onClose, userProfile, onN
                 backgroundColor: theme.background
               }
             ]}
-            placeholder="Il tuo nome esploratore..."
+            placeholder="Il tuo nome viaggiatore..."
             placeholderTextColor={theme.textMuted}
             value={nickname}
             onChangeText={(text) => {
