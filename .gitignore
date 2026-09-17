@@ -53,3 +53,6 @@ temp_backup_2/.env
 # Supabase generated dumps
 # schema_dump.sql e types/database.ts SONO committati (SSOT). Il data dump no (PII/geolocalizzazioni).
 supabase/schema/data_dump.sql
+
+# Cache/temp della Supabase CLI (tracciata per errore nell'Initial commit)
+supabase/.temp/
