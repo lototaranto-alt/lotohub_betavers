@@ -82,9 +82,9 @@ export const getRankInfo = (lvl: number): RankInfo => {
   if (lvl < 11) {
     return { rankName: 'TURISTA OCCASIONALE', nextRank: 'ESPLORATORE', color: '#8D6E63', requiredLvl: 11 };
   } else if (lvl < 21) {
-    return { rankName: 'ESPLORATORE', nextRank: 'CUSTODE DELLA CITTÃ€', color: '#2A9D8F', requiredLvl: 21 };
+    return { rankName: 'ESPLORATORE', nextRank: 'CUSTODE DELLA CITTÀ', color: '#2A9D8F', requiredLvl: 21 };
   } else if (lvl < 31) {
-    return { rankName: 'CUSTODE DELLA CITTÃ€', nextRank: 'EROE DEL MARE', color: '#D4AF37', requiredLvl: 31 };
+    return { rankName: 'CUSTODE DELLA CITTÀ', nextRank: 'EROE DEL MARE', color: '#D4AF37', requiredLvl: 31 };
   } else if (lvl < 41) {
     return { rankName: 'EROE DEL MARE', nextRank: 'LEGGENDA L.O.T.O.', color: '#00CED1', requiredLvl: 41 };
   } else {
@@ -157,7 +157,7 @@ export const getAvatarFrameStyle = (level: number) => {
   
   // L'anello attorno all'avatar "scatta" e cresce a ogni singolo livello! (da 2 a 6.5)
   const dynamicBorderWidth = 1.5 + (progressInRank * 0.5);
-  // Anche l'Aura (shadow) pulsa diventando piÃ¹ intensa a ogni livello
+  // Anche l'Aura (shadow) pulsa diventando più intensa a ogni livello
   const dynamicGlowOpacity = 0.2 + (progressInRank * 0.07);
 
   // Tier 5: L'Aura Dorata (Liv 41+)

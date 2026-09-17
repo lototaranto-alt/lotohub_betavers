@@ -28,7 +28,6 @@ import ImpactStatsModal from '../../components/ImpactStatsModal';
 import VaultModal from '../../components/VaultModal';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
-
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
 import i18n from '../../locales/i18n';
@@ -59,7 +58,7 @@ const DICTIONARY = {
     modalCo2: 'CO2 Evitata',
     modalPlast: 'Plastica Ridotta',
     modalTok: 'Token Accumulati',
-    modalDev: 'DEV TOOLS ðŸ› ï¸ (ModalitÃ  Super User)',
+    modalDev: 'DEV TOOLS ðŸ› ï¸ (Modalità Super User)',
     levelGold: 'EROE DEL MARE',
     levelSilver: 'CUSTODE DELLA CITTÀ€',
     levelBronze: 'ECO-NAVIGATORE',
@@ -144,7 +143,7 @@ export default function VetrinaScreen() {
   const [communityStats, setCommunityStats] = useState<any>(null);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
 
-  // --- STATO TRIANGOLO DELLA VERITÃ€ (INTEGRALE) ---
+  // --- STATO TRIANGOLO DELLA VERITÀ (INTEGRALE) ---
   const [isMotorized, setIsMotorized] = useState(false);
   const lastSample = useRef<{ coords: Location.LocationObjectCoords; timestamp: number } | null>(null);
   const KINEMATIC_TIMER_MS = 60000;
@@ -160,7 +159,7 @@ export default function VetrinaScreen() {
   const [tipsAnim] = useState(new Animated.Value(1));
   const [liveFeedIndex, setLiveFeedIndex] = useState(0);
   const [liveFeeds, setLiveFeeds] = useState<string[]>([
-    "Un ESPLORATORE ha scoperto un nuovo POI!",
+    "Un VIAGGIATORE ha scoperto un nuovo POI!",
     "La community ha raggiunto 120kg di CO2 risparmiata oggi!"
   ]);
 
@@ -172,7 +171,7 @@ export default function VetrinaScreen() {
           const feedTypes = ['scan', 'badge', 'level', 'report'];
           const builtFeed = data.map((p, i) => {
             const type = feedTypes[i % feedTypes.length];
-            const name = p.nickname || 'Un ESPLORATORE';
+            const name = p.nickname || 'Un VIAGGIATORE';
             if (type === 'scan') return `${name} ha scoperto un nuovo POI!`;
             if (type === 'badge') return `${name} ha sbloccato il badge Sentinella`;
             if (type === 'level') return `${name} ha raggiunto il Livello ${p.level || 2}`;
@@ -219,7 +218,7 @@ export default function VetrinaScreen() {
       if (stored) setDistanceToday(parseInt(stored, 10));
     });
 
-    // 2. Ascolta gli incrementi live dal motore di SincroAvventura
+    // 2. Ascolta gli incrementi live dal motore di EcoPassi
     const subscription = DeviceEventEmitter.addListener('onDistanceIncrement', (event) => {
       setDistanceToday(event.total);
       
@@ -256,7 +255,6 @@ export default function VetrinaScreen() {
 
   const getLevelInfo = (tokens: number) => {
     if (tokens >= 500) return { title: "EROE DEL MARE", badge: require('../../assets/images/badge_gold_1775676641737.png'), color: theme.accent, stemma: 'workspace-premium' as any };
-    if (tokens >= 100) return { title: "ESPLORATORE", badge: require('../../assets/images/badge_silver_1775675392322.png'), color: theme.primary, stemma: 'security' as any };
     return { title: "TURISTA OCCASIONALE", badge: require('../../assets/images/badge_bronze_1775675369793.png'), color: theme.secondary, stemma: 'sailing' as any };
   };
 
@@ -326,13 +324,19 @@ export default function VetrinaScreen() {
   const caricaDati = async () => {
     try {
       let fetchedPois: any[] = [];
-      const { data: poiData, error } = await supabase.from('vw_pois_frontend').select('*').eq('is_active', true);
+      const { data: poiData, error } = await supabase
+        .from('vw_pois_frontend')
+        .select('*')
+        .eq('tenant_id', currentTenant?.slug || 'taranto')
+        .eq('is_active', true)
+        .not('lat', 'is', null);
+
       if (error) {
         console.log("ERRORE RPC get_pois:", error);
       }
       if (poiData) {
         fetchedPois = poiData;
-        setPois(fetchedPois);
+        setPois(fetchedPois.map(p => ({ ...p, latitude: p.latitude || p.lat, longitude: p.longitude || p.lng })));
       }
 
       // Fetch Eventi Pubblici
@@ -411,7 +415,7 @@ export default function VetrinaScreen() {
   };
 
   useEffect(() => {
-    // Apri il modale di battesimo se il caricamento Ã¨ finito, c'Ã¨ un profilo ma non ha un nickname
+    // Apri il modale di battesimo se il caricamento è finito, c'è un profilo ma non ha un nickname
     if (!loading && userProfile && !userProfile.nickname) {
       // setIsBaptismVisible(true); // DISABILITATO PER ZERO-PII: l'app rimane 100% anonima
     }
@@ -474,7 +478,7 @@ export default function VetrinaScreen() {
 
   const executeScan = async (poi: any) => {
     if (isMotorized) {
-      Alert.alert("VelocitÃ  Elevata", "L'uso di mezzi motorizzati sospende l'erogazione di XP mobilitÃ .");
+      Alert.alert("Velocità Elevata", "L'uso di mezzi motorizzati sospende l'erogazione di XP mobilità.");
       return;
     }
 
@@ -499,7 +503,7 @@ export default function VetrinaScreen() {
 
     const { data: existing } = await supabase.from('impact_transactions').select('id').eq('receipt_hash', receiptHash).single();
     if (existing) {
-      Alert.alert("Errore", "Scontrino giÃ  registrato.");
+      Alert.alert("Errore", "Scontrino già registrato.");
       return;
     }
 
@@ -547,8 +551,8 @@ export default function VetrinaScreen() {
 
   const trovaAlternativa = (poiAffollato: any) => {
     Alert.alert(
-      "CapacitÃ  Massima Raggiunta",
-      `Il luogo ${poiAffollato.name} Ã¨ attualmente sovraffollato. Il protocollo LOTO ti invia alla mappa per esplorare opzioni sicure e guadagnare piÃ¹ punti!`,
+      "Capacità Massima Raggiunta",
+      `Il luogo ${poiAffollato.name} è attualmente sovraffollato. Il protocollo LOTO ti invia alla mappa per esplorare opzioni sicure e guadagnare più punti!`,
       [
         { text: "Resta qui", style: "cancel" },
         { text: "Apri Mappa", onPress: () => router.push('/map') }
@@ -571,7 +575,7 @@ export default function VetrinaScreen() {
       { 
         id: 'badge_first_scan', name: 'Battesimo', icon: 'location-on', color: '#2ECC71', 
         unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan'),
-        actionDescription: 'Scansiona il tuo primo POI (fontanella o punto d\'ombra) per iniziare a mappare la cittÃ .',
+        actionDescription: 'Scansiona il tuo primo POI (fontanella o punto d\'ombra) per iniziare a mappare la città.',
         progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan') ? 100 : Math.min(99, (userProfile?.pois_discovered || 0) * 100)
       },
       { 
@@ -583,7 +587,7 @@ export default function VetrinaScreen() {
       { 
         id: 'badge_eco_5kg', name: 'Eco-Sostenitore', icon: 'eco', color: '#4CAF50', 
         unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg'),
-        actionDescription: 'Mantieni uno stile di mobilitÃ  dolce (bici/piedi) per 5 giorni consecutivi.',
+        actionDescription: 'Mantieni uno stile di mobilità dolce (bici/piedi) per 5 giorni consecutivi.',
         progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg') ? 100 : 20
       },
       { 
@@ -595,7 +599,7 @@ export default function VetrinaScreen() {
       { 
         id: 'badge_level_5', name: 'Cittadino Attivo', icon: 'stars', color: '#FFD700', 
         unlocked: isLevel5OrAbove,
-        actionDescription: 'Raggiungi il Livello 5 accumulando punti esperienza per la cittÃ .',
+        actionDescription: 'Raggiungi il Livello 5 accumulando punti esperienza per la città.',
         progress: Math.min(100, Math.round(((levelProgress.currentLevel) / 5) * 100))
       }
     ];
@@ -625,7 +629,7 @@ export default function VetrinaScreen() {
             {/* Left Side: Info & XP */}
             <View style={{ flex: 1, paddingRight: 10 }}>
               <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 11, color: '#D4AF37', letterSpacing: 1, marginBottom: 2 }}>
-                BENTORNATO, TARANTO (POIS: {pois.length})
+                BENTORNATO, TARANTO
               </Text>
               <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 20, color: '#FFF', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 }} numberOfLines={1}>
                 {userProfile?.nickname || t.guest}
@@ -669,7 +673,7 @@ export default function VetrinaScreen() {
             <TouchableOpacity onPress={() => setIsExpModalVisible(true)} activeOpacity={0.8} style={{ alignItems: 'center' }}>
               <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#3B5F31', borderWidth: levelProgress.currentLevel >= 5 ? 3 : 2, borderColor: levelProgress.currentLevel >= 5 ? '#D4AF37' : 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', elevation: levelProgress.currentLevel >= 5 ? 10 : 4, shadowColor: levelProgress.currentLevel >= 5 ? '#D4AF37' : '#000' }}>
                 <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 28, color: '#FFF' }}>
-                  {(userProfile?.nickname || 'ESPLORATORE')[0].toUpperCase()}
+                  {(userProfile?.nickname || 'VIAGGIATORE')[0].toUpperCase()}
                 </Text>
               </View>
               <View style={{ backgroundColor: '#FDFBF7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: levelProgress.color || '#D4AF37', marginTop: 2, elevation: 5 }}>
@@ -713,7 +717,7 @@ export default function VetrinaScreen() {
                       { scale: distanceScaleAnim },
                       { translateX: pushRotateAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 6] }) }
                     ] }}>
-                    <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={12} color="#FFF" style={{marginRight: 4}} />
+                    <MaterialIcons name="route" size={12} color="#FFF" style={{marginRight: 4}} />
                   </Animated.View>
                   <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
                     {distanceToday > 1000 ? (distanceToday/1000).toFixed(1) + ' Km' : distanceToday + ' m'}
@@ -776,7 +780,7 @@ export default function VetrinaScreen() {
 
   // Rimossa BreathingLeaf iniziale come richiesto
   const userTokens = userProfile?.total_tokens ?? 0;
-  // OFFLINE FALLBACK: Scegliamo il valore piÃ¹ alto tra il DB (se esiste) e la memoria locale
+  // OFFLINE FALLBACK: Scegliamo il valore più alto tra il DB (se esiste) e la memoria locale
   const userXp = Math.max(userProfile?.total_xp ?? 0, localXpFallback);
   const levelProgress = getLevelProgress(userXp, theme);
   const levelInfo = { title: levelProgress.levelTitle, stemma: levelProgress.stemma, color: levelProgress.color };
@@ -784,16 +788,16 @@ export default function VetrinaScreen() {
   const getDynamicPois = () => {
     // Ordina tutti i POI per distanza
     const sorted = [...pois].sort((a, b) => {
-      const distA = userLocation ? calculateDistanceRaw(userLocation.coords.latitude, userLocation.coords.longitude, a.latitude, a.longitude) : 0;
-      const distB = userLocation ? calculateDistanceRaw(userLocation.coords.latitude, userLocation.coords.longitude, b.latitude, b.longitude) : 0;
+      const distA = userLocation ? calculateDistanceRaw(userLocation.coords.latitude, userLocation.coords.longitude, a.latitude || a.lat, a.longitude || a.lng) : 0;
+      const distB = userLocation ? calculateDistanceRaw(userLocation.coords.latitude, userLocation.coords.longitude, b.latitude || b.lat, b.longitude || b.lng) : 0;
       return distA - distB;
     });
 
     return [
       { id: 'recommended', title: 'Mete Consigliate', icon: 'explore', data: sorted.filter(p => p.is_recommended) },
-      { id: 'free', title: 'Culturali 🏛️', data: sorted.filter(p => (p.category === 'free' || p.category === 'museum' || p.category === 'attraction' || p.category === 'monument' || p.category === 'park') && !p.is_recommended) },
-      { id: 'partner', title: 'Boutique & Partner 🛍️', data: sorted.filter(p => p.category === 'partner') },
-      { id: 'secret', title: 'Mete Segrete 🤫', data: sorted.filter(p => p.category === 'secret') },
+      { id: 'free', icon: 'account-balance', title: 'Culturali', data: sorted.filter(p => (p.category === 'free' || p.category === 'museum' || p.category === 'attraction' || p.category === 'monument' || p.category === 'park') && !p.is_recommended) },
+      { id: 'partner', icon: 'storefront', title: 'Boutique & Partner', data: sorted.filter(p => p.category === 'partner') },
+      { id: 'secret', icon: 'vpn-key', title: 'Mete Segrete', data: sorted.filter(p => p.category === 'secret') },
 
     ];
   };
@@ -802,9 +806,12 @@ export default function VetrinaScreen() {
     return (
       <View style={{ marginBottom: 30 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, paddingHorizontal: 20 }}>
-          <Text style={{ fontSize: 20, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold', color: theme.text }}>
-            {item.title}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              {item.icon && <MaterialIcons name={item.icon} size={22} color={theme.text} style={{ marginRight: 8 }} />}
+              <Text style={{ fontSize: 20, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold', color: theme.text }}>
+                {item.title}
+              </Text>
+            </View>
           {item.id === 'recommended' && (
             <Animated.View style={{ transform: [{ scale: tipsAnim }] }}>
               <TouchableOpacity onPress={() => setIsTipsVisible(true)} style={{ backgroundColor: '#FDFBF7', padding: 6, borderRadius: 20, elevation: 4, borderWidth: 1, borderColor: '#D4AF37' }}>
@@ -1049,7 +1056,7 @@ export default function VetrinaScreen() {
               >
                 <MaterialIcons name="pedal-bike" size={24} color={mobilityType === 'dolce' ? theme.primary : theme.text} style={{ marginRight: 15 }} />
                 <View>
-                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: mobilityType === 'dolce' ? theme.primary : theme.text }}>MobilitÃ  Dolce</Text>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: mobilityType === 'dolce' ? theme.primary : theme.text }}>Mobilità Dolce</Text>
                   <Text style={{ fontSize: 12, color: theme.textMuted }}>Bici, Monopattino, Piedi (Miglior Impatto)</Text>
                 </View>
               </TouchableOpacity>

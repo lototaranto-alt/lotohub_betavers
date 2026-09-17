@@ -77,8 +77,8 @@ export default function MapScreen() {
     });
   }, []);
 
-  // [MODIFICA UX] Il pedometro NON si avvia piÃ¹ in automatico all'apertura della mappa
-  // VerrÃ  spostato in un trigger manuale (es. Onboarding Tips) per azzerare la frizione.
+  // [MODIFICA UX] Il pedometro NON si avvia più in automatico all'apertura della mappa
+  // Verrà spostato in un trigger manuale (es. Onboarding Tips) per azzerare la frizione.
   useEffect(() => {
     // Sincro-Avventura rimossa dall'auto-avvio
   }, [isAccessibleMode, userId]);
@@ -314,7 +314,7 @@ export default function MapScreen() {
             onPress={() => { setHeatmapOn(!heatmapOn); setIsLayerDropdownOpen(false); }}
           >
             <MaterialIcons name="local-fire-department" size={16} color={heatmapOn ? '#E63946' : theme.primary} />
-            <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text }]} numberOfLines={1}>DensitÃƒÂ </Text>
+            <Text style={[styles.pillText, { color: heatmapOn ? '#E63946' : theme.text }]} numberOfLines={1}>Densità</Text>
           </TouchableOpacity>
           
           <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 8 }} />
@@ -369,7 +369,7 @@ export default function MapScreen() {
       {/* FAB GROUP (Bottom Right) */}
       <View style={{ position: 'absolute', bottom: tabBarHeight + 20, right: 20, alignItems: 'flex-end' }}>
         
-        {/* FAB 1: AccessibilitÃƒÂ  */}
+        {/* FAB 1: Accessibilità */}
         <TouchableOpacity 
           style={[styles.fabCircle, isAccessibleMode && { backgroundColor: theme.primary }]}
           onPress={() => toggleAccessibleMode()}
@@ -393,7 +393,7 @@ export default function MapScreen() {
 <TouchableOpacity 
           style={[styles.fabCircle, { backgroundColor: routePois.length > 0 ? theme.primary : theme.surface }]}
           onPress={() => {
-            // Qui andrÃƒÂ  la logica per aprire la bottom sheet dell'itinerario
+            // Qui andrà la logica per aprire la bottom sheet dell'itinerario
             console.log('Apri Itinerario');
           }}
           activeOpacity={0.8}

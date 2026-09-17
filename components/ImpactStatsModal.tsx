@@ -52,7 +52,7 @@ export default function ImpactStatsModal({ visible, onClose, userProfile, userTr
               style={[styles.tab, activeTab === 'sync' && { borderBottomColor: theme.secondary, borderBottomWidth: 3 }]} 
               onPress={() => setActiveTab('sync')}
             >
-              <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={20} color={activeTab === 'sync' ? theme.secondary : theme.textMuted} />
+              <MaterialIcons name="route" size={20} color={activeTab === 'sync' ? theme.secondary : theme.textMuted} />
               <Text style={[styles.tabText, { color: activeTab === 'sync' ? theme.secondary : theme.textMuted }]}>MOBILITÀ</Text>
             </TouchableOpacity>
           </View>
@@ -106,7 +106,7 @@ export default function ImpactStatsModal({ visible, onClose, userProfile, userTr
               </View>
             ) : (
               <View style={{ alignItems: 'center' }}>
-                <MaterialIcons name={isAccessibleMode ? "accessible" : "directions-walk"} size={60} color={theme.secondary} style={{ marginBottom: 15 }} />
+                <MaterialIcons name="route" size={60} color={theme.secondary} style={{ marginBottom: 15 }} />
                 <Text style={[styles.mainStat, { color: theme.secondary }]}>{distanceToday > 1000 ? (distanceToday/1000).toFixed(2) + ' Km' : distanceToday + ' m'}</Text>
                 <Text style={styles.statLabel}>Distanza Registrata Oggi</Text>
                 
