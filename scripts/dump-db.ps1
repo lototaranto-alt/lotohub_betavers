@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  L.O.T.O. HUB - Estrazione schema DB (SSOT eseguibile), generazione tipi TS e baseline migrazioni.
+  L.O.T.O. HUB Estrazione schema DB (SSOT eseguibile), generazione tipi TS e baseline migrazioni.
 
 .DESCRIPTION
   Sorgente di verita' del database Supabase. NIENTE copia-incolla manuale dal pannello.
@@ -79,6 +79,30 @@ function Write-Info  ($m) { Write-Host "[dump-db] $m" -ForegroundColor Cyan }
 function Write-Warn2 ($m) { Write-Host "[dump-db] ATTENZIONE: $m" -ForegroundColor Yellow }
 function Write-Err   ($m) { Write-Host "[dump-db] ERRORE: $m" -ForegroundColor Red }
 
+function Push-EnvAway {
+    # La Supabase CLI (Deno dotenv) crash se ./.env ha BOM UTF-8 (visto nel repo: EF BB BF + porzione UTF-16LE).
+    # La disattiviamo temporaneamente solo intorno alle chiamate CLI, poi la ripristiniamo.
+    if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot '.env'))) { return $false }
+    $head = [System.IO.File]::ReadAllBytes((Join-Path $RepoRoot '.env'))
+    if ($head.Length -lt 3) { return $false }
+    if ($head[0] -eq 0xEF -and $head[1] -eq 0xBB -and $head[2] -eq 0xBF) {
+        Rename-Item -LiteralPath (Join-Path $RepoRoot '.env') -NewName '.env.cli-backup'
+        Write-Warn2 ".env ha un BOM UTF-8 non parsabile dalla CLI: disattivato temporaneamente, verra' ripristinato."
+        return $true
+    }
+    return $false
+}
+
+function Pop-EnvBack {
+    param([bool]$wasMoved)
+    if (-not $wasMoved) { return }
+    $bak = Join-Path $RepoRoot '.env.cli-backup'
+    if (Test-Path -LiteralPath $bak) {
+        Rename-Item -LiteralPath $bak -NewName '.env'
+        Write-Info ".env ripristinato."
+    }
+}
+
 function Resolve-Backend {
     param([string]$Requested, [string]$Url)
     if ($Requested -ne 'Auto') { return $Requested }
@@ -87,11 +111,22 @@ function Resolve-Backend {
     return 'Cli'
 }
 
+function Get-ConnArgs {
+    if (-not [string]::IsNullOrWhiteSpace($DbUrl))   { return @('--db-url', $DbUrl) }
+    if (-not [string]::IsNullOrWhiteSpace($ProjectRef)) { return @('--project-ref', $ProjectRef) }
+    return @('--linked')
+}
+
 function Invoke-Cli {
     param([string[]]$CliArgs)
-    Write-Info ("npx supabase " + ($CliArgs -join ' '))
-    & npx supabase @CliArgs
-    if ($LASTEXITCODE -ne 0) { throw "Comando Supabase CLI fallito (exit $LASTEXITCODE)." }
+    $moved = Push-EnvAway
+    try {
+        Write-Info ("npx supabase " + ($CliArgs -join ' '))
+        & npx supabase @CliArgs
+        if ($LASTEXITCODE -ne 0) { throw "Comando Supabase CLI fallito (exit $LASTEXITCODE)." }
+    } finally {
+        Pop-EnvBack $moved
+    }
 }
 
 function Assert-Linked {
@@ -203,7 +238,7 @@ ORDER BY table_name, column_name;
 -- 8g) Esistono le tabelle citate dalla mappa SSOT?
 SELECT c.relname AS object_name,
        CASE c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' WHEN 'm' THEN 'matview' ELSE c.relkind::text END AS kind
-FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname='public'
   AND c.relname IN ('scans','loto_squads','crowd_predictions','impact_transactions',
                     'esg_raw_logs','poi_ble_fingerprints','vw_pois_frontend',
@@ -222,21 +257,17 @@ if ($Mode -eq 'Introspection') {
     return
 }
 
-if ($Mode -in @('Types', 'Diff', 'Baseline')) {
-    Assert-Linked
-}
-
 switch ($Mode) {
 
     'Schema' {
         if ($resolved -eq 'PgDump') {
-            if ([string]::IsNullOrWhiteSpace($DbUrl)) { throw "Modalita' PgDump richiede -DbUrl o `$env:SUPABASE_DB_URL." }
+            if ([string]::IsNullOrWhiteSpace($DbUrl)) { throw "Modalita' PgDump richiede -DbUrl." }
             if (-not (Get-Command pg_dump -ErrorAction SilentlyContinue)) { throw "pg_dump non trovato nel PATH." }
             Write-Info "pg_dump --schema-only --schema=$SchemaName -> $SchemaOut"
             & pg_dump $DbUrl --schema-only --no-owner --schema=$SchemaName -f $SchemaOut
             if ($LASTEXITCODE -ne 0) { throw "pg_dump fallito (exit $LASTEXITCODE)." }
         } else {
-            Invoke-Cli @('db', 'dump', '--schema', $SchemaName, '-f', $SchemaOut)
+            Invoke-Cli ((@('db', 'dump', '--schema', $SchemaName, '-f', $SchemaOut)) + (Get-ConnArgs))
         }
         $h = (Get-FileHash -LiteralPath $SchemaOut -Algorithm SHA256).Hash
         Write-Info "Schema dump: $SchemaOut  (SHA256 $($h.Substring(0,16))...)"
@@ -249,7 +280,7 @@ switch ($Mode) {
             & pg_dump $DbUrl --data-only --no-owner --schema=$SchemaName -f $DataOut
             if ($LASTEXITCODE -ne 0) { throw "pg_dump (data) fallito (exit $LASTEXITCODE)." }
         } else {
-            Invoke-Cli @('db', 'dump', '--data-only', '--schema', $SchemaName, '-f', $DataOut)
+            Invoke-Cli ((@('db', 'dump', '--data-only', '--schema', $SchemaName, '-f', $DataOut)) + (Get-ConnArgs))
         }
         Write-Info "Data dump: $DataOut"
     }
@@ -266,13 +297,13 @@ switch ($Mode) {
     }
 
     'Diff' {
-        Invoke-Cli @('db', 'diff')
+        Invoke-Cli ((@('db', 'diff')) + (Get-ConnArgs))
         Write-Info "Se compaiono differenze -> modifiche out-of-band: riconciliare via migrazioni."
     }
 
     'Baseline' {
         $stamp = Get-Date -Format 'yyyyMMddHHmmss'
-        Invoke-Cli @('db', 'pull', 'remote_baseline', '--schema', $SchemaName)
+        Invoke-Cli ((@('db', 'pull', 'remote_baseline', '--schema', $SchemaName)) + (Get-ConnArgs))
         Write-Info "Baseline creata in supabase/migrations (attesa: ${stamp}_remote_baseline.sql)."
         Write-Info "Verificare e committare la migrazione baseline, poi usare SOLO migrazioni versionate."
     }
