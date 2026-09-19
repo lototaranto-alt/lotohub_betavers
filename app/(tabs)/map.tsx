@@ -296,6 +296,7 @@ export default function MapScreen() {
               key={"icon-" + poi.id}
               id={"icon-" + poi.id}
               coordinate={[poi.longitude, poi.latitude]}
+              onSelected={() => { setSelectedPoi(poi); setIsLayerDropdownOpen(false); }}
             >
               <View style={{ backgroundColor: poi.category === 'partner' ? '#0056D2' : (poi.category === 'event' ? '#D4AF37' : theme.primary), borderRadius: 20, padding: 4, borderWidth: 1, borderColor: '#FFF', transform: [{ scale: 0.8 }] }}>
                 <MaterialIcons name={poi.category === 'partner' ? 'store' : (poi.category === 'event' ? 'star' : 'account-balance')} size={16} color="#FFF" />
