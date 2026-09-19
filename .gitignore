@@ -44,6 +44,8 @@ app-example
 
 # backups
 *.zip
+*.apk
+loto_backup_*.bundle
 
 
 .env
