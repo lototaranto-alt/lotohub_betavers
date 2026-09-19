@@ -9,7 +9,7 @@ import { supabase } from '../../utils/supabase';
 import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
 import { ThemeProvider as AppThemeProvider } from '../../context/ThemeContext';
 import { useCity } from '../../context/CityContext';
-import { calculateLevel } from '../../utils/levelUtils';
+import { calculateLevel, getAvatarFrameStyle } from '../../utils/levelUtils';
 import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
@@ -410,6 +410,31 @@ export default function VetrinaScreen() {
     }
   };
 
+  // Refresh LEGGERO dello Store Gamification: aggiorna XP/livello/badge/transazioni
+  // senza rifare il caricamento completo della Home (transizione fluida dopo check-in).
+  const refreshGamification = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [[, fbXp], [, fbTok], [, fbPois]] = await AsyncStorage.multiGet(['loto_fallback_xp', 'loto_fallback_tokens', 'loto_fallback_pois']);
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (!profile) return;
+      setUserProfile(profile);
+      const { data: trans } = await supabase.from('impact_transactions').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(20);
+      if (trans) setUserTransactions(trans);
+      const { data: badges } = await supabase.from('user_badges').select('*, badges(*)').eq('user_id', user.id);
+      if (badges) setUserBadges(badges);
+      gamification.syncProfile(profile, {
+        badges: badges || [],
+        fallbackXp: fbXp ? parseInt(fbXp) : 0,
+        fallbackTokens: fbTok ? parseInt(fbTok) : 0,
+        fallbackPois: fbPois ? parseInt(fbPois) : 0,
+      });
+    } catch (e) {
+      console.log("Errore refreshGamification:", e);
+    }
+  };
+
   useEffect(() => {
     // Apri il modale di battesimo se il caricamento è finito, c'è un profilo ma non ha un nickname
     if (!loading && userProfile && !userProfile.nickname) {
@@ -536,13 +561,13 @@ export default function VetrinaScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsSheetVisible(false);
     
-    // Ricarica i dati per aggiornare UI (XP, Punti, ecc)
-    caricaDati();
+    // Aggiornamento LEGGERO dello Store Gamification (niente reload brutale della Home)
+    refreshGamification();
 
     // Dopo mezzo secondo, appare in trionfo la Scheda Trofeo
     setTimeout(() => {
       setTrophyPoi(poi);
-    }, 500);
+    }, 400);
   };
 
   const trovaAlternativa = (poiAffollato: any) => {
@@ -630,9 +655,9 @@ export default function VetrinaScreen() {
 
             </View>
 
-            {/* Right Side: Avatar Circle */}
+            {/* Right Side: Avatar Circle (cornice SSOT getAvatarFrameStyle, avanza a ogni livello) */}
             <TouchableOpacity onPress={() => setIsExpModalVisible(true)} activeOpacity={0.8} style={{ alignItems: 'center' }}>
-              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#3B5F31', borderWidth: levelProgress.currentLevel >= 5 ? 3 : 2, borderColor: levelProgress.currentLevel >= 5 ? '#D4AF37' : 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', elevation: levelProgress.currentLevel >= 5 ? 10 : 4, shadowColor: levelProgress.currentLevel >= 5 ? '#D4AF37' : '#000' }}>
+              <View style={[{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#3B5F31', justifyContent: 'center', alignItems: 'center' }, getAvatarFrameStyle(levelProgress.currentLevel)]}>
                 <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 28, color: '#FFF' }}>
                   {(userProfile?.nickname || 'VIAGGIATORE')[0].toUpperCase()}
                 </Text>
