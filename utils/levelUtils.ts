@@ -106,6 +106,12 @@ export interface LevelProgress {
   percent: number; // 0 a 100
   isMaxLevel: boolean;
   rankInfo: RankInfo;
+  // Progresso verso il PROSSIMO rank (blocco da 10 livelli: 1, 11, 21, 31, 41)
+  rankStartMinXp: number;
+  rankNextMinXp: number;
+  rankXpInBlock: number;
+  rankXpBlockSpan: number;
+  rankPercent: number; // 0 a 100, % verso il prossimo rank (no salti visivi)
 }
 
 export const getLevelProgress = (totalXp: number, theme?: any): LevelProgress => {
@@ -121,6 +127,17 @@ export const getLevelProgress = (totalXp: number, theme?: any): LevelProgress =>
   const percent = Math.min(100, Math.max(0, (xpInLevel / span) * 100));
   const rankInfo = getRankInfo(currentLevel);
 
+  // Blocco rank corrente (ogni 10 livelli): inizia a 1, 11, 21, 31, 41
+  const rankStartLevel = (Math.floor((currentLevel - 1) / 10) * 10) + 1;
+  const rankEndLevel = Math.min(rankStartLevel + 10, LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1].level);
+  const rankStartThreshold = LEVEL_THRESHOLDS.find(t => t.level === rankStartLevel) || LEVEL_THRESHOLDS[0];
+  const rankEndThreshold = LEVEL_THRESHOLDS.find(t => t.level === rankEndLevel) || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
+  const rankStartMinXp = rankStartThreshold.minXp;
+  const rankNextMinXp = rankEndThreshold.nextXp;
+  const rankXpBlockSpan = Math.max(1, rankNextMinXp - rankStartMinXp);
+  const rankXpInBlock = isMaxLevel ? rankXpBlockSpan : Math.min(rankXpBlockSpan, Math.max(0, safeXp - rankStartMinXp));
+  const rankPercent = isMaxLevel ? 100 : Math.min(100, Math.max(0, (rankXpInBlock / rankXpBlockSpan) * 100));
+
   return {
     currentLevel,
     levelTitle: currentThreshold.title,
@@ -134,7 +151,12 @@ export const getLevelProgress = (totalXp: number, theme?: any): LevelProgress =>
     xpNeededForNext: span,
     percent,
     isMaxLevel,
-    rankInfo
+    rankInfo,
+    rankStartMinXp,
+    rankNextMinXp,
+    rankXpInBlock,
+    rankXpBlockSpan,
+    rankPercent
   };
 };
 

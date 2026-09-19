@@ -7,33 +7,12 @@ import { Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
+import { getRankInfo as getRankInfoSSOT } from '../utils/levelUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const { width, height } = Dimensions.get('window');
 
-// 1. Funzione di Risoluzione Rango
-const getRankInfo = (level: number) => {
-  if (level < 11) return { 
-    title: 'TURISTA OCCASIONALE',
-    asset: require('../assets/images/logo-LOTO.png') 
-  };
-  if (level < 21) return { 
-    title: 'ESPLORATORE',
-    asset: require('../assets/images/logo-LOTO.png') 
-  };
-  if (level < 31) return { 
-    title: 'CUSTODE DELLA CITTÀ',
-    asset: require('../assets/images/logo-LOTO.png') 
-  };
-  if (level < 41) return { 
-    title: 'EROE DEL MARE',
-    asset: require('../assets/images/logo-LOTO.png') 
-  };
-  return { 
-    title: 'LEGGENDA L.O.T.O.', 
-    asset: require('../assets/images/logo-LOTO.png') 
-  };
-};
+const RANK_ASSET = require('../assets/images/logo-LOTO.png');
 
 export type GamificationEvent = 
   | { type: 'LEVEL_UP'; level: number; title?: string; text?: string; rarity?: number; badge?: any }
@@ -133,9 +112,9 @@ if (!visible || queue.length === 0) return null;
 
   const currentEvent = queue[currentIndex];
 
-  const renderLevelUp = (level: number) => {
-    const rankInfo = getRankInfo(level);
-    const shareMessage = `Ho appena raggiunto il Livello ${level} e il Rank '${rankInfo.title}' esplorando i segreti di Taranto con L.O.T.O.! 🌿`;
+const renderLevelUp = (level: number) => {
+    const rankInfo = getRankInfoSSOT(level);
+    const shareMessage = `Ho appena raggiunto il Livello ${level} e il Rank '${rankInfo.rankName}' esplorando i segreti di Taranto con L.O.T.O.! 🌿`;
     
     return (
       <Animated.View style={[
@@ -143,12 +122,12 @@ if (!visible || queue.length === 0) return null;
         { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }
       ]}>
         <View ref={viewRef} style={styles.captureContainer}>
-        <Image source={rankInfo.asset} 
+        <Image source={RANK_ASSET} 
           style={styles.rankImage} 
-          defaultSource={require('../assets/images/logo-LOTO.png')}
+          defaultSource={RANK_ASSET}
         />
         <Text style={styles.levelText}>LIVELLO {level} RAGGIUNTO</Text>
-        <Text style={styles.rankTitle}>{rankInfo.title}</Text>
+        <Text style={styles.rankTitle}>{rankInfo.rankName}</Text>
         </View>
         
         <View style={styles.btnRow}>

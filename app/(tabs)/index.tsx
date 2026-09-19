@@ -9,7 +9,7 @@ import { supabase } from '../../utils/supabase';
 import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
 import { ThemeProvider as AppThemeProvider } from '../../context/ThemeContext';
 import { useCity } from '../../context/CityContext';
-import { calculateLevel, getLevelProgress } from '../../utils/levelUtils';
+import { calculateLevel } from '../../utils/levelUtils';
 import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
@@ -28,6 +28,7 @@ import ImpactStatsModal from '../../components/ImpactStatsModal';
 import VaultModal from '../../components/VaultModal';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
+import { useGamification } from '../../context/GamificationContext';
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
 import i18n from '../../locales/i18n';
@@ -206,7 +207,6 @@ export default function VetrinaScreen() {
   const [activeVaultPoiId, setActiveVaultPoiId] = useState<string | null>(null);
   const [trophyPoi, setTrophyPoi] = useState<any | null>(null);
 
-  const [distanceToday, setDistanceToday] = useState(0);
   const lastNotifiedDistance = useRef(0);
 
   const distanceScaleAnim = useRef(new Animated.Value(1)).current;
@@ -215,12 +215,14 @@ export default function VetrinaScreen() {
   useEffect(() => {
     // 1. Carica il totale salvato all'avvio
     AsyncStorage.getItem('@sincro_avventura_meters').then(stored => {
-      if (stored) setDistanceToday(parseInt(stored, 10));
+      if (stored) {
+        gamification.setDistanceToday(parseInt(stored, 10));
+      }
     });
 
     // 2. Ascolta gli incrementi live dal motore di EcoPassi
     const subscription = DeviceEventEmitter.addListener('onDistanceIncrement', (event) => {
-      setDistanceToday(event.total);
+      gamification.setDistanceToday(event.total);
       
       // Animazione "battito/spinta"
       Animated.sequence([
@@ -246,31 +248,16 @@ export default function VetrinaScreen() {
   const [isBaptismVisible, setIsBaptismVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastData, setToastData] = useState({ xpAmount: 0, message: '' });
-  const [localXpFallback, setLocalXpFallback] = useState(0);
-  const [localTokensFallback, setLocalTokensFallback] = useState(0);
-  const [localPoisFallback, setLocalPoisFallback] = useState(0);
+
+  // Store gamification SSOT: tutti i contatori della Home leggono qui (no copie locali disconnesse)
+  const gamification = useGamification();
 
   const t = DICTIONARY[lang];
   const tickerText = currentTenant?.localization?.onboarding_subtitle || t.ticker;
 
-  const getLevelInfo = (tokens: number) => {
-    if (tokens >= 500) return { title: "EROE DEL MARE", badge: require('../../assets/images/badge_gold_1775676641737.png'), color: theme.accent, stemma: 'workspace-premium' as any };
-    return { title: "TURISTA OCCASIONALE", badge: require('../../assets/images/badge_bronze_1775675369793.png'), color: theme.secondary, stemma: 'sailing' as any };
-  };
-
   // Ricarica i dati dinamicamente ogni volta che si torna sulla Home (es. dopo una scansione NFC)
   useFocusEffect(
     useCallback(() => {
-      // Legge eventuali valori accumulati localmente per la resilienza offline
-      AsyncStorage.multiGet(['loto_fallback_xp', 'loto_fallback_tokens', 'loto_fallback_pois']).then(values => {
-        values.forEach(([key, value]) => {
-          if (value) {
-            if (key === 'loto_fallback_xp') setLocalXpFallback(parseInt(value));
-            if (key === 'loto_fallback_tokens') setLocalTokensFallback(parseInt(value));
-            if (key === 'loto_fallback_pois') setLocalPoisFallback(parseInt(value));
-          }
-        });
-      });
       caricaDati();
     }, [])
   );
@@ -379,6 +366,15 @@ export default function VetrinaScreen() {
             .select('*, badges(*)')
             .eq('user_id', user.id);
           if (badges) setUserBadges(badges);
+
+          // Sincronizza lo Store Gamification (SSOT): niente calcoli o copie locali disconnesse
+          const [[, fbXp], [, fbTok], [, fbPois]] = await AsyncStorage.multiGet(['loto_fallback_xp', 'loto_fallback_tokens', 'loto_fallback_pois']);
+          gamification.syncProfile(profile, {
+            badges: badges || [],
+            fallbackXp: fbXp ? parseInt(fbXp) : 0,
+            fallbackTokens: fbTok ? parseInt(fbTok) : 0,
+            fallbackPois: fbPois ? parseInt(fbPois) : 0,
+          });
         }
       }
 
@@ -566,41 +562,6 @@ export default function VetrinaScreen() {
     const isPartner = userProfile?.flow_role === 'LOTO Partner';
 
     const mobilityConfig = getMobilityPillStyle(mobilityType || 'dolce');
-    const isLevel5OrAbove = levelProgress.currentLevel >= 5;
-
-    // Catalogo dei 5 badge mostrati nella Prestige Card
-    const cardBadges = [
-      { 
-        id: 'badge_first_scan', name: 'Battesimo', icon: 'location-on', color: '#2ECC71', 
-        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan'),
-        actionDescription: 'Scansiona il tuo primo POI (fontanella o punto d\'ombra) per iniziare a mappare la città.',
-        progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_first_scan') ? 100 : Math.min(99, (userProfile?.pois_discovered || 0) * 100)
-      },
-      { 
-        id: 'badge_civic_3', name: 'Sentinella', icon: 'security', color: '#2196F3', 
-        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_civic_3'),
-        actionDescription: 'Partecipa a 3 eventi civici (es. Raccolta Rifiuti Plasticaqqua).',
-        progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_civic_3') ? 100 : 0
-      },
-      { 
-        id: 'badge_eco_5kg', name: 'Eco-Sostenitore', icon: 'eco', color: '#4CAF50', 
-        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg'),
-        actionDescription: 'Mantieni uno stile di mobilità dolce (bici/piedi) per 5 giorni consecutivi.',
-        progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_eco_5kg') ? 100 : 20
-      },
-      { 
-        id: 'badge_marathon_3', name: 'Maratoneta', icon: 'directions-run', color: '#FF9800', 
-        unlocked: userBadges.some(b => (b.badge_id || b.id) === 'badge_marathon_3'),
-        actionDescription: 'Completa 3 Itinerari consigliati da LOTO.',
-        progress: userBadges.some(b => (b.badge_id || b.id) === 'badge_marathon_3') ? 100 : Math.min(99, Math.round(((userProfile?.itineraries_count || 0) / 3) * 100))
-      },
-      { 
-        id: 'badge_level_5', name: 'Cittadino Attivo', icon: 'stars', color: '#FFD700', 
-        unlocked: isLevel5OrAbove,
-        actionDescription: 'Raggiungi il Livello 5 accumulando punti esperienza per la città.',
-        progress: Math.min(100, Math.round(((levelProgress.currentLevel) / 5) * 100))
-      }
-    ];
 
     return (
       <View style={{ paddingBottom: 10 }}>
@@ -657,12 +618,14 @@ export default function VetrinaScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* XP Bar inside Card */}
+              {/* XP Bar inside Card: progresso REALE verso il prossimo Rank (blocco da 10 livelli, no salti) */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1, height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3 }}>
-                  <View style={{ width: `${levelProgress.percent}%`, height: '100%', backgroundColor: levelProgress.color || '#D4AF37', borderRadius: 3 }} />
+                  <View style={{ width: `${levelProgress.rankPercent}%`, height: '100%', backgroundColor: levelProgress.color || '#D4AF37', borderRadius: 3 }} />
                 </View>
-                <Text style={{ fontSize: 10, color: '#FFF', fontWeight: 'bold', marginLeft: 8 }}>{Math.floor(userXp)} / {levelProgress.nextXp} XP</Text>
+                <Text style={{ fontSize: 10, color: '#FFF', fontWeight: 'bold', marginLeft: 8 }}>
+                  {levelProgress.rankPercent}% verso {levelProgress.rankInfo.nextRank === 'MAX' ? 'il Rank Massimo' : levelProgress.rankInfo.nextRank}
+                </Text>
               </View>
 
             </View>
@@ -696,7 +659,7 @@ export default function VetrinaScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialIcons name="search" size={24} color="#D4AF37" />
               <Text style={{ color: '#FFF', fontSize: 24, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold', marginLeft: 10 }}>
-                {Math.max(userProfile?.pois_discovered || 0, localPoisFallback)}
+                {gamification.poisDiscovered}
               </Text>
             </View>
           </TouchableOpacity>
@@ -718,19 +681,19 @@ export default function VetrinaScreen() {
                     <MaterialIcons name="route" size={12} color="#FFF" style={{marginRight: 4}} />
                   </Animated.View>
                   <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
-                    {distanceToday > 1000 ? (distanceToday/1000).toFixed(1) + ' Km' : distanceToday + ' m'}
+                    {gamification.distanceToday > 1000 ? (gamification.distanceToday/1000).toFixed(1) + ' Km' : gamification.distanceToday + ' m'}
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                   <MaterialIcons name="eco" size={12} color="#2ECC71" style={{marginRight: 4}} />
                   <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
-                    {userProfile?.total_co2?.toFixed(1) ?? '0.0'} kg
+                    {(gamification.co2 ?? 0).toFixed(1)} kg
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <MaterialIcons name="toll" size={12} color="#D4AF37" style={{marginRight: 4}} />
                   <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'PlayfairDisplay_700Bold' }}>
-                    {Math.max(userProfile?.total_tokens || 0, localTokensFallback)} PTI
+                    {gamification.tokens} PTI
                   </Text>
                 </View>
               </View>
@@ -758,10 +721,10 @@ export default function VetrinaScreen() {
             style={{ width: '48%', backgroundColor: '#DFAB55', borderRadius: 20, padding: 15, marginBottom: 10, elevation: 4 }}
           >
             <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold', opacity: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>{i18n.t('dashboardMilestones')}</Text>
-            <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>{levelInfo.title}</Text>
+            <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>{gamification.levelTitle}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialIcons name="emoji-events" size={14} color="#FFF" />
-              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>{userBadges.length} {i18n.t('dashboardBadges')}</Text>
+              <Text style={{ color: '#FFF', fontSize: 9, marginLeft: 5 }}>{gamification.badgesCount} {i18n.t('dashboardBadges')}</Text>
             </View>
             <Text style={{ color: '#FFF', fontSize: 9, marginTop: 8, fontWeight: 'bold' }}>{i18n.t('dashboardChallenge')}</Text>
           </TouchableOpacity>
@@ -777,10 +740,10 @@ export default function VetrinaScreen() {
   };
 
   // Rimossa BreathingLeaf iniziale come richiesto
-  const userTokens = userProfile?.total_tokens ?? 0;
-  // OFFLINE FALLBACK: Scegliamo il valore più alto tra il DB (se esiste) e la memoria locale
-  const userXp = Math.max(userProfile?.total_xp ?? 0, localXpFallback);
-  const levelProgress = getLevelProgress(userXp, theme);
+  // Tutti i contatori derivano dallo STORE GAMIFICATION (SSOT via calculateLevel/getLevelProgress)
+  const userTokens = gamification.tokens;
+  const userXp = gamification.xp;
+  const levelProgress = gamification.levelProgress;
   const levelInfo = { title: levelProgress.levelTitle, stemma: levelProgress.stemma, color: levelProgress.color, level: levelProgress.currentLevel };
 
   const getDynamicPois = () => {
@@ -947,7 +910,7 @@ export default function VetrinaScreen() {
           userProfile={userProfile}
           userXp={userXp}
           levelInfo={levelInfo}
-          userTokens={Math.max(userProfile?.total_tokens || 0, localTokensFallback)}
+          userTokens={userTokens}
           theme={theme}
           setUserProfile={setUserProfile}
         />
@@ -958,9 +921,9 @@ export default function VetrinaScreen() {
           onClose={() => setIsImpactModalVisible(false)}
           userProfile={userProfile}
           userTransactions={userTransactions}
-          userTokens={Math.max(userProfile?.total_tokens || 0, localTokensFallback)}
+          userTokens={userTokens}
           theme={theme}
-          distanceToday={distanceToday}
+          distanceToday={gamification.distanceToday}
           isAccessibleMode={isAccessibleMode}
         />
 
@@ -1026,6 +989,7 @@ export default function VetrinaScreen() {
         onClose={() => setIsBadgeModalVisible(false)}
         userBadges={userBadges}
         userProfile={userProfile}
+        userXp={userXp}
         theme={theme}
       />
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Dimensions, Alert, ProgressBarAndroid } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Dimensions, Alert } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { ALL_BADGES, getBadgeProgress, getBadgeUnlockedIds, LotoBadge } from '../utils/badgesCatalog';
 
 const { width, height } = Dimensions.get('window');
 
@@ -13,113 +14,13 @@ type BadgeCollectionModalProps = {
   onAction?: (actionType: string) => void;
 };
 
-// Catalogo Ufficiale dei Badge LOTO (Allineato ad azioni reali dell'ecosistema)
-const ALL_BADGES_CATALOG = [
-  { 
-    id: 'badge_first_scan', 
-    name: 'Battesimo del Loto', 
-    icon: 'location-on', 
-    desc: 'Effettua il tuo primo check-in o scansione NFC in un Luogo o Monumento LOTO.', 
-    actionLabel: 'Vai alla Mappa', 
-    actionType: 'map',
-    target: 1, 
-    unit: 'POI',
-    metricKey: 'pois_discovered',
-    color: '#2ECC71' 
-  },
-  { 
-    id: 'badge_civic_3', 
-    name: 'Sentinella Civica', 
-    icon: 'security', 
-    desc: 'Invia almeno 3 segnalazioni civiche con geolocalizzazione per preservare il decoro urbano.', 
-    actionLabel: 'Fai Segnalazione', 
-    actionType: 'report',
-    target: 3, 
-    unit: 'Segnalazioni',
-    metricKey: 'reports_count',
-    color: '#2196F3' 
-  },
-  { 
-    id: 'badge_eco_5kg', 
-    name: 'Eco-Sostenitore', 
-    icon: 'eco', 
-    desc: 'Risparmia 5.0 kg di CO₂ muovendoti a piedi, in bici o con mezzi sostenibili.', 
-    actionLabel: 'Monitora CO₂', 
-    actionType: 'co2',
-    target: 5.0, 
-    unit: 'kg CO₂',
-    metricKey: 'total_co2',
-    color: '#4CAF50' 
-  },
-  { 
-    id: 'badge_marathon_3', 
-    name: 'Maratoneta Jonico', 
-    icon: 'directions-run', 
-    desc: 'Completa 3 itinerari culturali integrali tra i vicoli e i monumenti della città.', 
-    actionLabel: 'Scegli Itinerario', 
-    actionType: 'itinerary',
-    target: 3, 
-    unit: 'Itinerari',
-    metricKey: 'itineraries_count',
-    color: '#FF9800' 
-  },
-  { 
-    id: 'badge_level_5', 
-    name: 'Cittadino Attivo',
-    icon: 'stars', 
-    desc: 'Raggiungi il Livello 5 accumulando esperienza civica e sblocca il Rango Argento.', 
-    actionLabel: 'Vedi Diario XP', 
-    actionType: 'profile',
-    target: 5, 
-    unit: 'Livello',
-    metricKey: 'level',
-    color: '#D4AF37' 
-  },
-  { 
-    id: 'badge_partner', 
-    name: 'Amico delle Botteghe', 
-    icon: 'storefront', 
-    desc: 'Visita e sostieni le botteghe artigiane e le boutique partner del territorio.', 
-    actionLabel: 'Vedi Botteghe', 
-    actionType: 'boutiques',
-    target: 2, 
-    unit: 'Check-in',
-    metricKey: 'partner_checkins',
-    color: '#9B59B6' 
-  },
-];
-
 export default function BadgeCollectionModal({ visible, onClose, userBadges, userProfile, theme, onAction }: BadgeCollectionModalProps) {
-  const [selectedBadge, setSelectedBadge] = useState<any | null>(null);
+  const [selectedBadge, setSelectedBadge] = useState<LotoBadge | null>(null);
 
-  // Otteniamo la lista degli ID sbloccati dall'utente (dai dati reali del database o calcolati)
-  const unlockedIds = userBadges.map(ub => ub.badge_type || ub.badge_id || ub.id);
+  // ID sbloccati dall'utente (dati reali del database user_badges)
+  const unlockedIds = getBadgeUnlockedIds(userBadges);
 
-  // Calcola il progresso numerico reale per ciascun badge
-  const getBadgeProgress = (badge: any) => {
-    let current = 0;
-    
-    // Mostriamo il progresso solo se il dato è realmente presente nel profilo (convalidato)
-    if (badge.metricKey === 'pois_discovered') {
-      current = userProfile?.pois_discovered || 0;
-    } else if (badge.metricKey === 'total_co2') {
-      current = userProfile?.total_co2 || 0;
-    } else if (badge.metricKey === 'level') {
-      current = userProfile?.level || 1;
-    } else if (badge.metricKey === 'reports_count') {
-      current = userProfile?.reports_count || 0;
-    } else if (badge.metricKey === 'itineraries_count') {
-      current = userProfile?.itineraries_count || 0;
-    }
-
-    // Se l'id è forzatamente sbloccato dal database user_badges, lo consideriamo completo
-    const isCompleted = current >= badge.target || unlockedIds.includes(badge.id);
-    // Se è completato forzatamente ma non abbiamo il contatore, simuliamo il 100% visivo
-    const percent = isCompleted ? 100 : Math.min(100, Math.round((current / badge.target) * 100));
-    return { current, isCompleted, percent };
-  };
-
-  const handleActionClick = (badge: any) => {
+  const handleActionClick = (badge: LotoBadge) => {
     setSelectedBadge(null);
     onClose();
     if (onAction) {
@@ -144,7 +45,7 @@ export default function BadgeCollectionModal({ visible, onClose, userBadges, use
               </View>
               <View style={{ marginLeft: 12 }}>
                 <Text style={styles.title}>Distintivi & Missioni Territorio</Text>
-                <Text style={styles.subtitle}>Obiettivi sbloccati: {ALL_BADGES_CATALOG.filter(b => getBadgeProgress(b).isCompleted).length} su {ALL_BADGES_CATALOG.length}</Text>
+                <Text style={styles.subtitle}>Obiettivi sbloccati: {ALL_BADGES.filter(b => getBadgeProgress(b, userProfile, unlockedIds).isCompleted).length} su {ALL_BADGES.length}</Text>
               </View>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
@@ -157,8 +58,8 @@ export default function BadgeCollectionModal({ visible, onClose, userBadges, use
           </Text>
 
           <ScrollView contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
-            {ALL_BADGES_CATALOG.map((badge, idx) => {
-              const { current, isCompleted, percent } = getBadgeProgress(badge);
+            {ALL_BADGES.map((badge, idx) => {
+              const { current, isCompleted, percent } = getBadgeProgress(badge, userProfile, unlockedIds);
               const badgeColor = badge.color || '#2D4A22';
 
               return (
@@ -238,7 +139,7 @@ export default function BadgeCollectionModal({ visible, onClose, userBadges, use
                   onPress={() => handleActionClick(selectedBadge)}
                 >
                   <Text style={styles.actionBtnConfirmText}>
-                    {getBadgeProgress(selectedBadge).isCompleted ? 'Mostra nel Diario' : selectedBadge.actionLabel}
+                    {getBadgeProgress(selectedBadge, userProfile, unlockedIds).isCompleted ? 'Mostra nel Diario' : selectedBadge.actionLabel}
                   </Text>
                 </TouchableOpacity>
               </View>

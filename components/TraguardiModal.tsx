@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity, Modal, 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LEVEL_UP_LORE } from '../utils/LevelUpLore';
 import { LEVEL_THRESHOLDS, getLevelProgress } from '../utils/levelUtils';
+import { ALL_BADGES, getBadgeProgress, getBadgeUnlockedIds } from '../utils/badgesCatalog';
 import SingleBadgeSheet from './SingleBadgeSheet';
 
 const { height } = Dimensions.get('window');
@@ -12,32 +13,26 @@ interface TraguardiModalProps {
   onClose: () => void;
   userBadges: any[];
   userProfile: any;
+  userXp?: number;
   theme: any;
 }
 
-export default function TraguardiModal({ visible, onClose, userBadges, userProfile, theme }: TraguardiModalProps) {
+export default function TraguardiModal({ visible, onClose, userBadges, userProfile, userXp, theme }: TraguardiModalProps) {
   const [activeTab, setActiveTab] = useState<'livelli' | 'badge' | 'rank'>('livelli');
   const [selectedBadge, setSelectedBadge] = useState<any>(null);
 
-// --- CALCOLI BASE (SSOT da levelUtils) ---
-  const levelProgress = getLevelProgress(userProfile?.total_xp || 0);
+// --- CALCOLI BASE (SSOT da levelUtils, xp dal context) ---
+  const xpForProgress = userXp ?? userProfile?.total_xp ?? 0;
+  const levelProgress = getLevelProgress(xpForProgress);
   const currentLevel = levelProgress.currentLevel;
   const nextXp = levelProgress.nextXp;
-  const currentXp = userProfile?.total_xp || 0;
+  const currentXp = xpForProgress;
   const percent = levelProgress.percent;
 
   // I 5 Rank base
   const baseRanks = LEVEL_THRESHOLDS.filter(l => [1, 11, 21, 31, 41].includes(l.level)); // Adjust if needed
 
-  // Lista fittizia di badge per la griglia
-  const ALL_BADGES_CATALOG = [
-    { id: 'badge_first_scan', name: 'Battesimo', icon: 'location-on', color: '#2ECC71', target: 1, unit: 'Scan' },
-    { id: 'badge_civic_3', name: 'Sentinella', icon: 'security', color: '#2196F3', target: 3, unit: 'Eventi' },
-    { id: 'badge_explorer_5', name: 'Pioniere', icon: 'explore', color: '#9B59B6', target: 5, unit: 'Segreti' },
-    { id: 'badge_eco_5kg', name: 'Anima Green', icon: 'eco', color: '#4CAF50', target: 5, unit: 'Kg CO2' },
-    { id: 'badge_marathon_3', name: 'Maratoneta', icon: 'directions-run', color: '#FF9800', target: 3, unit: 'Itinerari' },
-    { id: 'badge_level_5', name: 'Cittadino Attivo', icon: 'stars', color: '#FFD700', target: 5, unit: 'Livelli' }
-  ];
+  const unlockedIds = getBadgeUnlockedIds(userBadges);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -96,18 +91,19 @@ export default function TraguardiModal({ visible, onClose, userBadges, userProfi
             {activeTab === 'badge' && (
               <View>
                 <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>I tuoi obiettivi sul territorio</Text>
-                <View style={styles.badgesGrid}>
-                  {ALL_BADGES_CATALOG.map((b, idx) => {
-                    const isUnlocked = userBadges.some(ub => (ub.badge_id || ub.id) === b.id);
+<View style={styles.badgesGrid}>
+                  {ALL_BADGES.map((b) => {
+                    const { current, isCompleted } = getBadgeProgress(b, userProfile, unlockedIds);
+                    const isUnlocked = isCompleted;
                     return (
                       <TouchableOpacity 
-                        key={idx} 
+                        key={b.id} 
                         style={[styles.badgeWrapper, { borderColor: isUnlocked ? b.color : 'rgba(0,0,0,0.1)', backgroundColor: isUnlocked ? b.color + '10' : 'transparent' }]}
                         onPress={() => setSelectedBadge({ ...b, unlocked: isUnlocked })}
                       >
                         <MaterialIcons name={b.icon as any} size={32} color={isUnlocked ? b.color : 'rgba(0,0,0,0.2)'} />
                         <Text style={[styles.badgeTitle, { color: isUnlocked ? theme.text : 'rgba(0,0,0,0.3)' }]}>{b.name}</Text>
-                        <Text style={[styles.badgeTarget, { color: theme.textMuted }]}>{isUnlocked ? 'SBLOCCATO' : `0 / ${b.target}`}</Text>
+                        <Text style={[styles.badgeTarget, { color: theme.textMuted }]}>{isUnlocked ? 'SBLOCCATO' : `${Math.min(current, b.target)} / ${b.target}`}</Text>
                       </TouchableOpacity>
                     );
                   })}
