@@ -406,7 +406,6 @@ export type Database = {
           created_at: string | null
           id: string
           is_premium_only: boolean | null
-          loto_cost: number | null
           media_path: string
           media_type: string | null
           poi_id: string | null
@@ -417,7 +416,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_premium_only?: boolean | null
-          loto_cost?: number | null
           media_path: string
           media_type?: string | null
           poi_id?: string | null
@@ -428,7 +426,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_premium_only?: boolean | null
-          loto_cost?: number | null
           media_path?: string
           media_type?: string | null
           poi_id?: string | null
@@ -1097,22 +1094,22 @@ export type Database = {
       }
       user_unlocked_media: {
         Row: {
-          id: string
           media_id: string | null
+          profile_id: string
+          territory_id: string | null
           unlocked_at: string | null
-          user_id: string | null
         }
         Insert: {
-          id?: string
           media_id?: string | null
+          profile_id: string
+          territory_id?: string | null
           unlocked_at?: string | null
-          user_id?: string | null
         }
         Update: {
-          id?: string
           media_id?: string | null
+          profile_id?: string
+          territory_id?: string | null
           unlocked_at?: string | null
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -1123,10 +1120,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "user_unlocked_media_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "user_unlocked_media_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_unlocked_media_territory_id_fkey"
+            columns: ["territory_id"]
+            isOneToOne: false
+            referencedRelation: "territories"
             referencedColumns: ["id"]
           },
         ]

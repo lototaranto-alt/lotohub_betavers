@@ -657,7 +657,7 @@ export default function VetrinaScreen() {
 
             {/* Right Side: Avatar Circle (cornice SSOT getAvatarFrameStyle, avanza a ogni livello) */}
             <TouchableOpacity onPress={() => setIsExpModalVisible(true)} activeOpacity={0.8} style={{ alignItems: 'center' }}>
-              <View style={[{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#3B5F31', justifyContent: 'center', alignItems: 'center' }, getAvatarFrameStyle(levelProgress.currentLevel)]}>
+              <View style={[{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#3B5F31', justifyContent: 'center', alignItems: 'center', transform: [{ translateY: -5 }] }, getAvatarFrameStyle(levelProgress.currentLevel)]}>
                 <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 28, color: '#FFF' }}>
                   {(userProfile?.nickname || 'VIAGGIATORE')[0].toUpperCase()}
                 </Text>

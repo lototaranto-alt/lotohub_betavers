@@ -158,8 +158,8 @@ export const TenantProvider: React.FC<{
 
   /**
    * [NOTA DI SVILUPPO - FASE 4: Whitelabel]
-   * Questa funzione Ã¨ responsabile di decidere QUALE Comune caricare all'avvio.
-   * L'algoritmo segue questo ordine di prioritÃ :
+   * Questa funzione è responsabile di decidere QUALE Comune caricare all'avvio.
+   * L'algoritmo segue questo ordine di priorità:
    * 1. Deep Link (es. loto://app?tenant=borgo-test) -> Utile per campagne marketing.
    * 2. GPS Fallback -> Calcola l'Haversine distance; se sei a < 50km dal centro di un tenant attivo, lo carica.
    * 3. Default Fallback -> Carica il primo tenant attivo disponibile (es. Taranto).

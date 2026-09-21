@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
+import { supabase } from '../utils/supabase';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -18,8 +19,29 @@ export default function UpgradeScreen() {
   const neonGreen = '#10B981'; // Smeraldo Neon
   const neonPurple = '#FF00FF';
 
-  const handleUpgrade = () => {
+  const handleUpgrade = async () => {
     setElite(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('profiles').update({ is_premium: true }).eq('id', user.id);
+      }
+    } catch (e) {
+      console.warn('[Upgrade] Impossibile sincronizzare lo stato Premium:', e);
+    }
+    router.back();
+  };
+
+  const handleDowngrade = async () => {
+    setElite(false);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('profiles').update({ is_premium: false }).eq('id', user.id);
+      }
+    } catch (e) {
+      console.warn('[Upgrade] Impossibile sincronizzare lo stato Freemium:', e);
+    }
     router.back();
   };
 
@@ -83,7 +105,7 @@ export default function UpgradeScreen() {
               <MaterialIcons name="check-circle" size={24} color={neonCyan} />
               <Text style={[styles.upgradedText, { color: neonCyan }]}>SEI PREMIUM</Text>
             </View>
-            <TouchableOpacity onPress={() => { setElite(false); router.back(); }} style={{ marginTop: 20 }}>
+            <TouchableOpacity onPress={handleDowngrade} style={{ marginTop: 20 }}>
               <Text style={{ color: '#8BA6B9', textDecorationLine: 'underline', fontSize: 12 }}>[Dev] Torna a Freemium</Text>
             </TouchableOpacity>
           </View>

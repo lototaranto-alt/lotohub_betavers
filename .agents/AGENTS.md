@@ -33,7 +33,7 @@ As an AI working on the Loto Map project, you MUST strictly adhere to the follow
 - **Parit di Funzioni:** L'utente iOS e l'utente Android devono godere della stessa identica esperienza (es. Sincro-Avventura), anche se il codice "sotto il cofano" usa motori diversi.
 
 ## 7. ASSOLUTO RIGORE ARCHITETTURALE (ESG & B2B)
-- **SEMPRE, SEMPRE, SEMPRE, SEMPRE, SEMPRE:** L'architettura del Database Ã¨ la singola fonte di veritÃ  (SSOT) e non deve MAI essere inquinata o forzata per accomodare codice frontend pigro.
+- **SEMPRE, SEMPRE, SEMPRE, SEMPRE, SEMPRE:** L'architettura del Database è la singola fonte di verità (SSOT) e non deve MAI essere inquinata o forzata per accomodare codice frontend pigro.
 - Il sistema e i suoi dati DEVONO rimanere **CERTIFICABILI per l'ESG e le vendite B2B**. 
 - Dati ambientali (es. CO2) vanno in Ledger Immutabili (es. impact_transactions) e non vengono sovrascritti nei profili. 
 - Il frontend deve rimanere leggero ("Zero-Code layer"): carica i pesi complessi solo in Lazy-Loading (Modali) e si affida a Viste (Views) e RPC performanti.

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTenant } from './TenantContext';
+import { supabase } from '../utils/supabase';
 
 // Palette Colori
 export const FREEMIUM_THEME = {
@@ -43,6 +44,25 @@ const ThemeContext = createContext<ThemeContextProps>({
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isElite, setIsElite] = useState(false);
   const { currentTenant } = useTenant();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_premium')
+          .eq('id', user.id)
+          .single();
+        if (active && profile) setIsElite(!!profile.is_premium);
+      } catch (e) {
+        console.warn('[ThemeContext] Impossibile recuperare lo stato Premium:', e);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   // Se l'utente non è Elite, usa i colori dinamici del Tenant (effetto Camaleonte)
   // Se è Elite, usa il dark theme universale (status symbol)

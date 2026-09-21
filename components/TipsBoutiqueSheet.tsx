@@ -1,11 +1,11 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Animated, Switch } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import { Pedometer } from 'expo-sensors';
 import { useTheme } from '../context/ThemeContext';
-import { startBackgroundTracking } from '../utils/SincroAvventura';
+import { startBackgroundTracking, stopBackgroundTracking, getTrackingMode, setTrackingMode } from '../utils/SincroAvventura';
 import { supabase } from '../utils/supabase';
 
 interface TipsBoutiqueSheetProps {
@@ -33,12 +33,14 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
   const insets = useSafeAreaInsets();
   const [gpsGranted, setGpsGranted] = useState(false);
   const [bgGpsGranted, setBgGpsGranted] = useState(false);
+  const [batterySaver, setBatterySaver] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (visible) {
       checkPermissions();
       fetchUser();
+      getTrackingMode().then(mode => setBatterySaver(mode === 'battery'));
     }
   }, [visible]);
 
@@ -68,6 +70,17 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
       if (userId) {
         startBackgroundTracking(userId); // Avvia tracking se permesso
       }
+    }
+  };
+
+  const toggleBatterySaver = async (value: boolean) => {
+    setBatterySaver(value);
+    await setTrackingMode(value ? 'battery' : 'performance');
+
+    // Se il tracking è già attivo, riavvialo con i nuovi parametri di campionamento
+    if (bgGpsGranted && userId) {
+      stopBackgroundTracking();
+      startBackgroundTracking(userId);
     }
   };
 
@@ -122,6 +135,25 @@ export default function TipsBoutiqueSheet({ visible, onClose }: TipsBoutiqueShee
               </View>
               <MaterialIcons name={bgGpsGranted ? "check-circle" : "add-circle-outline"} size={24} color={bgGpsGranted ? '#2ECC71' : theme.primary} />
             </TouchableOpacity>
+
+            {/* Toggle Risparmio Batteria (solo se Eco-Passi abilitato) */}
+            {bgGpsGranted && (
+              <View style={[styles.permissionRow, { borderColor: theme.border }]}>
+                <View style={[styles.iconBox, { backgroundColor: batterySaver ? 'rgba(46, 204, 113, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                  <MaterialIcons name="battery-saver" size={24} color={batterySaver ? '#2ECC71' : theme.primary} />
+                </View>
+                <View style={styles.permissionText}>
+                  <Text style={[styles.permTitle, { color: theme.text }]}>Risparmio Batteria</Text>
+                  <Text style={[styles.permDesc, { color: theme.textMuted }]}>Campiona i dati GPS meno spesso per consumare meno batteria. I chilometri restano sempre certificati.</Text>
+                </View>
+                <Switch
+                  value={batterySaver}
+                  onValueChange={toggleBatterySaver}
+                  trackColor={{ false: '#D1D5DB', true: '#2ECC71' }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+            )}
 
 
             {/* SEZIONE 2: CONSIGLI (TIPS) */}

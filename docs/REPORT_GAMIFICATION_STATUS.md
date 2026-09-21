@@ -1,0 +1,168 @@
+# 📋 REPORT STATO E LABORATORIO — Segmento Gamification L.O.T.O. HUB
+
+> **Scopo:** Resoconto esportabile di tutto il lavoro elaborato sul segmento gamification,
+> con separazione netta tra **REALIZZATO** (in produzione/lavoro) e **DISCUSSO** (analizzato, deciso ma NON ancora costruito).
+> Include le **linee guida del segmento** con il loro stato puntuale (realizzata / discussa / da fare).
+> Data snapshot: 20/09 — Branch: `fix/ripristino-lavoro-15-set-selective` (worktree `fix-conversation-stuck-issue`).
+
+---
+
+## ⚙ PARTE A — REALIZZATO (codice verificato, `npx tsc --noEmit` pulito)
+
+### A.1 Committato (storia `git log` recente)
+
+| Commit | Contenuto |
+|---|---|
+| `de6e4c6` | Home: cornice avatar evolutiva `getAvatarFrameStyle` (avanza a ogni livello, aura per tier) + check-in senza "reload brutale" |
+| `f24d5a3` | SSOT rank/XP nel context-store, catalogo badge unico, barra di progresso verso il rank |
+| `0510c1d` | Scheda POI aperta al tap sulla mappa (`onSelected`) |
+| `f7ea103` | Versione allineata 1.0.1 (SSOT, versionCode 3) |
+| `5f9c9a6` `563bcd4` `5222ae0` | SSOT DB dump eseguibile (`dump-db.ps1`), tipi TS generati, gitignore cache/artefatti |
+| `5d06354` | RPC `process_crowd_radar` (certificato ESG crowd) |
+| `9d67e1d` | Livello con `calculateLevel` SSOT (curva apprendimento), rimosso dead code barra XP, badge Liv.5 Cittadino Attivo uniforme |
+| `5ca30ae` | Naming anonimo VIAGGIATORE, ranghi reali nel level-up, level ProfileModal, mojibake, gate GPS manuale |
+| `741291c` `73bdc75` | Ripristino lavoro 15-set dallo stash; ranghi allineati, Eco-Passi, Anti-Drift 20m/15m, tab bar insets |
+| `28f6c30` | Gate permessi GPS/Bluetooth con pre-prompt privacy-first |
+| `b98642f` `351db51` `3431387` | Ranghi ufficiali allineati a `levelUtils`; BLE Crowd Radar Fence; flusso Scheda Trofeo dopo check-in |
+
+### A.2 In working tree (modificato ma non ancora committato) — 20/09
+
+| Area | Contenuto |
+|---|---|
+| **F1 — Tab gate REATTIVO** (bloccante) | `app/(tabs)/_layout.tsx`: rimosso lo state stale (`useEffect` + fetch Supabase una tantum) → legge `useGamification().level` (SSOT reattivo). Gate Community ora scatta al level-up in sessione. Import inutilizzati rimossi. |
+| **UI Level-Up** | `app/(tabs)/index.tsx:660`: avatar +5px in alto (la cornice cresce al level-up senza accavallare la pill del livello). |
+| **Toggle Risparmio Batteria** | `utils/SincroAvventura.ts`: `TrackingMode` 'performance'\|'battery' persistito (`@sincro_avventura_battery_saver`); battery = accuracy High · 30s/30m (vs 5s/10m). Delta INVARIATI → dati ESG certificabili. `TipsBoutiqueSheet.tsx`: Switch visibile se Eco-Passi attivo, riavvio tracking al cambio. |
+| **Vault-economia (frontend)** | `PoiDetailSheet.tsx` (guard Premium + sblocco via RPC), `app/upgrade.tsx` + hydration `ThemeContext` (persistenza `is_premium`), `types/database.ts` allineati, `OfflineQueueManager` (sblocco offline accodato). |
+| **Lore livelli** | `utils/LevelUpLore.ts`: espansione/rifinitura testi narrativi tier 1-30. |
+| **Docs/artefatti** | `docs/gamification_hooks_analisi.md` (nuova, §7 con decisioni + economia XP per azione) · `docs/codici_morti.md` (nuova) · `supabase/migration_v20_vault_currency_fix.sql` (nuova, **NON ancora eseguita**) · `coerenza_ecosistema.md` / `pre_gamification_baseline.md` / `NEXT_SESSION_HANDOFF.md` aggiornati · `write_seed.js` → archiviato in `archive_dead_code/`. |
+
+> **Dead code registrato** (`docs/codici_morti.md`): `write_seed.js` archiviato (contiene `loto_cost` stale + mojibake);
+> `LevelUpModal.tsx` non importato (asset `rank*.jpg` da verificare); SQL v19/02 da NON applicare (curve incoerenti con SSOT).
+
+---
+
+## 💬 PARTE B — DISCUSSO (analizzato + deciso, NON ancora costruito)
+
+### B.1 Decisioni CHIUSE, pronte per l'ingegnerizzazione (priorità)
+
+| # | Feature | Decisione presa | Stima costo | Apri |
+|---|---|---|---|---|
+| F3 | Tab Community "preview lockata" | Sostituire l'Alert "Sezione Chiusa 🔒" con badge icona sbiadita + label "??? (LV.5)" in stile LOTO (stesso pattern `ProfileModal` per "??? (LV.20)") | Basso | ORA |
+| K | Costante `KEY_LEVELS` SSOT | Centralizzare `1→2→5→11→20→21→30→31→41` accanto a `levelUtils.ts` (zero numeri magici) | Bassissimo | con F3 |
+| F4 | Fiore a 3 Petali (Home) | 🟢 2km a piedi (o 1kg CO₂) · 🟡 1 check-in NFC · 🔵 **sfida-quotidiana a rotazione** | Medio | dopo F3 |
+| F6 | Zona "**Diario di Bordo**" | Hub **dentro il Profilo**: ① Scoperte (Vault + toggle Fog of War) ② Memorie (camera filtri) ③ Co-Experience (???.LV.20). Palette LOTO | Alto | dopo F4 |
+| F2 | Loop "Risonanza Civica" | Count oggettivo (utenti che hanno sbloccato la stessa whisper) + push template su canale `sincro-avventura`. **Nessuna moderazione manuale** (whisper = contenuto curato, no UGC) | Medio | dopo F6 |
+
+### B.2 Posticipati di concerto con l'utente
+
+| Voce | Stato |
+|---|---|
+| **Migration** `supabase/migration_v20_vault_currency_fix.sql` su Supabase (cloud+locale) + test end-to-end `sblocca_media` online/offline | **da eseguire** (script pronto, utente ha detto "attendiamo per gli script") |
+| **Notifiche Eco-Passi** — capire perché NON escono (canale `sincro-avventura`, plugin `./withNotifee.js`) | debug su device reale |
+| **Economia PTI** (spendibilità, moltiplicatore streak F5, freeze a pagamento) | **i punti non sono spendibili**: brainstorming dedicato a fine app |
+| **Misura ritmo XP reale** (quanto XP = 1 check-in oggi) | pre-req obbligatorio PRIMA di F5 (streak/petali collassano se curva irreale) |
+
+### B.3 Futuro non ancora avviato
+
+- F5 **Rugiada/Streak** — base approvata, dipende da misura ritmo XP + economia PTI.
+- UX Scanner Modal: strutturare visivamente i 3 scenari (NFC On / NFC Off / QR fallback) — `coerenza_ecosistema.md` §2.
+- Deploy infrastruttura (Vercel dashboard/landing, APK su Storage) e Bot WhatsApp B2B (report notifiche).
+
+---
+
+## 🎯 PARTE C — LINEE GUIDA DEL SEGMENTO GAMIFICATION (con stato)
+
+> **Nota metodologica:** ogni linea guida riporta lo stato REALE:
+> ✅ **Realizzata** (codice verificato) · 🟡 **Discussa** (concetto validato, da costruire) · 🔒 **Congelata/rinviata**.
+
+| # | Linea guida | Stato | Dove/Note |
+|---|---|---|---|
+| G1 | **SSOT progresso** — rank/XP/livello derivano SOLO da `levelUtils` + `GamificationContext` (nessun doppio calcolo) | ✅ Realizzata | `levelUtils.ts`, `GamificationContext.tsx`; gate tab ora legge l'SSOT (F1) |
+| G2 | **Zero-Coercition** — nessuna classifica pubblica, zero PvP, niente recensioni tossiche (Whispers anonimi) | ✅ Realizzata | filosofia di base (AGENTS §4, `coerenza_ecosistema.md`) |
+| G3 | **Dualità XP/PTI non interscambiabili** — XP = progressione narrativa; PTI = impatto civico globale, **non spendibili** | ✅ Realizzata | `migration_v20` (pronta): `loto_cost` rimosso dai media |
+| G4 | **Progressive Disclosure a livelli chiave** — soglia di apprendimento utente calibrata con la curva | 🟡 Decisa | `KEY_LEVELS` `1→2→5→11→20→21→30→31→41` da centralizzare (F3/K) |
+| G5 | **Economia XP per azione documentata e coerente** — check-in NFC, sblocco storia +30, Eco-Passi 100m=5XP, ESG `floor(kgCO₂×100+litri×20)`, itinerario POI×10, evento +10, badge +50 | 🟡 Documentata | tabella certificata in `gamification_hooks_analisi.md` §7.2; **misura runtime in sospeso** |
+| G6 | **Vincolo stilistico palette LOTO** — ogni modale unlockFeature usa `useTheme()` + palette freemium/Elite, MAI colori hard-coded estranei; pattern glassmorphism già nei level-up | 🟡 Regola attiva | `ThemeContext.tsx:6-28`, `constants/MapConfig.ts:38`; si applica a F3/F4/F6 |
+| G7 | **Popup personalizzati, MAI notifiche di sistema** — richiesta esplicita utente per tutti i pop-up (incl. unlock) | 🟡 Regola attiva | nuova modale unlock in F3 |
+| G8 | **Anti-farming / anti-spoofing** — cooldown 12h stesso POI, check velocità (shadowban silente >130km/h, veicolare senza CO₂), gate GPS manuale, Anti-Drift | ✅ Realizzata | `scan_poi_gps` (`anti_spoofing_scan_poi_gps.sql`), gate `28f6c30` |
+| G9 | **Whisper curati, no UGC** — niente moderazione manuale necessaria per il loop di ritorno (F2); se in futuro si apre la scrittura UGC → flusso auto-moderazione PRIMA del rilascio | 🟡 Analisi chiusa | `whispers` in sola lettura lato app (`PoiDetailSheet`) |
+| G10 | **Privacy by Design** — zero PII, spatial hashing 100×100m (`esg_raw_logs`), solo QR L.O.T.O. Pass come backup | ✅ Realizzata | baseline `pre_gamification_baseline.md` §4 |
+| G11 | **Certificabilità ESG/B2B** — dati ambientali in ledger immutabili (`impact_transactions`), sottocampionamento matematico, frontend "zero-code layer" | ✅ Realizzata | AGENTS §7; mondeggi cogenti: batteria saver NON altera i delta |
+| G12 | **Economia circolare di burn PTI** (freeze streak, moltiplicatori) | 🔒 Congelata | F5 — brainstorming di fine app (punti non spendibili per ora) |
+| G13 | **Retention quotidiana (Zeigarnik)** — Fiore 3 Petali (F4) + sfida-quotidiana | 🟡 Da costruire | dopo F3 |
+| G14 | **Loss-Aversion / Streak 7 giorni** — Rugiada (F5) | 🔒 Dipende da ritmo XP | pre-req: misura runtime |
+| G15 | **Curiosità spaziale (Fog of War)** — nebbia Mapbox che si dirada ~50m, riusa `heatScores` | 🟡 Da costruire | dentro "Diario di Bordo" (F6) |
+
+---
+
+## 🗺 Mappa degli artefatti di riferimento
+
+| File | Ruolo |
+|---|---|
+| `docs/gamification_hooks_analisi.md` | Triangolazione + fix F1-F6 + **decisioni utente §7** + economia XP/azioni |
+| `docs/NEXT_SESSION_HANDOFF.md` | Roadmap operativa sessione per sessione |
+| `docs/pre_gamification_baseline.md` | Baseline architetturale (Zero-Coercition, dualità XP/PTI) |
+| `docs/coerenza_ecosistema.md` | Gerarchia flussi + disconnessioni da sistemare |
+| `docs/codici_morti.md` | Registro dead code / archivi |
+| `.agents/AGENTS.md` | Regole SSOT + filosofia core (Zero-PII, Zero-IoT, Offline-First, Goal B2B) |
+| `context/GamificationContext.tsx` + `utils/levelUtils.ts` | SSOT progresso (XP→livello→rank) |
+| `supabase/migration_v20_vault_currency_fix.sql` | Fix economia duale (pronto, **da applicare**) |
+
+---
+
+## 💬 PARTE D — DIARIO DELLA CONVERSAZIONE (terminale, 20/09)
+
+> Origine delle decisioni di PARTE B/C. Le osservazioni utente sono riportate **verbatim** (senza correzioni),
+> perché sono le "sottilissime linee guida" da non perdere.
+
+### D.1 Sequenza temporale
+
+| # | Turno | Contenuto | Esito |
+|---|---|---|---|
+| 1 | Utente: avvio sessione | Richiesta recap dei passaggi in corso (worktree `fix-conversation-stuck-issue`) | Recap fornito da `NEXT_SESSION_HANDOFF.md` (Level-Up UI, Toggle Batteria, analisi hooks) |
+| 2 | Utente: "attendiamo per gli script, procedi pure" | Postica gli script DB (migration_v20), chiede di procedere | **F1 realizzato** — gate tab reattivo in `_layout.tsx` con `useGamification().level`; `tsc` pulito |
+| 3 | Utente: osservazioni F1-F6 (verbatim sotto) | Validazioni + correzioni di rotta sull'intera roadmap gamification | Analizzate e registrate in `gamification_hooks_analisi.md` §7 |
+| 4 | Risposte utente ai quesiti (tool) | F4 petalo = **B** · F6 zona = **hub nel Profilo** · F6 nome = **"Diario di Bordo"** · LV30 = "va inserita assieme a tutte le opzioni che creano questo segmento, es. descrizione soglia exp per azione" | **Economia XP per azione** verificata sul codice e aggiunta a §7.2; LV30 incluso nei KEY_LEVELS |
+| 5 | Utente: richiesta report | "raccogli un report che salvi il lavoro elaborato, e lo divida da quello realizzato e quello solo discusso. specie le sottilissime linee guida del segmento gamification" | **Questo documento** (PARTE A/B/C) |
+| 6 | Utente: "ok mi riferisco anche della conversazione in questo terminal" | Il diario deve includere i ragionamenti emersi in chat, non solo i doc/git | **PARTE D** (questa sezione) |
+
+### D.2 Osservazioni utente VERBATIM (turno #3)
+
+- **F1:** "ottimo cosi diventa ancora piu fluida l'esperienza utente"
+- **F2:** "bella proposta ma da stutturare prima con precisione.questo segmento è da verificare bene perche richia di richiedere una moderazione costante( se non automatizabile)"
+- **F3:** "ottimo ( avevo già fatto presente che tutti i pop up dovranno essere personalizati e non come notifiche sistemma . inoltre bisogna identificare quali sono iliv chiave per gestire lasoglia di apprendimento utente."
+- **F4:** "ottima ok i primi 2 obiettivi il 3 dobbiamo stabilirlo."
+- **F5:** "è un ottima base per parttire con questa feature, attenzione però i punti non sono spendibili.una volta completato l'app valuteremo in braingstorming precisi per ogni segmento come gestire i punti e man mano altri segmenti ."
+- **F6:** "ma a questo punto servirebbe una zona che raccolga sicuramente questa modale e altre coaerenti per creare una sezione apposita per attivare la modalità "Avventura-Contenuti" troviamo un nome all'altezza dell'app"
+
+### D.3 Lettura interpretativa (cosa implicano, dedotto e non espresso a parole)
+
+- **F2 su moderazione:** l'utente NON vuole un loop che richieda curatela umana costante. Conclusione registrata:
+  applicare il loop di ritorno su **azioni oggettive** (sblocco whisper via check-in), mai su testo UGC; template nei push.
+- **F3 su pop-up di sistema:** vincolo RADICALE: tutti i pop-up (incl. unlock e level-up) devono essere modali
+  personalizzate in stile/palette LOTO — mai `Alert` di sistema (oggi `_layout.tsx` usa ancora `Alert` per il gate → F3).
+- **F3 su livelli chiave:** serve la mappa dei gate di apprendimento PRIMA di toccare la UI → `KEY_LEVELS` SSOT.
+- **F4 obiettivo 3 "da stabilire":** il terzo petalo è rimasto volutamente aperto: l'utente ha delegato la proposta,
+  ha chiuso su **B (sfida-quotidiana a rotazione)**.
+- **F5 punti non spendibili:** la stretta su "non spendibili" rende F5 (streak con freeze a pagamento) NON avviabile oggi
+  → economia PTI congelata a brainstorming finale; F5 resta solo "base concettuale".
+- **F6 zona dedicata:** la modalità avventura non deve vivere in una modale isolata: ha bisogno di una **sezione/luogo
+  stabile** (da qui il "Diario di Bordo" dentro il Profilo) che ospiti F6 + contenuti coerenti.
+
+### D.4 Verifica anti-perdita (item emersi in chat e non dispersi)
+
+| Ragionamento | Stato |
+|---|---|
+| Esperienza utente più fluida (F1) | ✅ implementato |
+| F2: strutturare "prima con precisione" + rischio moderazione | ✅ chiuso in analisi (§7.1) |
+| F3: pop-up personalizzati (no notifiche sistema) | 🟡 da fare (F3) |
+| F3: identificare livelli chiave per soglia apprendimento | 🟡 chiuse in §7.2 (`KEY_LEVELS` da centralizzare) |
+| F4: 3° obiettivo "da stabilire" | ✅ deciso = B |
+| F5: punti non spendibili → economia a brainstorming di fine app | 🔒 congelato (registrato G12) |
+| F6: sezione/zona dedicata + nome | ✅ deciso = "Diario di Bordo" (hub nel Profilo) |
+| LV30 + soglia XP per azione | ✅ economia XP documentata (§7.2) |
+
+---
+
+*Fine report. Lavoro elaborato (codice + conversazione) salvato separatamente da quello realizzato; le sottili linee guida
+del segmento gamification sono tracciate con stato puntuale (PARTE C) e la loro origine è in PARTE D.*

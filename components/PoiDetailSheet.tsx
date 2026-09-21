@@ -78,7 +78,7 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
         let { status } = await Location.getForegroundPermissionsAsync();
         if (status !== 'granted') return;
         
-        // Controlla se c'Ã¨ un timer in corso in AsyncStorage
+        // Controlla se c'è un timer in corso in AsyncStorage
         const savedTime = await AsyncStorage.getItem(`@checkin_start_${poi.id}`);
         if (savedTime) {
            setCheckinStartTime(parseInt(savedTime));
@@ -244,7 +244,7 @@ const handleRiscattaVisitaGPS = async () => {
           } else if (queuedIds.includes(media.id)) {
             statusMap[media.id] = 'queued';
           } else if (unlockedIds.includes(media.id)) {
-            // GiÃ  sbloccato su server, ma non scaricato localmente (es. dopo reinstallazione)
+            // Già sbloccato su server, ma non scaricato localmente (es. dopo reinstallazione)
             statusMap[media.id] = 'locked';
             const netState = await NetInfo.fetch();
             if (netState.isConnected) {
@@ -306,6 +306,11 @@ const handleRiscattaVisitaGPS = async () => {
       return;
     }
 
+    if (media.is_premium_only && !isElite) {
+      Alert.alert("Contenuto Premium", "Questo contenuto è riservato agli utenti L.O.T.O. ELITE. Effettua l'upgrade per sbloccarlo.");
+      return;
+    }
+
     const netState = await NetInfo.fetch();
 
     if (!netState.isConnected) {
@@ -317,7 +322,7 @@ const handleRiscattaVisitaGPS = async () => {
           { 
             text: "Prenota", 
             onPress: async () => {
-              await OfflineQueueManager.enqueueUnlock(media.id, 0, poi.name);
+              await OfflineQueueManager.enqueueUnlock(media.id, poi.name);
               setMediaStatus(prev => ({ ...prev, [media.id]: 'queued' }));
               Alert.alert("Sblocco Prenotato", "Sblocco registrato in locale. Il file si scaricherà in background quando tornerai online.");
             }
@@ -333,13 +338,18 @@ const handleRiscattaVisitaGPS = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Utente non autenticato");
 
-      // Inseriamo lo sblocco gratis nel DB
-      const { error } = await supabase
-        .from('user_unlocked_media')
-        .insert({ profile_id: user.id, media_id: media.id });
+      const { data: unlockResult, error: unlockError } = await supabase
+        .rpc('sblocca_media', { p_media_id: media.id });
 
-      if (error && error.code !== '23505') { // Ignora errore se giÃ  sbloccato
+      if (unlockError) {
         Alert.alert("Errore", "Impossibile registrare lo sblocco nel Cloud.");
+        setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
+        return;
+      }
+
+      const unlock = Array.isArray(unlockResult) ? unlockResult[0] : unlockResult;
+      if (!unlock?.unlocked) {
+        Alert.alert("Sblocco non disponibile", unlock?.message || "Contenuto non disponibile per il tuo account.");
         setMediaStatus(prev => ({ ...prev, [media.id]: 'locked' }));
         return;
       }
@@ -398,7 +408,7 @@ const handleRiscattaVisitaGPS = async () => {
   const hasParkingSuggestion = !!poi.recommended_parking_id;
 
   const handleNavigate = (type: 'driving' | 'walking' | 'transit' | 'bicycling', isParking: boolean = false) => {
-    // Coordinate fittizie per il parcheggio se isParking Ã¨ vero, altrimenti coordinate del POI
+    // Coordinate fittizie per il parcheggio se isParking è vero, altrimenti coordinate del POI
     const destLat = isParking ? 40.4720 : (poi.lat || poi.latitude);
     const destLng = isParking ? 17.2285 : poi.longitude;
     const url = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=${type}`;
@@ -658,7 +668,7 @@ const handleRiscattaVisitaGPS = async () => {
             
             {vaultMedia.length > 0 && (
               <View style={[styles.vaultSection, { borderBottomColor: theme.border }]}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>ðŸŽ’ RISORSE ESCLUSIVE</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>🎒 RISORSE ESCLUSIVE</Text>
                 {vaultMedia.map(media => {
                   const status = mediaStatus[media.id] || 'locked';
                   return (
@@ -672,12 +682,12 @@ const handleRiscattaVisitaGPS = async () => {
                         <View style={{ marginLeft: 12, flex: 1 }}>
                           <Text style={[styles.mediaTitle, { color: theme.text }]}>{media.title}</Text>
                           <Text style={[styles.mediaTypeLabel, { color: theme.textMuted }]}>
-                            {media.media_type.toUpperCase()} â€¢ Sblocco: Livello {media.required_level || 1}
+                            {media.media_type.toUpperCase()} • Sblocco: Livello {media.required_level || 1}
                           </Text>
                         </View>
                       </View>
                       
-                        {media.is_premium && !isElite ? (
+                        {media.is_premium_only && !isElite ? (
                           <TouchableOpacity 
                             style={[styles.vaultBtn, { backgroundColor: theme.text }]}
                             onPress={() => { onClose(); router.push('/upgrade'); }}
@@ -701,7 +711,7 @@ const handleRiscattaVisitaGPS = async () => {
                             <MaterialIcons name="schedule" size={16} color="#D97706" style={{ marginRight: 4 }} />
                             <Text style={[styles.vaultBtnTextDisabled, { color: '#D97706', fontSize: 11 }]}>In coda</Text>
                           </View>
-                        ) : media.is_premium && isElite ? (
+                        ) : media.is_premium_only && isElite ? (
                           <TouchableOpacity 
                             style={[styles.vaultBtn, { backgroundColor: theme.accent }]}
                             onPress={() => handleUnlockMedia(media)}
@@ -731,7 +741,7 @@ const handleRiscattaVisitaGPS = async () => {
               <View style={styles.tabContent}>
                 {poiEvents && poiEvents.length > 0 ? (
                   <View style={[styles.vaultSection, { borderBottomColor: theme.border, marginTop: 15 }]}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>ðŸ“… PROSSIMI EVENTI</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>📅 PROSSIMI EVENTI</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
                       {poiEvents.map((ev: any) => (
                         <View key={ev.id} style={{ backgroundColor: theme.background, padding: 15, borderRadius: 15, marginRight: 15, width: 200, borderWidth: 1, borderColor: theme.border }}>
@@ -747,7 +757,7 @@ const handleRiscattaVisitaGPS = async () => {
                             style={{ marginTop: 10, backgroundColor: ev.is_premium ? theme.accent : theme.primary, paddingVertical: 8, borderRadius: 10, alignItems: 'center' }}
                             onPress={() => ev.is_premium && !isElite ? router.push('/upgrade') : Alert.alert('Iscritto!', 'Sei in lista per questo evento.')}
                           >
-                            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Partecipa {ev.is_premium ? 'ðŸŒŸ' : ''}</Text>
+                            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Partecipa {ev.is_premium ? '🌟' : ''}</Text>
                           </TouchableOpacity>
                         </View>
                       ))}
@@ -781,7 +791,7 @@ const handleRiscattaVisitaGPS = async () => {
                   </TouchableOpacity>
 
 
-                                    {/* AccessibilitÃ  a 3 Stati (Community) */}
+                                    {/* Accessibilità a 3 Stati (Community) */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: poi.is_wheelchair_accessible === true ? 'rgba(46, 204, 113, 0.1)' : poi.is_wheelchair_accessible === false ? 'rgba(231, 76, 60, 0.1)' : 'rgba(149, 165, 166, 0.1)', padding: 12, borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: poi.is_wheelchair_accessible === true ? '#2ECC71' : poi.is_wheelchair_accessible === false ? '#E74C3C' : '#95A5A6' }}>
                     <MaterialIcons name={poi.is_wheelchair_accessible === true ? 'accessible' : poi.is_wheelchair_accessible === false ? 'not-accessible' : 'help-outline'} size={24} color={poi.is_wheelchair_accessible === true ? '#2ECC71' : poi.is_wheelchair_accessible === false ? '#E74C3C' : '#7F8C8D'} />
                     <View style={{ marginLeft: 12, flex: 1 }}>

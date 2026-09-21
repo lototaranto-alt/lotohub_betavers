@@ -6,7 +6,34 @@ import { supabase } from './supabase';
 import { calculateDistanceRaw } from './haversine';
 
 const STORAGE_KEY = '@sincro_avventura_meters';
+const BATTERY_SAVER_KEY = '@sincro_avventura_battery_saver';
 const SYNC_THRESHOLD = 200; // Sincronizza ogni 200 metri
+
+export type TrackingMode = 'performance' | 'battery';
+
+// Campionamento GPS differenziato: in Risparmio Batteria si abbassa la frequenza
+// e la precisione (meno fix), MAI la matematica dei delta -> dati sempre certificabili.
+const TRACKING_OPTIONS: Record<TrackingMode, { accuracy: Location.Accuracy; timeInterval: number; distanceInterval: number }> = {
+  performance: {
+    accuracy: Location.Accuracy.BestForNavigation,
+    timeInterval: 5000,
+    distanceInterval: 10,
+  },
+  battery: {
+    accuracy: Location.Accuracy.High,
+    timeInterval: 30000,
+    distanceInterval: 30,
+  },
+};
+
+export async function getTrackingMode(): Promise<TrackingMode> {
+  const stored = await AsyncStorage.getItem(BATTERY_SAVER_KEY);
+  return stored === 'battery' ? 'battery' : 'performance';
+}
+
+export async function setTrackingMode(mode: TrackingMode): Promise<void> {
+  await AsyncStorage.setItem(BATTERY_SAVER_KEY, mode);
+}
 
 let currentSessionMeters = 0;
 let subscription: Location.LocationSubscription | null = null;
@@ -119,12 +146,15 @@ if (Platform.OS === 'android') {
   // Opzionale: richiamare background per massima persistenza in Android Doze
   await Location.requestBackgroundPermissionsAsync();
 
-  try {
+try {
+    const mode = await getTrackingMode();
+    const options = TRACKING_OPTIONS[mode];
+
     subscription = await Location.watchPositionAsync(
       {
-        accuracy: Location.Accuracy.BestForNavigation, // Massima precisione
-        timeInterval: 5000, // Aggiornamento minimo ogni 5 secondi
-        distanceInterval: 10, // Aggiornamento ogni 10 metri reali
+        accuracy: options.accuracy,
+        timeInterval: options.timeInterval,
+        distanceInterval: options.distanceInterval,
       },
       (newLocation) => {
         if (!lastLocation) {

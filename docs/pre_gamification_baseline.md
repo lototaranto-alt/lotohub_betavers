@@ -13,6 +13,8 @@ L'app si regge su un delicato equilibrio psicologico e strutturale, diviso in du
 
 **Incoerenza corretta mentalmente:** Il *Vault Multimediale* (audioguide e documenti) NON deve costare PTI (che sono destinati agli alberi), ma deve sbloccarsi gratis al check-in fisico o tramite XP.
 
+> ✅ **RISOLTO in migration_v20_vault_currency_fix.sql:** `loto_cost` eliminato; sblocco media = **Level Gate** (`required_level`, curva SSOT `utils/levelUtils.ts`) + gate **Premium** (`is_premium_only` ↔ `profiles.is_premium`), entrambi validati server-side dalla RPC `sblocca_media`. Nessuna moneta viene spesa.
+
 ---
 
 ## 2. Architettura dei Ruoli (`flow_role`)

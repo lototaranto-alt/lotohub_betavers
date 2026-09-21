@@ -1,15 +1,12 @@
 import { Tabs, useRouter } from 'expo-router';
-import React, { useState, createContext, useContext, useEffect } from 'react';
+import React, { useState, createContext, useContext } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, Dimensions, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, Alert } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useGamification } from '../../context/GamificationContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import NfcManager from 'react-native-nfc-manager';
-import { supabase } from '../../utils/supabase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { calculateLevel } from '../../utils/levelUtils';
-import * as Location from 'expo-location';
 
 // Inizializza NFC
 try {
@@ -30,28 +27,9 @@ export const useScanner = () => useContext(ScannerContext);
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { theme, isElite } = useTheme();
+  const { level: userLevel } = useGamification();
   const [modalVisible, setModalVisible] = useState(false);
-  const [userLevel, setUserLevel] = useState(1);
   const router = useRouter();
-
-  useEffect(() => {
-    const fetchLevel = async () => {
-      let dbXp = 0;
-      let localXp = 0;
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase.from('profiles').select('total_xp').eq('id', user.id).single();
-          if (profile) dbXp = profile.total_xp || 0;
-        }
-        const fallbackStr = await AsyncStorage.getItem('loto_fallback_xp');
-        if (fallbackStr) localXp = parseInt(fallbackStr);
-      } catch (e) {}
-      
-      setUserLevel(calculateLevel(Math.max(dbXp, localXp)));
-    };
-    fetchLevel();
-  }, []);
 
   const handleOpenScanner = async () => {
     try {

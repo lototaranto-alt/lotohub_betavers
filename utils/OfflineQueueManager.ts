@@ -10,7 +10,7 @@ export type QueueActionType = 'UNLOCK_MEDIA' | 'CHECKIN_GPS';
 export interface QueueItem {
   id: string; // unique ID to prevent duplicates (e.g. `${type}_${poiId}`)
   type: QueueActionType;
-  payload: any; // e.g. { mediaId, lotoCost } or { poiId, lat, lng }
+  payload: any; // e.g. { mediaId } or { poiId, lat, lng }
   description: string; // for logging and UI (e.g. "Sblocco Media", "Check-in GPS")
   queuedAt: number;
 }
@@ -52,8 +52,8 @@ export class OfflineQueueManager {
     }
   }
 
-  // --- COMPATIBILITA' ESISTENTE: SBLOCCO MEDIA ---
-  static async enqueueUnlock(mediaId: string, lotoCost: number, poiName: string): Promise<void> {
+  // --- SBLOCCO MEDIA (gate Livello + Premium validati server-side da sblocca_media) ---
+  static async enqueueUnlock(mediaId: string, poiName: string): Promise<void> {
     const queue = await this.getQueue();
     const id = `UNLOCK_${mediaId}`;
     if (queue.some(item => item.id === id)) return;
@@ -61,8 +61,8 @@ export class OfflineQueueManager {
     queue.push({
       id,
       type: 'UNLOCK_MEDIA',
-      payload: { mediaId, lotoCost, poiName },
-      description: `Sblocco "${poiName}" (${lotoCost} PTI)`,
+      payload: { mediaId, poiName },
+      description: `Sblocco "${poiName}"`,
       queuedAt: Date.now()
     });
 
@@ -129,9 +129,9 @@ export class OfflineQueueManager {
               const fileName = mediaPath.split('/').pop() || `${mediaId}.mp4`;
               await LruCacheManager.downloadFile(signedData.signedUrl, fileName);
             }
-          } else if (data[0]?.message?.includes('insufficiente')) {
-             console.error('[OfflineQueue] Rimozione elemento: saldo insufficiente.');
-             continue; // scarta
+          } else {
+            console.warn('[OfflineQueue] Sblocco rifiutato dal server:', data[0]?.message);
+            continue;
           }
         } 
         else if (item.type === 'CHECKIN_GPS') {
