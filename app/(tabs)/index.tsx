@@ -26,6 +26,7 @@ import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
 import ImpactStatsModal from '../../components/ImpactStatsModal';
 import VaultModal from '../../components/VaultModal';
+import FioreDeiTrePetali from '../../components/FioreDeiTrePetali';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
 import { useGamification } from '../../context/GamificationContext';
@@ -197,6 +198,7 @@ export default function VetrinaScreen() {
   const [isScannedPoisVisible, setIsScannedPoisVisible] = useState(false);
   const [isSingleBadgeVisible, setIsSingleBadgeVisible] = useState(false);
   const [selectedBadgeData, setSelectedBadgeData] = useState<any>(null);
+  const [checkinsToday, setCheckinsToday] = useState(0); // F4 Fiore 3 Petali: check-in di oggi
   
   // --- STATI SHEET ---
   const [isHomeMobilitySheetVisible, setIsHomeMobilitySheetVisible] = useState(false);
@@ -308,6 +310,23 @@ export default function VetrinaScreen() {
     }
   }, [userProfile?.total_xp]);
 
+  const fetchCheckinsToday = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const startToday = new Date();
+      startToday.setHours(0, 0, 0, 0);
+      const { count, error } = await supabase
+        .from('user_pois')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', user.id)
+        .gte('visited_at', startToday.toISOString());
+      if (!error && count !== null) setCheckinsToday(count);
+    } catch (e) {
+      console.log('Errore conteggio check-in di oggi:', e);
+    }
+  };
+
   const caricaDati = async () => {
     try {
       let fetchedPois: any[] = [];
@@ -351,6 +370,7 @@ export default function VetrinaScreen() {
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         if (profile) {
           setUserProfile(profile);
+          fetchCheckinsToday();
           const { data: trans } = await supabase.from('impact_transactions').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(20);
           if (trans) setUserTransactions(trans);
           
@@ -420,6 +440,7 @@ export default function VetrinaScreen() {
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       if (!profile) return;
       setUserProfile(profile);
+      fetchCheckinsToday();
       const { data: trans } = await supabase.from('impact_transactions').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(20);
       if (trans) setUserTransactions(trans);
       const { data: badges } = await supabase.from('user_badges').select('*, badges(*)').eq('user_id', user.id);
@@ -670,6 +691,13 @@ export default function VetrinaScreen() {
           </View>
 
           </View>
+
+        {/* --- F4 FIORE 3 PETALI (rituale quotidiano) --- */}
+        <FioreDeiTrePetali
+          distanceToday={gamification.distanceToday || 0}
+          co2Kg={gamification.co2 ?? 0}
+          checkinsToday={checkinsToday}
+        />
 
         {/* --- 4 QUADRANT GRID --- */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 15 }}>

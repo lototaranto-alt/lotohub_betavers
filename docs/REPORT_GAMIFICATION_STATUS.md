@@ -24,6 +24,8 @@
 | `741291c` `73bdc75` | Ripristino lavoro 15-set dallo stash; ranghi allineati, Eco-Passi, Anti-Drift 20m/15m, tab bar insets |
 | `28f6c30` | Gate permessi GPS/Bluetooth con pre-prompt privacy-first |
 | `b98642f` `351db51` `3431387` | Ranghi ufficiali allineati a `levelUtils`; BLE Crowd Radar Fence; flusso Scheda Trofeo dopo check-in |
+| `4fde326` | **FASE 0** — gate tab reattivo, toggle batteria Eco-Passi, unlock media via RPC `sblocca_media`, LevelUpLore, migration_v20 |
+| `65909a8` | **F3** — `KEY_LEVELS` SSOT, `FeatureLockSheet`, preview lock Community (LV.5) e Co-Experience (LV.20) |
 
 ### A.2 In working tree (modificato ma non ancora committato) — 20/09
 
@@ -34,6 +36,7 @@
 | **Toggle Risparmio Batteria** | `utils/SincroAvventura.ts`: `TrackingMode` 'performance'\|'battery' persistito (`@sincro_avventura_battery_saver`); battery = accuracy High · 30s/30m (vs 5s/10m). Delta INVARIATI → dati ESG certificabili. `TipsBoutiqueSheet.tsx`: Switch visibile se Eco-Passi attivo, riavvio tracking al cambio. |
 | **Vault-economia (frontend)** | `PoiDetailSheet.tsx` (guard Premium + sblocco via RPC), `app/upgrade.tsx` + hydration `ThemeContext` (persistenza `is_premium`), `types/database.ts` allineati, `OfflineQueueManager` (sblocco offline accodato). |
 | **Lore livelli** | `utils/LevelUpLore.ts`: espansione/rifinitura testi narrativi tier 1-30. |
+| **F4 — Fiore 3 Petali** (working tree) | `components/FioreDeiTrePetali.tsx` (nuova): card "Fiore di Oggi" su Home tra avatar e quadrante — 🟢 2km a piedi (o 1kg CO₂, `distanceToday`/`co2` da `useGamification`) · 🟡 1 check-in oggi (conteggio `user_pois.visited_at >= oggi` in `index.tsx`, ricalcato su `caricaDati`+`refreshGamification`) · 🔵 sfida-quotidiana a ROTAZIONE curata (5 sfide misurabili dai contatori, indice = giorno dell'anno). Zeigarnik. |
 | **Docs/artefatti** | `docs/gamification_hooks_analisi.md` (nuova, §7 con decisioni + economia XP per azione) · `docs/codici_morti.md` (nuova) · `supabase/migration_v20_vault_currency_fix.sql` (nuova, **NON ancora eseguita**) · `coerenza_ecosistema.md` / `pre_gamification_baseline.md` / `NEXT_SESSION_HANDOFF.md` aggiornati · `write_seed.js` → archiviato in `archive_dead_code/`. |
 
 > **Dead code registrato** (`docs/codici_morti.md`): `write_seed.js` archiviato (contiene `loto_cost` stale + mojibake);
@@ -49,7 +52,6 @@
 |---|---|---|---|---|
 | F3 | Tab Community "preview lockata" | Sostituire l'Alert "Sezione Chiusa 🔒" con badge icona sbiadita + label "??? (LV.5)" in stile LOTO (stesso pattern `ProfileModal` per "??? (LV.20)") | Basso | ORA |
 | K | Costante `KEY_LEVELS` SSOT | Centralizzare `1→2→5→11→20→21→30→31→41` accanto a `levelUtils.ts` (zero numeri magici) | Bassissimo | con F3 |
-| F4 | Fiore a 3 Petali (Home) | 🟢 2km a piedi (o 1kg CO₂) · 🟡 1 check-in NFC · 🔵 **sfida-quotidiana a rotazione** | Medio | dopo F3 |
 | F6 | Zona "**Diario di Bordo**" | Hub **dentro il Profilo**: ① Scoperte (Vault + toggle Fog of War) ② Memorie (camera filtri) ③ Co-Experience (???.LV.20). Palette LOTO | Alto | dopo F4 |
 | F2 | Loop "Risonanza Civica" | Count oggettivo (utenti che hanno sbloccato la stessa whisper) + push template su canale `sincro-avventura`. **Nessuna moderazione manuale** (whisper = contenuto curato, no UGC) | Medio | dopo F6 |
 
