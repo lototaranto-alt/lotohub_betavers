@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity, Alert, TextInput, LayoutAnimation, Platform, UIManager, ImageBackground, BackHandler } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity, Alert, LayoutAnimation, Platform, UIManager, ImageBackground, BackHandler } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import LotoPassCard from '../../components/LotoPassCard';
 import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
@@ -51,6 +51,7 @@ export default function ProfileScreen() {
   // Dati reali dal backend
   const [userTotalXp, setUserTotalXp] = useState<number>(0);
   const [userTokens, setUserTokens] = useState<number>(0);
+  const [userTotalCo2, setUserTotalCo2] = useState<number>(0);
   
   // Sfruttiamo le VERE logiche matematiche di levelUtils
   const progressInfo = getLevelProgress(userTotalXp, theme);
@@ -60,9 +61,6 @@ export default function ProfileScreen() {
     stemma: progressInfo.stemma as any
   };
   
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLinking, setIsLinking] = useState(false);
   const [isTipsVisible, setIsTipsVisible] = useState(false);
   const [isCollectionVisible, setIsCollectionVisible] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
@@ -76,10 +74,11 @@ export default function ProfileScreen() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setIsAnonymous(!user.email);
-          const { data: profile } = await supabase.from('profiles').select('total_xp, total_tokens').eq('id', user.id).single();
+          const { data: profile } = await supabase.from('profiles').select('total_xp, total_tokens, total_co2').eq('id', user.id).single();
           if (profile) {
             setUserTotalXp(profile.total_xp || 0);
             setUserTokens(profile.total_tokens || 0);
+            setUserTotalCo2(profile.total_co2 || 0);
           }
 
           // Fetch Badges
@@ -119,18 +118,6 @@ export default function ProfileScreen() {
   const toggleSection = (section: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setOpenAccordion(openAccordion === section ? null : section);
-  };
-
-  const handleEmailLogin = () => {
-    if (!email || !password) {
-      Alert.alert("Attenzione", "Inserisci email e password per effettuare il backup.");
-      return;
-    }
-    setIsLinking(true);
-    setTimeout(() => {
-      setIsLinking(false);
-      Alert.alert("Backup completato", `Il tuo account anonimo è stato fuso con ${email}. I tuoi LOTO PTI sono ora al sicuro!`, [{ text: "Ottimo!" }]);
-    }, 1500);
   };
 
   const handleResetDemo = () => {
@@ -236,7 +223,7 @@ export default function ProfileScreen() {
                 onPress={() => setIsCollectionVisible(true)}
               >
                 <MaterialIcons name="military-tech" size={18} color={theme.primary} style={{ marginRight: 8 }} />
-                <Text style={{ color: theme.primary, fontWeight: 'bold', fontSize: 14 }}>Vedi l'intera Collezione</Text>
+                <Text style={{ color: theme.primary, fontWeight: 'bold', fontSize: 14 }}>Vedi l&apos;intera Collezione</Text>
               </TouchableOpacity>
             </Accordion>
 
@@ -256,7 +243,7 @@ export default function ProfileScreen() {
               <View style={[styles.impactBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <View style={styles.impactCol}>
                   <MaterialIcons name="eco" size={24} color="#2ECC71" />
-                  <Text style={[styles.impactVal, { color: theme.text }]}>{(userTokens * 0.15).toFixed(1)} kg</Text>
+                  <Text style={[styles.impactVal, { color: theme.text }]}>{userTotalCo2.toFixed(2)} kg</Text>
                   <Text style={styles.impactLabel}>CO2 Evitata</Text>
                 </View>
                 <View style={[styles.impactDivider, { backgroundColor: theme.border }]} />
@@ -274,7 +261,7 @@ export default function ProfileScreen() {
                     <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text, marginLeft: 8 }}>Itinerario in Corso</Text>
                   </View>
                   <Text style={{ fontSize: 13, color: theme.textMuted }}>
-                    Stai esplorando {routePois.length} tappe. L'impatto verrà calcolato all'arrivo.
+                    Stai esplorando {routePois.length} tappe. L&apos;impatto verrà calcolato all&apos;arrivo.
                   </Text>
                 </View>
               )}
@@ -414,7 +401,7 @@ export default function ProfileScreen() {
               onToggle={() => toggleSection('backup')}
             >
               <Text style={styles.sectionDesc}>
-                La tua LOTO Pass è la tua identità civica anonima. Proteggi i tuoi progressi salvando la Pass in galleria, oppure effettua un backup completo in cloud tramite email.
+                La tua LOTO Pass è la tua identità civica anonima Zero-PII. Proteggi i tuoi progressi salvando la Pass in galleria: il recupero avviene solo tramite QR locale, senza email e senza dati personali.
               </Text>
 
               {/* OPZIONE 1: LOTO PASS LOCALE (QR) */}
@@ -473,11 +460,6 @@ const styles = StyleSheet.create({
   badgeCircle: { width: 64, height: 64, borderRadius: 32, borderWidth: 3, justifyContent: 'center', alignItems: 'center', elevation: 3 },
   badgeText: { fontSize: 11, fontWeight: 'bold', marginTop: 8, color: '#64748B' },
   
-  // Form
-  formContainer: { borderRadius: 12, paddingHorizontal: 16, marginBottom: 16, borderWidth: 1 },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1 },
-  inputIcon: { marginRight: 12 },
-  input: { flex: 1, fontSize: 16 },
   authButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12 },
   authButtonText: { color: '#FFF', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 },
   

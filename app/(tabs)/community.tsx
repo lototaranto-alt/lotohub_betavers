@@ -58,6 +58,7 @@ export default function CommunityScreen() {
   const [impactStats, setImpactStats] = useState({
     checkins: 0,
     co2: 0,
+    explorers: 0,
     reports: 0
   });
 
@@ -92,20 +93,23 @@ export default function CommunityScreen() {
         setActiveNodes(nodiData);
       }
 
-      // Fetch Dati Cooperativi (Check-in totali)
-      const { count: checkinCount, error: chErr } = await supabase
-        .from('user_pois')
-        .select('*', { count: 'exact', head: true });
-        
+      // Fetch Bacheca Cooperativa dal Ledger (vw_collective_impact è la SSOT:
+      // somma reale di impact_transactions, mai coefficienti inventati nel client)
+      const { data: cStats, error: cErr } = await supabase
+        .from('vw_collective_impact')
+        .select('*')
+        .single();
+
       // Fetch Segnalazioni Civiche Totali
       const { count: reportCount, error: repErr } = await supabase
         .from('civic_reports')
         .select('*', { count: 'exact', head: true });
-        
-      if (!chErr && checkinCount !== null) {
+
+      if (!cErr && cStats) {
         setImpactStats({
-          checkins: checkinCount,
-          co2: parseFloat((checkinCount * 0.5).toFixed(1)), // 0.5kg stimati per viaggio a piedi
+          checkins: cStats.total_checkins || 0,
+          co2: cStats.total_co2_saved || 0,
+          explorers: cStats.total_explorers_today || 0,
           reports: (!repErr && reportCount !== null) ? reportCount : 0
         });
       }
@@ -213,12 +217,12 @@ export default function CommunityScreen() {
                 {renderImpactStat("Check-in Totali", impactStats.checkins.toString(), "check-circle", "#4CAF50", 1)}
               </View>
               <View style={{ width: '48%' }}>
-                {renderImpactStat("CO₂ Evitata (kg)", impactStats.co2.toString(), "eco", "#8BC34A", 2)}
+                {renderImpactStat("CO₂ Evitata (kg)", impactStats.co2.toFixed(1), "eco", "#8BC34A", 2)}
               </View>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={{ width: '48%' }}>
-                {renderImpactStat("KM Esplorati", (impactStats.co2 / 0.12).toFixed(1), "directions-walk", theme.secondary, 3)}
+                {renderImpactStat("Esploratori Oggi", impactStats.explorers.toString(), "explore", theme.secondary, 3)}
               </View>
               <View style={{ width: '48%' }}>
                 {renderImpactStat("Segnalazioni", impactStats.reports.toString(), "add-alert", "#D6734E", 4)}
