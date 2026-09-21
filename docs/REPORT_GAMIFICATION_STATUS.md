@@ -37,6 +37,7 @@
 | **Vault-economia (frontend)** | `PoiDetailSheet.tsx` (guard Premium + sblocco via RPC), `app/upgrade.tsx` + hydration `ThemeContext` (persistenza `is_premium`), `types/database.ts` allineati, `OfflineQueueManager` (sblocco offline accodato). |
 | **Lore livelli** | `utils/LevelUpLore.ts`: espansione/rifinitura testi narrativi tier 1-30. |
 | **F4 — Fiore 3 Petali** (working tree) | `components/FioreDeiTrePetali.tsx` (nuova): card "Fiore di Oggi" su Home tra avatar e quadrante — 🟢 2km a piedi (o 1kg CO₂, `distanceToday`/`co2` da `useGamification`) · 🟡 1 check-in oggi (conteggio `user_pois.visited_at >= oggi` in `index.tsx`, ricalcato su `caricaDati`+`refreshGamification`) · 🔵 sfida-quotidiana a ROTAZIONE curata (5 sfide misurabili dai contatori, indice = giorno dell'anno). Zeigarnik. |
+| **F6 — Diario di Bordo + Fog of War** (working tree) | `components/ProfileModal.tsx`: 3° tab **DIARIO** hub nel Profilo — ① Scoperte → apre `VaultModal` ② Memorie → apre `MemoriesCameraModal` ("Visioni Sospese", filtri per livello) ③ Co-Experience → salta al tab squad se LV≥20, altrimenti `FeatureLockSheet`. Toggle **Nebbia della Memoria** persistito (`@loto_fog_of_war`) + effetto sulla Mappa (`app/(tabs)/map.tsx`): POI non ancora scoperti sfumati/ridotti (iconOpacity 0.35, size 1.1, textOpacity 0.25). Fix **G7**: rimosso `alert()` dal tab Co-Experience → `FeatureLockSheet`. |
 | **Docs/artefatti** | `docs/gamification_hooks_analisi.md` (nuova, §7 con decisioni + economia XP per azione) · `docs/codici_morti.md` (nuova) · `supabase/migration_v20_vault_currency_fix.sql` (nuova, **NON ancora eseguita**) · `coerenza_ecosistema.md` / `pre_gamification_baseline.md` / `NEXT_SESSION_HANDOFF.md` aggiornati · `write_seed.js` → archiviato in `archive_dead_code/`. |
 
 > **Dead code registrato** (`docs/codici_morti.md`): `write_seed.js` archiviato (contiene `loto_cost` stale + mojibake);
@@ -52,7 +53,6 @@
 |---|---|---|---|---|
 | F3 | Tab Community "preview lockata" | Sostituire l'Alert "Sezione Chiusa 🔒" con badge icona sbiadita + label "??? (LV.5)" in stile LOTO (stesso pattern `ProfileModal` per "??? (LV.20)") | Basso | ORA |
 | K | Costante `KEY_LEVELS` SSOT | Centralizzare `1→2→5→11→20→21→30→31→41` accanto a `levelUtils.ts` (zero numeri magici) | Bassissimo | con F3 |
-| F6 | Zona "**Diario di Bordo**" | Hub **dentro il Profilo**: ① Scoperte (Vault + toggle Fog of War) ② Memorie (camera filtri) ③ Co-Experience (???.LV.20). Palette LOTO | Alto | dopo F4 |
 | F2 | Loop "Risonanza Civica" | Count oggettivo (utenti che hanno sbloccato la stessa whisper) + push template su canale `sincro-avventura`. **Nessuna moderazione manuale** (whisper = contenuto curato, no UGC) | Medio | dopo F6 |
 
 ### B.2 Posticipati di concerto con l'utente

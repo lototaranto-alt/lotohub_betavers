@@ -61,6 +61,8 @@ export default function MapScreen() {
 
   const [selectedPoi, setSelectedPoi] = useState<any>(null);
   const [heatScores, setHeatScores] = useState<Record<string, number>>({});
+  const [fogOfWar, setFogOfWar] = useState(false);
+  const [discoveredPoiIds, setDiscoveredPoiIds] = useState<Set<string>>(new Set());
   
   // UI States
   
@@ -131,6 +133,21 @@ export default function MapScreen() {
           
         if (isActive && poisData) {
           setPois(poisData);
+
+          const fogVal = await AsyncStorage.getItem('@loto_fog_of_war');
+          if (isActive) setFogOfWar(fogVal === '1');
+
+          // F6 Fog of War: set dei POI già scoperti dall'utente
+          const { data: { user } } = await supabase.auth.getUser();
+          if (isActive && user) {
+            const { data: discovered } = await supabase
+              .from('user_pois')
+              .select('poi_id')
+              .eq('profile_id', user.id);
+            if (isActive && discovered) {
+              setDiscoveredPoiIds(new Set(discovered.map(d => d.poi_id)));
+            }
+          }
           
           const initialHeat: Record<string, number> = {};
           poisData.forEach(p => { initialHeat[p.id] = 10; });
@@ -177,6 +194,7 @@ export default function MapScreen() {
         id: poi.id,
         name: poi.name,
         heat: heatScores[poi.id] || 10,
+        discovered: discoveredPoiIds.has(poi.id) ? 1 : 0,
       },
       geometry: {
         type: 'Point',
@@ -260,15 +278,32 @@ export default function MapScreen() {
                 'monument', 'monument-15',
                 'marker-15'
               ],
-              iconSize: 1.5,
+              iconSize: fogOfWar ? [
+                'case',
+                ['get', 'discovered'], 1.5,
+                1.1,
+                1.5
+              ] : 1.5,
               iconAllowOverlap: true,
+              iconOpacity: fogOfWar ? [
+                'case',
+                ['get', 'discovered'], 1,
+                0.35,
+                1
+              ] : 1,
               textField: ['get', 'name'],
               textSize: 10,
               textOffset: [0, 1.2],
               textAnchor: 'top',
               textColor: theme.text,
               textHaloColor: theme.surface,
-              textHaloWidth: 2
+              textHaloWidth: 2,
+              textOpacity: fogOfWar ? [
+                'case',
+                ['get', 'discovered'], 1,
+                0.25,
+                1
+              ] : 1
             }}
           />
                   {eventsOn ? (

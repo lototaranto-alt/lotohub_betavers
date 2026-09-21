@@ -1,11 +1,17 @@
 ﻿import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, StyleSheet, Dimensions, Switch } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
 import { getAvatarFrameStyle, CO_EXPERIENCE_UNLOCK_LEVEL } from '../utils/levelUtils';
 import QRCode from 'react-native-qrcode-svg';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import FeatureLockSheet from './FeatureLockSheet';
+import VaultModal from './VaultModal';
+import MemoriesCameraModal from './MemoriesCameraModal';
+
+const FOG_KEY = '@loto_fog_of_war';
 
 interface ProfileModalProps {
   visible: boolean;
@@ -19,19 +25,29 @@ interface ProfileModalProps {
 }
 
 export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userTokens, theme, setUserProfile }: ProfileModalProps) {
-  const [editingNickname, setEditingNickname] = useState(false);
+const [editingNickname, setEditingNickname] = useState(false);
   const [tempNickname, setTempNickname] = useState(userProfile?.nickname || 'VIAGGIATORE');
-  const [activeTab, setActiveTab] = useState<'identity' | 'squad'>('identity');
+  const [activeTab, setActiveTab] = useState<'identity' | 'squad' | 'diario'>('identity');
   const [isScanning, setIsScanning] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+  const [fogOfWar, setFogOfWar] = useState(false);
+  const [isVaultVisible, setIsVaultVisible] = useState(false);
+  const [isMemoriesVisible, setIsMemoriesVisible] = useState(false);
+  const [isCoLockSheetVisible, setIsCoLockSheetVisible] = useState(false);
 
   React.useEffect(() => {
     if (visible && userProfile?.id) {
       setEditingNickname(false);
       setTempNickname(userProfile.nickname || 'VIAGGIATORE');
       setActiveTab('identity');
+      AsyncStorage.getItem(FOG_KEY).then(val => setFogOfWar(val === '1'));
     }
   }, [visible, userProfile?.id]);
+
+  const toggleFogOfWar = async (value: boolean) => {
+    setFogOfWar(value);
+    await AsyncStorage.setItem(FOG_KEY, value ? '1' : '0');
+  };
 
   const salvaNickname = async () => {
     if (!tempNickname.trim()) return;
@@ -80,13 +96,16 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
             </TouchableOpacity>
           </View>
 
-          {/* TABS */}
+{/* TABS */}
           <View style={[styles.tabBar, { borderColor: theme.border }]}>
             <TouchableOpacity style={[styles.tab, activeTab === 'identity' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => setActiveTab('identity')}>
               <Text style={[styles.tabText, { color: activeTab === 'identity' ? theme.accent : theme.textMuted }]}>IDENTITÀ</Text>
             </TouchableOpacity>
-<TouchableOpacity style={[styles.tab, activeTab === 'squad' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => { if (computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL) setActiveTab('squad'); else alert(`Sblocca gli Eco-Passi al Livello ${CO_EXPERIENCE_UNLOCK_LEVEL}!`); }}>
+<TouchableOpacity style={[styles.tab, activeTab === 'squad' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => { if (computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL) setActiveTab('squad'); else setIsCoLockSheetVisible(true); }}>
               <Text style={[styles.tabText, { color: activeTab === 'squad' ? theme.accent : theme.textMuted }]}>{computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL ? 'CO-EXPERIENCE' : `??? (LV.${CO_EXPERIENCE_UNLOCK_LEVEL})`}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.tab, activeTab === 'diario' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => setActiveTab('diario')}>
+              <Text style={[styles.tabText, { color: activeTab === 'diario' ? theme.accent : theme.textMuted }]}>DIARIO</Text>
             </TouchableOpacity>
           </View>
 
@@ -199,13 +218,113 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                 <View style={styles.privacyNote}>
                   <MaterialIcons name="shield" size={12} color={theme.textMuted} />
                   <Text style={[styles.privacyText, { color: theme.textMuted }]}>Zero PII: la sincronia è 100% anonima e dura 2 ore.</Text>
-                </View>
+</View>
                   </>
                 )}
               </View>
             )}
 
-          </ScrollView>
+            {/* === TAB 3: DIARIO DI BORDO === */}
+            {activeTab === 'diario' && (
+              <View style={styles.diarioSection}>
+                <Text style={[styles.diarioEyebrow, { color: theme.textMuted }]}>IL TUO PERCORSO CITTADINO</Text>
+                <Text style={[styles.diarioTitle, { color: theme.text }]}>Diario di Bordo</Text>
+                <Text style={[styles.diarioDesc, { color: theme.textMuted }]}>
+                  Tre esperienze si intrecciano nel tuo passaggio in città. Ogni zona si svela con il tuo avanzamento.
+                </Text>
+
+                {/* ① SCOPERTE + Vault */}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => setIsVaultVisible(true)}
+                  style={[styles.zoneCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                >
+                  <View style={[styles.zoneIcon, { backgroundColor: '#2D4A22' }]}>
+                    <MaterialIcons name="photo-library" size={26} color="#FFF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.zoneTitle, { color: theme.text }]}>Scoperte</Text>
+                    <Text style={[styles.zoneDesc, { color: theme.textMuted }]}>Audio-guide e documenti sbloccati con i tuoi check-in.</Text>
+                  </View>
+                  <MaterialIcons name="chevron-right" size={24} color={theme.textMuted} />
+                </TouchableOpacity>
+
+                {/* Toggle Nebbia della Memoria (Fog of War) */}
+                <View style={[styles.fogRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                  <View style={[styles.zoneIcon, { backgroundColor: '#3B5F31' }]}>
+                    <MaterialIcons name="blur-on" size={22} color="#FFF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.fogTitle, { color: theme.text }]}>Nebbia della Memoria</Text>
+                    <Text style={[styles.fogDesc, { color: theme.textMuted }]}>
+                      Sulla mappa, i luoghi non ancora esplorati restano velati, come ricordi sfumati.
+                    </Text>
+                  </View>
+                  <Switch
+                    value={fogOfWar}
+                    onValueChange={toggleFogOfWar}
+                    trackColor={{ false: theme.border, true: theme.primary }}
+                    thumbColor="#FFF"
+                  />
+                </View>
+
+                {/* ② MEMORIE + Camera filtri */}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => setIsMemoriesVisible(true)}
+                  style={[styles.zoneCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                >
+                  <View style={[styles.zoneIcon, { backgroundColor: '#DFAB55' }]}>
+                    <MaterialIcons name="camera" size={26} color="#FFF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.zoneTitle, { color: theme.text }]}>Memorie</Text>
+                    <Text style={[styles.zoneDesc, { color: theme.textMuted }]}>Visioni Sospese: filtri fotografici che si sbloccano col livello.</Text>
+                  </View>
+                  <MaterialIcons name="chevron-right" size={24} color={theme.textMuted} />
+                </TouchableOpacity>
+
+                {/* ③ CO-EXPERIENCE */}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => { if (computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL) setActiveTab('squad'); else setIsCoLockSheetVisible(true); }}
+                  style={[styles.zoneCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                >
+                  <View style={[styles.zoneIcon, { backgroundColor: computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL ? '#1A3621' : '#6B6B6B' }]}>
+                    <MaterialIcons name="group" size={26} color="#FFF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.zoneTitle, { color: theme.text }]}>Co-Experience</Text>
+                    <Text style={[styles.zoneDesc, { color: theme.textMuted }]}>Sincronia di squadra per moltiplicare la tua esperienza.</Text>
+                  </View>
+                  <Text style={[styles.zoneTag, { color: computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL ? theme.primary : theme.textMuted }]}>
+                    {computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL ? 'ATTIVA' : `??? (LV.${CO_EXPERIENCE_UNLOCK_LEVEL})`}
+                  </Text>
+                </TouchableOpacity>
+
+              </View>
+            )}
+
+</ScrollView>
+
+          <VaultModal
+            visible={isVaultVisible}
+            onClose={() => setIsVaultVisible(false)}
+            userProfile={userProfile}
+            theme={theme}
+          />
+          <MemoriesCameraModal
+            visible={isMemoriesVisible}
+            onClose={() => setIsMemoriesVisible(false)}
+            userLevel={computedLevel}
+            theme={theme}
+          />
+          <FeatureLockSheet
+            visible={isCoLockSheetVisible}
+            onClose={() => setIsCoLockSheetVisible(false)}
+            featureName="Co-Experience"
+            unlockLevel={CO_EXPERIENCE_UNLOCK_LEVEL}
+          />
         </View>
       </View>
     </Modal>
@@ -246,6 +365,43 @@ const styles = StyleSheet.create({
   squadDesc: { textAlign: 'center', fontSize: 14, lineHeight: 22, marginBottom: 30 },
   scanBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 24, borderRadius: 30, elevation: 3 },
   scanBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  privacyNote: { flexDirection: 'row', alignItems: 'center', marginTop: 25, opacity: 0.8 },
-  privacyText: { fontSize: 11, marginLeft: 5 }
+privacyNote: { flexDirection: 'row', alignItems: 'center', marginTop: 25, opacity: 0.8 },
+  privacyText: { fontSize: 11, marginLeft: 5 },
+
+  // DIARIO DI BORDO
+  diarioSection: { paddingHorizontal: 20, marginTop: 6 },
+  diarioEyebrow: { fontSize: 11, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 },
+  diarioTitle: { fontSize: 24, fontWeight: '900', fontFamily: 'PlayfairDisplay_700Bold', marginBottom: 8 },
+  diarioDesc: { fontSize: 13, lineHeight: 20, marginBottom: 24, opacity: 0.9 },
+  zoneCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 14,
+    marginBottom: 12,
+    elevation: 2,
+  },
+  zoneIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  zoneTitle: { fontSize: 16, fontWeight: '900', marginBottom: 3 },
+  zoneDesc: { fontSize: 12, lineHeight: 16, opacity: 0.85 },
+  zoneTag: { fontSize: 10, fontWeight: '900', letterSpacing: 0.8, marginLeft: 8 },
+  fogRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 14,
+    marginBottom: 12,
+    elevation: 2,
+  },
+  fogTitle: { fontSize: 14, fontWeight: '900', marginBottom: 2 },
+  fogDesc: { fontSize: 11, lineHeight: 15, opacity: 0.85 },
 });
