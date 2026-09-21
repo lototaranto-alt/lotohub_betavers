@@ -60,6 +60,7 @@
 | `UX_GPS_STARTUP_GUIDELINES.md` | Vivente | Linee guida GPS/primo avvio/mappa |
 | `gamification_struttura_narrativa.md` | Vivente | Tier narrativi 5x10, nomi e tono |
 | `gamification_experience.md` | **Nuovo (Vivente)** | L'esperienza gamification complessiva + scenari + decisioni (es. Fog of War) |
+| `gamification_rampa_early_game.md` | **Nuovo (Bozza)** | Rampa primi 10 livelli: visibilità POI per livello, sezioni sbloccate, XP per sblocco, catena modali, gancio feature di gruppo |
 | `audio_feedback.md` | **Nuovo (Vivente)** | Gestione completa dei feedback audio/SFX |
 | `WHATSAPP_BOT_SPECS.md` | Vivente | Spec bot B2B e template (complementare a `commercial/whatsapp_bot_architecture.md`) |
 | `gamification_auth_plan.md` | Bozza | Piano auth/gamification |
@@ -68,6 +69,7 @@
 ### C — Stato & Tracciamento
 | Doc | Stato | Scopo |
 |---|---|---|
+| `FINE_SESSIONE_PROTOCOLLO.md` | **Nuovo (Vivente)** | Workflow obbligatorio di chiusura sessione (verifica, commit, riferimento cronologico, riepilogo) |
 | `REPORT_GAMIFICATION_STATUS.md` | **Vivente (SSOT di stato)** | PARTE A-B-C-D: realizzato, discusso, linee guida G, diario decisioni |
 | `NEXT_SESSION_HANDOFF.md` | Storico (appendere) | Istantanee di fine sessione |
 | `task.md` / `implementation_plan.md` | Storico | Piani passati a quadranti/boutique |

@@ -3,6 +3,7 @@
 Questo documento serve come "Mappa del Tesoro" per recuperare qualsiasi concetto, logica di business o frammento di codice che abbiamo sviluppato nella chat precedente. Se un concetto sembra perso o poco chiaro, questa è la bussola per ritrovarlo.
 
 > **2026-09-21 — Indice aggiornato:** ora esiste `docs/README.md` con l'**architettura della documentazione** (criterio + indice completo). I doc nuovi di riferimento: `gamification_experience.md` (esperienza e scenari, incl. Fog of War) e `audio_feedback.md` (SFX/feedback).
+> **2026-09-21 (serale) — Chiusura sessione:** `FINE_SESSIONE_PROTOCOLLO.md` = workflow di chiusura sessione (verifica/commit/cronologia); `gamification_rampa_early_game.md` = design Bozza dei primi 10 livelli (visibilità POI, sezioni, XP per sblocco, catena modali).
 
 ## 1. La Libreria dei Documenti (Dove cercare cosa)
 I documenti generati nella chat bloccata non sono semplici appunti, ma veri e propri "Libretti di Istruzione" (Technical Briefs). Li abbiamo organizzati per macro-aree:

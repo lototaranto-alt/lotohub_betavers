@@ -1,3 +1,28 @@
+# Fine Sessione (21/09 serale): G16/G17 realizzate, PFS attivo, G18 rampa primi 10 livelli (Bozza)
+
+## Raggiunto in questa sessione (terminale)
+- **G16 (impatto dal ledger):** `community.tsx` legge `vw_collective_impact` (checkins/co2/explorers/pti/water)
+  + `civic_reports`; "Esploratori Oggi" al posto di KM Esplorati. `profile.tsx` usa `profiles.total_co2`.
+- **G17 (backup QR-only):** rimosso dead code form email/password (`profile.tsx`), descrizione Zero-PII;
+  fix apici pre-esistenti; verifica `npx tsc --noEmit` EXIT 0 + eslint 0 errori (6 warning pre-esistenti).
+- **PFS (Fine Sessione Protocollo):** nuovo `docs/FINE_SESSIONE_PROTOCOLLO.md` — FASE 1-5 obbligatorie
+  (verifica tsc/eslint/diff → ripulisci → commit separati → handoff/report → riepilogo). Da seguire a OGNI chiusura.
+- **G18 (design Bozza):** `docs/gamification_rampa_early_game.md` — rampa LV1-10 con POI reali
+  (M+Fontane 29 → Attractions LV2 → Museums LV5 → Parks LV10), KP per sblocco sulla soglia SSOT,
+  regole anti-flood modali (max 3 carte, aggregazione jump, REVEAL≠LOCK), gancio feature gruppo (bonus squadra).
+- **Docs cronologici aggiornati:** REPORT PARTE C (G18) + diario turni 9-10; README indice (2 righe nuove);
+  knowledge_recovery_guide nota serale.
+
+## Prossime Task (in ordine)
+1. **Validare G18 (utente):** rispondere alle 5 domande aperte in `gamification_rampa_early_game.md` §8
+   (ordine categorie, capstone LV10, rito LV10, badge "Nuovo strato", LV3 Percorsi).
+2. **Implementare (dopo ok):** `POI_CATEGORY_UNLOCK_LEVEL` in `levelUtils.ts` + filtro `map.tsx` + label "???"
+   nel dropdown; carta REVEAL e rito LV10 in `GamificationTransitionManager`; aggregazione jump in `buildLevelUpEvents`.
+3. **RPC `recover_loto_pass`:** verificare sul DB cloud se esiste (introspection §8d) — in attesa risposta utente.
+4. **Version bump 1.0.2 / versionCode 4 + build EAS AAB** (dopo QA checklist) — blocker gradle da ri-testare.
+
+---
+
 # Fine Sessione (20/09 serale): F1 reattivo, Decisioni F2-F6 chiuse, REPORT completo creato
 
 ## Raggiunto in questa sessione (terminale)

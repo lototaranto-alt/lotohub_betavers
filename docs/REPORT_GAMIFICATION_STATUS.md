@@ -94,6 +94,9 @@
 | G13 | **Retention quotidiana (Zeigarnik)** — Fiore 3 Petali (F4) + sfida-quotidiana | 🟡 Da costruire | dopo F3 |
 | G14 | **Loss-Aversion / Streak 7 giorni** — Rugiada (F5) | 🔒 Dipende da ritmo XP | pre-req: misura runtime |
 | G15 | **Curiosità spaziale (Fog of War)** — nebbia Mapbox che si dirada ~50m, riusa `heatScores` | 🟡 Da costruire | dentro "Diario di Bordo" (F6) |
+| G16 | **Metriche impatto dal ledger, MAI coefficienti inventati nel client** — statistiche (personali e collettive) pescate da `profiles.total_co2` e `vw_collective_impact` (somma reale `impact_transactions`), non calcoli `*0.5/*0.12/*0.15` hard-coded | ✅ Realizzata | `community.tsx` e `profile.tsx` (21/09) |
+| G17 | **Backup SOLO QR locale, Zero-PII totale** — nessun backup cloud via email/password: app più leggera e inattaccabile sulla privacy; `recover_loto_pass` (flusso QR) resta l'unico metodo | ✅ Decisa (utente, 21/09) | `profile.tsx` (sezione Backup), `LotoPassCard.tsx`, `LotoPassRecoveryScanner.tsx` |
+| G18 | **Rampa early-game progressiva** — nei primi 10 livelli la mappa svela UNA nuova categoria POI per soglia (Monuments+Fontane → Attractions LV2 → Museums LV5 → Parks LV10), senza gate DB (Zero-Code layer, costante client SSOT) | 🟡 Bozza (design) | `gamification_rampa_early_game.md` (21/09, da validare Q1-Q5) |
 
 ---
 
@@ -108,7 +111,7 @@
 | `docs/codici_morti.md` | Registro dead code / archivi |
 | `.agents/AGENTS.md` | Regole SSOT + filosofia core (Zero-PII, Zero-IoT, Offline-First, Goal B2B) |
 | `context/GamificationContext.tsx` + `utils/levelUtils.ts` | SSOT progresso (XP→livello→rank) |
-| `supabase/migration_v20_vault_currency_fix.sql` | Fix economia duale (pronto, **da applicare**) |
+| `supabase/migration_v20_vault_currency_fix.sql` | Fix economia duale (**applicata** sul cloud, 21/09) |
 
 ---
 
@@ -127,6 +130,10 @@
 | 4 | Risposte utente ai quesiti (tool) | F4 petalo = **B** · F6 zona = **hub nel Profilo** · F6 nome = **"Diario di Bordo"** · LV30 = "va inserita assieme a tutte le opzioni che creano questo segmento, es. descrizione soglia exp per azione" | **Economia XP per azione** verificata sul codice e aggiunta a §7.2; LV30 incluso nei KEY_LEVELS |
 | 5 | Utente: richiesta report | "raccogli un report che salvi il lavoro elaborato, e lo divida da quello realizzato e quello solo discusso. specie le sottilissime linee guida del segmento gamification" | **Questo documento** (PARTE A/B/C) |
 | 6 | Utente: "ok mi riferisco anche della conversazione in questo terminal" | Il diario deve includere i ragionamenti emersi in chat, non solo i doc/git | **PARTE D** (questa sezione) |
+| 7 | Utente (21/09): analisi tab Community/Profilo | "il sistema backup utente (LotoPass) non è interamente codificato, manca qualcosa" | **G16/G17** — analisi fatta: metriche inventate (`*0.5/*0.12/*0.15`), form email promesso ma non renderizzato, `recover_loto_pass` solo nell'introspection |
+| 8 | Utente (21/09): decisione backup | **"Abbiamo eliminato il backup via email... Solo QR Code locale."** | **G17** — niente form email (dead code rimosso), solo QR; scelta Zero-PII radicale |
+| 9 | Utente (21/09, terminale): protocollo fine sessione | "tu continua pure... stabilisci tu tutti i criteri [di fine sessione]" | **PFS** — `docs/FINE_SESSIONE_PROTOCOLLO.md` (FASI 1-5: verifica→ripulisci→salva→registro→riepilogo) |
+| 10 | Utente (21/09, terminale): rampa primi 10 livelli | "strutturare le basi: da quanti POI vedere (solo monumenti attualmente) a sezioni tipo community... quante XP per sblocco e tutte le modali concatenate (futuro gruppo = bonus exp)" | **G18** — analisi POI reali (179 seed), design `gamification_rampa_early_game.md` (Bozza, Q1-Q5) |
 
 ### D.2 Osservazioni utente VERBATIM (turno #3)
 
@@ -163,6 +170,8 @@
 | F5: punti non spendibili → economia a brainstorming di fine app | 🔒 congelato (registrato G12) |
 | F6: sezione/zona dedicata + nome | ✅ deciso = "Diario di Bordo" (hub nel Profilo) |
 | LV30 + soglia XP per azione | ✅ economia XP documentata (§7.2) |
+| Metriche impatto con coefficienti inventati nel client (0.5/0.12/0.15 kg C()₂) | ✅ spostate su ledger reale (`total_co2`, `vw_collective_impact`) — G16 |
+| Backup via email promesso nella UI ma non codificato | ✅ decisione utente: eliminato del tutto, solo QR locale — G17 |
 
 ---
 
