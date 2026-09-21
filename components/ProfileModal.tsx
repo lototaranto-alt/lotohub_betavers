@@ -2,7 +2,7 @@
 import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, StyleSheet, Dimensions } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
-import { getAvatarFrameStyle } from '../utils/levelUtils';
+import { getAvatarFrameStyle, CO_EXPERIENCE_UNLOCK_LEVEL } from '../utils/levelUtils';
 import QRCode from 'react-native-qrcode-svg';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Alert } from 'react-native';
@@ -85,8 +85,8 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
             <TouchableOpacity style={[styles.tab, activeTab === 'identity' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => setActiveTab('identity')}>
               <Text style={[styles.tabText, { color: activeTab === 'identity' ? theme.accent : theme.textMuted }]}>IDENTITÀ</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.tab, activeTab === 'squad' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => { if (computedLevel >= 20) setActiveTab('squad'); else alert('Sblocca gli Eco-Passi al Livello 20!'); }}>
-              <Text style={[styles.tabText, { color: activeTab === 'squad' ? theme.accent : theme.textMuted }]}>{computedLevel >= 20 ? 'CO-EXPERIENCE' : '??? (LV.20)'}</Text>
+<TouchableOpacity style={[styles.tab, activeTab === 'squad' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => { if (computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL) setActiveTab('squad'); else alert(`Sblocca gli Eco-Passi al Livello ${CO_EXPERIENCE_UNLOCK_LEVEL}!`); }}>
+              <Text style={[styles.tabText, { color: activeTab === 'squad' ? theme.accent : theme.textMuted }]}>{computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL ? 'CO-EXPERIENCE' : `??? (LV.${CO_EXPERIENCE_UNLOCK_LEVEL})`}</Text>
             </TouchableOpacity>
           </View>
 
@@ -153,12 +153,12 @@ export default function ProfileModal({ visible, onClose, userProfile, userXp, le
                   />
                 </View>
                 
-                {computedLevel < 20 ? (
+                {computedLevel < CO_EXPERIENCE_UNLOCK_LEVEL ? (
                   <View style={{ alignItems: 'center', padding: 20, marginTop: 40 }}>
                     <MaterialIcons name="lock" size={60} color={theme.textMuted} />
                     <Text style={[styles.squadTitle, { color: theme.text, marginTop: 20 }]}>Sincronia Bloccata</Text>
                     <Text style={[styles.squadDesc, { color: theme.textMuted }]}>
-                      La Co-Experience  un privilegio riservato ai Cittadini di L.O.T.O. Raggiungi il Livello 20 per sbloccare la sincronizzazione di gruppo e moltiplicare i tuoi Punti.
+                      La Co-Experience è un privilegio riservato ai Cittadini di L.O.T.O. Raggiungi il Livello {CO_EXPERIENCE_UNLOCK_LEVEL} per sbloccare la sincronizzazione di gruppo e moltiplicare i tuoi Punti.
                     </Text>
                   </View>
                 ) : (

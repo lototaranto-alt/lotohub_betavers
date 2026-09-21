@@ -4,6 +4,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Alert } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useGamification } from '../../context/GamificationContext';
+import { COMMUNITY_UNLOCK_LEVEL } from '../../utils/levelUtils';
+import FeatureLockSheet from '../../components/FeatureLockSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import NfcManager from 'react-native-nfc-manager';
@@ -29,6 +31,7 @@ export default function TabLayout() {
   const { theme, isElite } = useTheme();
   const { level: userLevel } = useGamification();
   const [modalVisible, setModalVisible] = useState(false);
+  const [lockedFeature, setLockedFeature] = useState<string | null>(null);
   const router = useRouter();
 
   const handleOpenScanner = async () => {
@@ -154,20 +157,56 @@ export default function TabLayout() {
           }}
         />
 
-        {/* 4. Community (Sempre visibile, ma mostra Popup se livello < 5) */}
+        {/* 4. Community (Sempre visibile, ma mostra preview lockata se livello < soglia) */}
         <Tabs.Screen
           name="community"
           listeners={{
             tabPress: (e) => {
-              if (userLevel < 5) {
+              if (userLevel < COMMUNITY_UNLOCK_LEVEL) {
                 e.preventDefault();
-                Alert.alert("Sezione Chiusa 🔒", "Raggiungi il Livello 5 per sbloccare la Community e gli Eventi!");
+                setLockedFeature('Community');
               }
             }
           }}
           options={{
             title: 'Community',
-            tabBarIcon: ({ color }) => <MaterialIcons size={28} name="groups" color={color} />,
+            tabBarLabel: () => (
+              <Text style={[{
+                fontSize: 10,
+                fontWeight: '900',
+                fontFamily: isElite ? 'sans-serif' : 'serif',
+                color: userLevel < COMMUNITY_UNLOCK_LEVEL ? theme.textMuted : (theme.primary),
+                opacity: userLevel < COMMUNITY_UNLOCK_LEVEL ? 0.75 : 1,
+              }]}>
+                {userLevel < COMMUNITY_UNLOCK_LEVEL ? `??? (LV.${COMMUNITY_UNLOCK_LEVEL})` : 'Community'}
+              </Text>
+            ),
+            tabBarIcon: ({ color }) => {
+              const locked = userLevel < COMMUNITY_UNLOCK_LEVEL;
+              return (
+                <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                  <MaterialIcons
+                    size={28}
+                    name="groups"
+                    color={locked ? `${theme.textMuted}B3` : color}
+                    style={{ opacity: locked ? 0.6 : 1 }}
+                  />
+                  {locked && (
+                    <View style={{
+                      position: 'absolute',
+                      right: -6,
+                      top: -2,
+                      backgroundColor: theme.secondary,
+                      borderRadius: 8,
+                      paddingHorizontal: 3,
+                      paddingVertical: 1,
+                    }}>
+                      <MaterialIcons name="lock" size={10} color="#FFF" />
+                    </View>
+                  )}
+                </View>
+              );
+            },
           }}
         />
 
@@ -199,6 +238,14 @@ export default function TabLayout() {
           </View>
         </View>
       </Modal>
+
+      {/* OVERLAY MODALE GLOBALE: preview lockata (G7 — popup personalizzato, mai notifica di sistema) */}
+      <FeatureLockSheet
+        visible={lockedFeature !== null}
+        onClose={() => setLockedFeature(null)}
+        featureName={lockedFeature || 'Sezione Misteriosa'}
+        unlockLevel={COMMUNITY_UNLOCK_LEVEL}
+      />
     </ScannerContext.Provider>
   );
 }

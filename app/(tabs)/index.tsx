@@ -9,7 +9,7 @@ import { supabase } from '../../utils/supabase';
 import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
 import { ThemeProvider as AppThemeProvider } from '../../context/ThemeContext';
 import { useCity } from '../../context/CityContext';
-import { calculateLevel, getAvatarFrameStyle } from '../../utils/levelUtils';
+import { calculateLevel, getAvatarFrameStyle, EVENTS_UNLOCK_LEVEL } from '../../utils/levelUtils';
 import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
@@ -842,7 +842,7 @@ export default function VetrinaScreen() {
   const renderEventsFooter = () => {
     if (!publicEvents || publicEvents.length === 0) return null;
     
-    const isEventsUnlocked = levelProgress.currentLevel >= 2;
+    const isEventsUnlocked = levelProgress.currentLevel >= EVENTS_UNLOCK_LEVEL;
     
     return (
       <View style={{ marginBottom: 40, marginTop: 10 }}>

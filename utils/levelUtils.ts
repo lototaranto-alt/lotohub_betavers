@@ -1,4 +1,20 @@
 import { getLoreForLevel } from './LevelUpLore';
+
+// ---------------------------------------------------------------------------
+// KEY_LEVELS — soglie di Progressive Disclosure (SSOT, zero numeri magici)
+// I livelli chiave in cui l'utente "impara" una nuova sezione del gioco.
+// Ordine deciso in sessione 20/09 (REPORT_GAMIFICATION_STATUS.md PARTE B.1):
+//   1  Avvio (seme) · 2  Eventi/Community dati · 5  Community completa
+//   11 Radici Sommerse · 20 Co-Experience · 21 Linfa Vitale
+//   30 Soglia di apprendimento DMV · 31 Respiro Urbano · 41 Fioritura del Loto
+// ---------------------------------------------------------------------------
+export const KEY_LEVELS: readonly number[] = [1, 2, 5, 11, 20, 21, 30, 31, 41];
+
+// Gate specifici per sezione/funzione. Usare SEMPRE questi, mai il numero a mano.
+export const EVENTS_UNLOCK_LEVEL = 2;
+export const COMMUNITY_UNLOCK_LEVEL = 5;
+export const CO_EXPERIENCE_UNLOCK_LEVEL = 20;
+
 export interface LevelThreshold {
   level: number;
   minXp: number;
