@@ -4,6 +4,7 @@ Questo documento serve come "Mappa del Tesoro" per recuperare qualsiasi concetto
 
 > **2026-09-21 — Indice aggiornato:** ora esiste `docs/README.md` con l'**architettura della documentazione** (criterio + indice completo). I doc nuovi di riferimento: `gamification_experience.md` (esperienza e scenari, incl. Fog of War) e `audio_feedback.md` (SFX/feedback).
 > **2026-09-21 (serale) — Chiusura sessione:** `FINE_SESSIONE_PROTOCOLLO.md` = workflow di chiusura sessione (verifica/commit/cronologia); `gamification_rampa_early_game.md` = design Bozza dei primi 10 livelli (visibilità POI, sezioni, XP per sblocco, catena modali).
+> **2026-09-22 — Sessioni successive:** G18 validato dall'utente (POI mai gated, nessun badge, rito LV10 sì) → doc **Vivente**; implementati anti-flood (1 LEVEL_UP aggregato, whisper solo KEY_LEVELS, REVEAL LV2/LV5, RITO LV10) in `levelUtils.ts` + `GamificationTransitionManager.tsx`; tipo `GamificationEvent` deduplicato; lore LV2 corretto.
 
 ## 1. La Libreria dei Documenti (Dove cercare cosa)
 I documenti generati nella chat bloccata non sono semplici appunti, ma veri e propri "Libretti di Istruzione" (Technical Briefs). Li abbiamo organizzati per macro-aree:

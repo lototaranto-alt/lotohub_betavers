@@ -1,3 +1,19 @@
+# Fine Sessione (22/09): G18 realizzata (rampa + rito + anti-flood), verso la release 1.0.2
+
+## Raggiunto in questa sessione
+- **G18 → VIVENTE e IMPLEMENTATA:** l'utente ha risposto Q1-Q5 — POI e categorie **mai gated da XP** ("i p.o.i  e le categorie non vanno toccate è gia tutto ok cosi"), POI sempre consultabili, **nessun badge** "nuovo strato", **rito LV10 sì**, **itinerari già a LV2**. `gamification_rampa_early_game.md` riscritto (sez. 0 = decisioni verbatim).
+- **Anti-flood modali** in `levelUtils.buildLevelUpEvents`: 1 solo LEVEL_UP aggregato al livello finale, WHISPER solo per i KEY_LEVELS attraversati (max 3 carte), ordine LEVEL_UP→WHISPER→REVEAL→BADGE.
+- **Carte nuove** in `GamificationTransitionManager`: `REVEAL` (sezioni aperte: Eventi/Itinerari LV2, Community LV5 — testo SSOT `UNLOCK_REVEALS`) + `RITO` capstone Tier 1 (LV10, card con Condividi). Tipi `GamificationEvent` deduplicati (SSOT = manager).
+- **Lore corretto:** LV2 non promette più "Comunità" (rimandata alle REVEAL LV5).
+- **Verifiche:** `tsc --noEmit` EXIT 0; eslint nessun errore nuovo (solo `react/display-name` su forwardRef pre-esistente); `git diff --check` pulito.
+
+## Prossime Task (in ordine)
+1. **Version bump 1.0.2 / versionCode 4 / buildNumber 4** in `app.json` + **build locale `android\gradlew assembleRelease`** (EAS cloud vietato da AGENTS §8).
+2. **RPC `recover_loto_pass`:** verifica sul DB cloud (introspection §8d) — in attesa risposta utente.
+3. QA finale manuale: catena modali su jump multipli (es. LV9→LV11) e rito LV10.
+
+---
+
 # Fine Sessione (21/09 serale): G16/G17 realizzate, PFS attivo, G18 rampa primi 10 livelli (Bozza)
 
 ## Raggiunto in questa sessione (terminale)
