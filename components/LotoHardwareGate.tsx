@@ -1,80 +1,121 @@
-import React, { useEffect, useState } from 'react';
-import { Platform, PermissionsAndroid } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Platform, PermissionsAndroid, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import LotoPermissionModal from './LotoPermissionModal';
 
+export type SensorGateState = 'ok' | 'missing' | 'gpsOff';
+
 /**
- * LotoHardwareGate
- * Componente invisibile piazzato in app/_layout.tsx.
- * Controlla silenziosamente lo stato dei permessi all'avvio (getPermission, non requestPermission).
- * Mostra la modale narrativa LOTO solo se mancano permessi critici, bloccando l'UX rumorosa
- * e costringendo tutti i componenti a usare getForegroundPermissionsAsync() anzichè requestForegroundPermissionsAsync().
+ * Richiede preventivamente i permessi GPS + Bluetooth (da usare nei CTA
+ * espliciti: onboarding, Tips, comando mappa). MAI al mount.
  */
-export default function LotoHardwareGate() {
+export function requestSensors(): Promise<{ fg: boolean; bt: boolean }> {
+  return (async () => {
+    const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+    let bluetoothOk = true;
+    if (Platform.OS === 'android') {
+      const apiLevel = parseInt(Platform.Version.toString(), 10);
+      if (apiLevel >= 31) {
+        const results = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        ]);
+        bluetoothOk = results[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === 'granted'
+          && results[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === 'granted';
+      } else {
+        bluetoothOk = true;
+      }
+    }
+    return { fg: fgStatus === 'granted', bt: bluetoothOk };
+  })();
+}
+
+/**
+ * Stato sensori in SOLA LETTURA (mai richieste → mai popup di sistema).
+ * Distingue: permesso non dato vs permesso dato ma GPS OFF a livello provider.
+ * Il caso 'gpsOff' è la chiave del fix #2: con permesso già concesso e GPS
+ * spento, la risposta corretta è una modale LOTO che porta alle impostazioni,
+ * NON il ri-trigger della notifica nativa.
+ */
+export async function getSensorGateState(): Promise<SensorGateState> {
+  try {
+    const { status: gpsStatus } = await Location.getForegroundPermissionsAsync();
+    if (gpsStatus !== 'granted') return 'missing';
+
+    let btOk = true;
+    if (Platform.OS === 'android') {
+      const apiLevel = parseInt(Platform.Version.toString(), 10);
+      if (apiLevel >= 31) {
+        const scanGranted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN);
+        const connectGranted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT);
+        btOk = scanGranted && connectGranted;
+      } else {
+        btOk = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+      }
+    }
+    if (!btOk) return 'missing';
+
+    const provider = await Location.getProviderStatusAsync();
+    if (!provider.locationServicesEnabled) return 'gpsOff';
+
+    return 'ok';
+  } catch (e) {
+    console.warn('[LotoHardwareGate] Errore check permessi:', e);
+    return 'missing';
+  }
+}
+
+/**
+ * Apre le impostazioni di sistema della posizione (Android: pagina GPS;
+ * iOS/iOS: impostazioni app). Da usare ANCHE dal comando "centra posizione"
+ * della mappa per evitare che il sistema mostri la propria dialog.
+ */
+export function openLocationSettings() {
+  if (Platform.OS === 'android') {
+    Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() => Linking.openSettings());
+  } else {
+    Linking.openSettings();
+  }
+}
+
+type LotoHardwareGateProps = {
+  suppressed?: boolean;
+};
+
+export default function LotoHardwareGate({ suppressed = false }: LotoHardwareGateProps) {
+  const [gateState, setGateState] = useState<SensorGateState>('ok');
   const [showModal, setShowModal] = useState(false);
 
+  const runCheck = useCallback(async () => {
+    const state = await getSensorGateState();
+    setGateState(state);
+    if (state === 'ok') {
+      setShowModal(false);
+    } else if (!suppressed) {
+      setShowModal(true);
+    }
+  }, [suppressed]);
+
   useEffect(() => {
-    const checkPermissions = async () => {
-      let needsModal = false;
-
-      try {
-        // 1. Controlla GPS (solo legge lo stato, non chiede)
-        const { status: gpsStatus } = await Location.getForegroundPermissionsAsync();
-        if (gpsStatus !== 'granted') needsModal = true;
-
-        // 2. Controlla Bluetooth (solo legge lo stato, non chiede)
-        if (Platform.OS === 'android') {
-          const apiLevel = parseInt(Platform.Version.toString(), 10);
-          if (apiLevel >= 31) {
-            const scanGranted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN);
-            const connectGranted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT);
-            if (!scanGranted || !connectGranted) needsModal = true;
-          } else {
-            const locationGranted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
-            if (!locationGranted) needsModal = true;
-          }
-        }
-
-        if (needsModal) setShowModal(true);
-      } catch (e) {
-        // Se il check fallisce in modo imprevisto, mostriamo comunque la modale
-        console.warn('[LotoHardwareGate] Errore check permessi:', e);
-        setShowModal(true);
-      }
-    };
-
-    checkPermissions();
-  }, []);
+    runCheck();
+  }, [runCheck]);
 
   const handleRequestPermissions = async () => {
-    try {
-      // 1. Richiedi GPS
-      await Location.requestForegroundPermissionsAsync();
+    await requestSensors();
+    await runCheck();
+  };
 
-      // 2. Richiedi Bluetooth (il pop-up grigio di sistema comparirà ORA, quando l'utente si aspetta)
-      if (Platform.OS === 'android') {
-        const apiLevel = parseInt(Platform.Version.toString(), 10);
-        if (apiLevel >= 31) {
-          await PermissionsAndroid.requestMultiple([
-            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-          ]);
-        } else {
-          await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
-        }
-      }
-
-      setShowModal(false);
-    } catch (e) {
-      console.error('[LotoHardwareGate] Errore richiesta permessi:', e);
-      setShowModal(false);
-    }
+  const handleOpenSettings = () => {
+    openLocationSettings();
   };
 
   return (
     <LotoPermissionModal
       visible={showModal}
+      state={gateState}
+      onClose={() => setShowModal(false)}
       onRequestPermissions={handleRequestPermissions}
+      onOpenSettings={handleOpenSettings}
     />
   );
 }

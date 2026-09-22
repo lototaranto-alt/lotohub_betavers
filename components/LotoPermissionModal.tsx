@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions, ImageBackg
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SensorGateState } from './LotoHardwareGate';
 
 const { width, height } = Dimensions.get('window');
 
@@ -16,11 +17,15 @@ const LOTO_PALETTE = {
 
 type LotoPermissionModalProps = {
   visible: boolean;
+  state?: SensorGateState;
   onRequestPermissions: () => void;
+  onOpenSettings?: () => void;
+  onClose?: () => void;
 };
 
-export default function LotoPermissionModal({ visible, onRequestPermissions }: LotoPermissionModalProps) {
+export default function LotoPermissionModal({ visible, state = 'missing', onRequestPermissions, onOpenSettings, onClose }: LotoPermissionModalProps) {
   const insets = useSafeAreaInsets();
+  const isGpsOff = state === 'gpsOff';
 
   return (
     <Modal visible={visible} animationType="fade" transparent>
@@ -34,23 +39,45 @@ export default function LotoPermissionModal({ visible, onRequestPermissions }: L
 
         <View style={styles.content}>
           <View style={styles.iconBadge}>
-            <MaterialIcons name="radar" size={48} color={LOTO_PALETTE.SABBIA_DORATA} />
+            <MaterialIcons name={isGpsOff ? 'gps-off' : 'radar'} size={48} color={LOTO_PALETTE.SABBIA_DORATA} />
           </View>
 
-          <Text style={styles.title}>Serve una Mano dal Tuo Sensore</Text>
-
-          <Text style={styles.paragraph}>
-            L.O.T.O. ha bisogno del tuo <Text style={styles.highlight}>GPS</Text> per guidarti sulla mappa
-            e del tuo <Text style={styles.highlight}>Bluetooth</Text> per le ancore dei locali.
+          <Text style={styles.title}>
+            {isGpsOff ? 'Il Tuo Sensore È Spento' : 'Serve una Mano dal Tuo Sensore'}
           </Text>
+
+          {isGpsOff ? (
+            <Text style={styles.paragraph}>
+              Il <Text style={styles.highlight}>GPS</Text> del telefono è spento. Il permesso è già concesso:
+              basta riattivare i servizi di posizione per ritrovare la strada tra i Nodi Segreti.
+            </Text>
+          ) : (
+            <Text style={styles.paragraph}>
+              L.O.T.O. ha bisogno del tuo <Text style={styles.highlight}>GPS</Text> per guidarti sulla mappa
+              e del tuo <Text style={styles.highlight}>Bluetooth</Text> per le ancore dei locali.
+            </Text>
+          )}
 
           <Text style={styles.paragraphSub}>
-            Nessun dato personale esce dal telefono: è solo la tua bussola per scovare i segreti di Taranto.
+            {isGpsOff
+              ? 'Nessun dato lascia il telefono: si tratta solo della tua bussola personale.'
+              : "Nessun dato personale esce dal telefono: è solo la tua bussola per scovare i segreti di Taranto."}
           </Text>
 
-          <TouchableOpacity style={styles.activateBtn} onPress={onRequestPermissions} activeOpacity={0.9}>
-            <MaterialIcons name="sensors" size={22} color={LOTO_PALETTE.EBANO} style={{ marginRight: 10 }} />
-            <Text style={styles.activateBtnText}>Attiva Sensori LOTO</Text>
+          {isGpsOff ? (
+            <TouchableOpacity style={styles.activateBtn} onPress={onOpenSettings} activeOpacity={0.9}>
+              <MaterialIcons name="settings" size={22} color={LOTO_PALETTE.EBANO} style={{ marginRight: 10 }} />
+              <Text style={styles.activateBtnText}>Attiva il GPS (Impostazioni)</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.activateBtn} onPress={onRequestPermissions} activeOpacity={0.9}>
+              <MaterialIcons name="sensors" size={22} color={LOTO_PALETTE.EBANO} style={{ marginRight: 10 }} />
+              <Text style={styles.activateBtnText}>Attiva Sensori LOTO</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity onPress={onClose} style={styles.silentBtn} activeOpacity={0.8}>
+            <Text style={styles.silentBtnText}>Ora no, esploro in silenzio</Text>
           </TouchableOpacity>
         </View>
 
@@ -141,6 +168,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: LOTO_PALETTE.EBANO,
     letterSpacing: 0.5,
+  },
+  silentBtn: {
+    marginTop: 18,
+    padding: 10,
+  },
+  silentBtnText: {
+    fontFamily: 'Raleway-Regular',
+    fontSize: 13,
+    color: 'rgba(253, 248, 242, 0.55)',
+    textDecorationLine: 'underline',
   },
   footer: {
     paddingHorizontal: 20,

@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useFocusEffect } from 'expo-router';
 import Constants from 'expo-constants';
+import { getSensorGateState, requestSensors, openLocationSettings } from '../../components/LotoHardwareGate';
 
 // Inizializza Mapbox con la chiave pubblica
 try {
@@ -43,21 +44,32 @@ export default function MapScreen() {
   const cameraRef = useRef<any>(null);
 
   const handleRequestLocation = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      setHasLocationPermission(true);
-      try {
-        const loc = await Location.getCurrentPositionAsync({});
-        cameraRef.current?.setCamera({
-          centerCoordinate: [loc.coords.longitude, loc.coords.latitude],
-          zoomLevel: 16,
-          animationDuration: 1000,
-        });
-      } catch (e) {
-        console.warn("Location error:", e);
+    // Check SILENZIOSO (sola lettura): nessun ri-trigger della notifica di sistema.
+    const gateState = await getSensorGateState();
+    if (gateState === 'gpsOff') {
+      // GPS spento con permesso già concesso → apri impostazioni, non il popup nativo.
+      openLocationSettings();
+      return;
+    }
+    if (gateState === 'missing') {
+      // Permesso non dato → richiesta esplicita (CTA utente), poi riprova.
+      const { fg } = await requestSensors();
+      if (!fg) {
+        Alert.alert("Sensore non attivato", "L.O.T.O. ti guiderà comunque tra i Nodi Segreti, ma ti servirà il GPS per raggiungerli. Puoi attivarlo quando vuoi dai Tips.");
+        return;
       }
-    } else {
-      Alert.alert("Permessi Negati", "Impossibile accedere al GPS. Attiva i permessi dalle impostazioni del telefono.");
+    }
+    setHasLocationPermission(true);
+    try {
+      const loc = await Location.getCurrentPositionAsync({});
+      cameraRef.current?.setCamera({
+        centerCoordinate: [loc.coords.longitude, loc.coords.latitude],
+        zoomLevel: 16,
+        animationDuration: 1000,
+      });
+    } catch (e) {
+      console.warn("Location error:", e);
+      Alert.alert("GPS assente", "I servizi di posizione sono spenti. Attiva il GPS dalle impostazioni del telefono per centrare la mappa su di te.");
     }
   };
 

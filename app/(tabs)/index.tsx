@@ -26,7 +26,6 @@ import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
 import ImpactStatsModal from '../../components/ImpactStatsModal';
 import VaultModal from '../../components/VaultModal';
-import FioreDeiTrePetali from '../../components/FioreDeiTrePetali';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { useMobility } from '../../context/MobilityContext';
 import { useGamification } from '../../context/GamificationContext';
@@ -191,6 +190,7 @@ export default function VetrinaScreen() {
     return () => clearInterval(interval);
   }, [liveFeeds.length]);
   const [isExpModalVisible, setIsExpModalVisible] = useState(false); // --- NUOVI STATI GAMIFICATION ---
+  const [profileInitialTab, setProfileInitialTab] = useState<'identity' | 'squad' | 'diario'>('identity'); // F4: tab di apertura dell'L.O.T.O. HUB (fiore → Diario)
   const [isBadgeModalVisible, setIsBadgeModalVisible] = useState(false);
   const [isImpactModalVisible, setIsImpactModalVisible] = useState(false);
   const [isVaultModalVisible, setIsVaultModalVisible] = useState(false);
@@ -623,6 +623,21 @@ export default function VetrinaScreen() {
         {/* --- PRESTIGE CARD COMPATTA --- */}
         <View style={{ backgroundColor: '#2D4A22', borderRadius: 20, padding: 15, marginHorizontal: 20, marginBottom: 15, elevation: 6, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10 }}>
           
+          {/* Fiore di Oggi: icona-rituale della barra verde, apre il Diario di Bordo (F4/P.S.) */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => { setProfileInitialTab('diario'); setIsExpModalVisible(true); }}
+            style={{
+              position: 'absolute', top: 12, right: 12, zIndex: 5,
+              width: 36, height: 36, borderRadius: 18,
+              backgroundColor: '#3B5F31', borderWidth: 1, borderColor: '#D4AF37',
+              justifyContent: 'center', alignItems: 'center',
+              shadowColor: '#D4AF37', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.55, shadowRadius: 6, elevation: 6,
+            }}
+          >
+            <MaterialIcons name="spa" size={20} color="#D4AF37" />
+          </TouchableOpacity>
+
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             
             {/* Left Side: Info & XP */}
@@ -664,14 +679,14 @@ export default function VetrinaScreen() {
                   <View style={{ width: `${levelProgress.rankPercent}%`, height: '100%', backgroundColor: levelProgress.color || '#D4AF37', borderRadius: 3 }} />
                 </View>
                 <Text style={{ fontSize: 10, color: '#FFF', fontWeight: 'bold', marginLeft: 8 }}>
-                  {levelProgress.rankPercent}% verso {levelProgress.rankInfo.nextRank === 'MAX' ? 'il Rank Massimo' : levelProgress.rankInfo.nextRank}
+                  {Math.round(levelProgress.rankPercent)}% verso {levelProgress.rankInfo.nextRank === 'MAX' ? 'il Rank Massimo' : levelProgress.rankInfo.nextRank}
                 </Text>
               </View>
 
             </View>
 
             {/* Right Side: Avatar Circle (cornice SSOT getAvatarFrameStyle, avanza a ogni livello) */}
-            <TouchableOpacity onPress={() => setIsExpModalVisible(true)} activeOpacity={0.8} style={{ alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => { setProfileInitialTab('identity'); setIsExpModalVisible(true); }} activeOpacity={0.8} style={{ alignItems: 'center', marginRight: 44 }}>
               <View style={[{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#3B5F31', justifyContent: 'center', alignItems: 'center', transform: [{ translateY: -5 }] }, getAvatarFrameStyle(levelProgress.currentLevel)]}>
                 <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 28, color: '#FFF' }}>
                   {(userProfile?.nickname || 'VIAGGIATORE')[0].toUpperCase()}
@@ -685,13 +700,6 @@ export default function VetrinaScreen() {
           </View>
 
           </View>
-
-        {/* --- F4 FIORE 3 PETALI (rituale quotidiano) --- */}
-        <FioreDeiTrePetali
-          distanceToday={gamification.distanceToday || 0}
-          co2Kg={gamification.co2 ?? 0}
-          checkinsToday={checkinsToday}
-        />
 
         {/* --- 4 QUADRANT GRID --- */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 15 }}>
@@ -960,6 +968,10 @@ export default function VetrinaScreen() {
           userTokens={userTokens}
           theme={theme}
           setUserProfile={setUserProfile}
+          initialTab={profileInitialTab}
+          distanceToday={gamification.distanceToday || 0}
+          co2Kg={gamification.co2 ?? 0}
+          checkinsToday={checkinsToday}
         />
 
         {/* MODALE IMPATTO E PUNTI (DAL QUADRANTE 2) */}

@@ -22,6 +22,13 @@ export const onboardingSlides = [
     title: "Meno Co2, Più Premi.",
     subtitle: "Più esplori a piedi, più XP accumuli. Sali di livello (LV 1, 3, 5...) per sbloccare Badge prestigiosi e accedere a vantaggi, premi e convenzioni esclusive in città.",
     icon: "workspace-premium"
+  },
+  {
+    id: '5',
+    title: "Accendi i Tuoi Sensori",
+    subtitle: "GPS e Bluetooth ci servono per guidarti tra i Nodi Segreti e per le ancore dei locali. Nessun dato personale esce dal telefono: solo la tua bussola.",
+    icon: "radar",
+    action: 'sensors'
   }
 ];
 

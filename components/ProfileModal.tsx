@@ -10,8 +10,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import FeatureLockSheet from './FeatureLockSheet';
 import VaultModal from './VaultModal';
 import MemoriesCameraModal from './MemoriesCameraModal';
+import FioreDeiTrePetali from './FioreDeiTrePetali';
 
 const FOG_KEY = '@loto_fog_of_war';
+
+type ProfileTab = 'identity' | 'squad' | 'diario';
 
 interface ProfileModalProps {
   visible: boolean;
@@ -22,12 +25,16 @@ interface ProfileModalProps {
   userTokens: number;
   theme: any;
   setUserProfile: (profile: any) => void;
+  initialTab?: ProfileTab;
+  distanceToday?: number;
+  co2Kg?: number;
+  checkinsToday?: number;
 }
 
-export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userTokens, theme, setUserProfile }: ProfileModalProps) {
+export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userTokens, theme, setUserProfile, initialTab = 'identity', distanceToday = 0, co2Kg = 0, checkinsToday = 0 }: ProfileModalProps) {
 const [editingNickname, setEditingNickname] = useState(false);
   const [tempNickname, setTempNickname] = useState(userProfile?.nickname || 'VIAGGIATORE');
-  const [activeTab, setActiveTab] = useState<'identity' | 'squad' | 'diario'>('identity');
+  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
   const [isScanning, setIsScanning] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [fogOfWar, setFogOfWar] = useState(false);
@@ -40,10 +47,10 @@ const [editingNickname, setEditingNickname] = useState(false);
     if (visible && userProfile?.id) {
       setEditingNickname(false);
       setTempNickname(userProfile.nickname || 'VIAGGIATORE');
-      setActiveTab('identity');
+      setActiveTab(initialTab);
       AsyncStorage.getItem(FOG_KEY).then(val => setFogOfWar(val === '1'));
     }
-  }, [visible, userProfile?.id, userProfile?.nickname]);
+  }, [visible, userProfile?.id, userProfile?.nickname, initialTab]);
 
   const toggleFogOfWar = async (value: boolean) => {
     setFogOfWar(value);
@@ -153,7 +160,7 @@ const [editingNickname, setEditingNickname] = useState(false);
                     <Text style={[styles.statValue, { color: theme.text }]}>{userTokens}</Text>
                     <Text style={styles.statLabel}>PTI LOTO</Text>
                   </View>
-                </View>
+</View>
 
                 <Text style={[styles.description, { color: theme.textMuted }]}>
                   Il tuo Avatar evolve con te. Avanza di livello accumulando XP per sbloccare le cornici delle pietre preziose e dominare la gerarchia cittadina.
@@ -227,7 +234,17 @@ const [editingNickname, setEditingNickname] = useState(false);
 
             {/* === TAB 3: DIARIO DI BORDO === */}
             {activeTab === 'diario' && (
-              <View style={styles.diarioSection}>
+              <>
+                {/* Fiore di Oggi: rituale quotidiano, ora raccolto nel Diario (ex blocco Home) */}
+                <View style={{ marginTop: 6 }}>
+                  <FioreDeiTrePetali
+                    distanceToday={distanceToday}
+                    co2Kg={co2Kg}
+                    checkinsToday={checkinsToday}
+                  />
+                </View>
+
+                <View style={styles.diarioSection}>
                 <Text style={[styles.diarioEyebrow, { color: theme.textMuted }]}>IL TUO PERCORSO CITTADINO</Text>
                 <Text style={[styles.diarioTitle, { color: theme.text }]}>Diario di Bordo</Text>
                 <Text style={[styles.diarioDesc, { color: theme.textMuted }]}>
@@ -306,6 +323,7 @@ const [editingNickname, setEditingNickname] = useState(false);
                 </TouchableOpacity>
 
               </View>
+              </>
             )}
 
 </ScrollView>

@@ -158,7 +158,7 @@ export default function RootLayout() {
                 </Stack>
                 <StatusBar style="auto" />
                 <MobilityWizard />
-                <LotoHardwareGate />
+                <LotoHardwareGate suppressed={showOnboarding} />
                 {showOnboarding && <OnboardingCarousel onComplete={handleOnboardingComplete} isFirstLaunch={isFirstLaunch} />}
               </ThemeProvider>
             </RouteProvider>
