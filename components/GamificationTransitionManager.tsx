@@ -17,6 +17,8 @@ const RANK_ASSET = require('../assets/images/logo-LOTO.png');
 export type GamificationEvent = 
   | { type: 'LEVEL_UP'; level: number; title?: string; text?: string; rarity?: number; badge?: any }
   | { type: 'WHISPER'; title: string; text: string; rarity?: number; level?: number; badge?: any }
+  | { type: 'REVEAL'; title: string; text: string; level?: number; rarity?: number; badge?: any }
+  | { type: 'RITO'; title: string; text: string; level?: number; rarity?: number; badge?: any }
   | { type: 'BADGE'; badge: any; title?: string; text?: string; rarity?: number; level?: number };
 
 export interface GamificationTransitionManagerRef {
@@ -157,9 +159,60 @@ const renderLevelUp = (level: number) => {
             <MaterialIcons name="auto-awesome" size={24} color="#FFD700" />
           </View>
           <ScrollView style={styles.whisperScroll} showsVerticalScrollIndicator={false}>
-            <Text style={styles.whisperText}>"{text}"</Text>
+            <Text style={styles.whisperText}>“{text}”</Text>
           </ScrollView>
           <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary, marginTop: 20, width: '100%' }]} onPress={handleNext}>
+            <Text style={styles.btnText}>Avanti</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    );
+  };
+
+  const renderReveal = (title: string = "LA CITTÀ SI SCHIUDE", text: string) => {
+    return (
+      <Animated.View style={[
+        styles.glassCard,
+        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+      ]}>
+        <BlurView intensity={60} tint="dark" style={styles.blurCardBg} />
+        <View style={styles.cardContent}>
+          <View style={styles.whisperHeader}>
+            <MaterialIcons name="auto-awesome" size={24} color="#D4AF37" />
+            <Text style={styles.whisperTitle}>{title}</Text>
+            <MaterialIcons name="auto-awesome" size={24} color="#D4AF37" />
+          </View>
+          <ScrollView style={styles.whisperScroll} showsVerticalScrollIndicator={false}>
+            <Text style={styles.whisperText}>“{text}”</Text>
+          </ScrollView>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary, marginTop: 20, width: '100%' }]} onPress={handleNext}>
+            <Text style={styles.btnText}>Avanti</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    );
+  };
+
+  const renderRito = (title: string, text: string, level: number = 10) => {
+    const shareMessage = `Ho compiuto il Risveglio del Seme (Livello ${level}) esplorando i segreti di Taranto con L.O.T.O.! 🌱`;
+    return (
+      <Animated.View style={[
+        styles.centerContainer,
+        { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }
+      ]}>
+        <View ref={viewRef} style={styles.captureContainer}>
+          <Image source={RANK_ASSET} style={styles.rankImage} defaultSource={RANK_ASSET} />
+          <Text style={styles.levelText}>TIER 1 COMPIUTO</Text>
+          <Text style={styles.rankTitle}>{title}</Text>
+          <Text style={[styles.ritoBody, { color: '#FFFFFF' }]}>{text}</Text>
+        </View>
+
+        <View style={styles.btnRow}>
+          <TouchableOpacity style={[styles.btn, styles.shareBtn]} onPress={() => handleShare(shareMessage)}>
+            <MaterialIcons name="share" size={20} color="#FFF" />
+            <Text style={styles.btnText}>Condividi</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary }]} onPress={handleNext}>
             <Text style={styles.btnText}>Avanti</Text>
           </TouchableOpacity>
         </View>
@@ -211,8 +264,10 @@ const renderLevelUp = (level: number) => {
         <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFillObject} />
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(26, 54, 33, 0.7)' }]} />
 
-        {currentEvent.type === 'LEVEL_UP' && renderLevelUp(currentEvent.level)}
+{currentEvent.type === 'LEVEL_UP' && renderLevelUp(currentEvent.level)}
         {currentEvent.type === 'WHISPER' && renderWhisper(currentEvent.title, currentEvent.text)}
+        {currentEvent.type === 'REVEAL' && renderReveal(currentEvent.title, currentEvent.text)}
+        {currentEvent.type === 'RITO' && renderRito(currentEvent.title, currentEvent.text, currentEvent.level)}
         {currentEvent.type === 'BADGE' && renderBadge(currentEvent.badge)}
       </View>
     </Modal>
@@ -245,7 +300,7 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     marginTop: 20,
   },
-  rankTitle: {
+rankTitle: {
     color: '#FFFFFF',
     fontSize: 32,
     fontWeight: '900',
@@ -255,6 +310,18 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 10,
+  },
+  ritoBody: {
+    fontSize: 16,
+    fontFamily: 'serif',
+    textAlign: 'center',
+    lineHeight: 26,
+    fontStyle: 'italic',
+    marginTop: 12,
+    paddingHorizontal: 10,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 6,
   },
   glassCard: {
     position: 'absolute',

@@ -15,6 +15,30 @@ export const EVENTS_UNLOCK_LEVEL = 2;
 export const COMMUNITY_UNLOCK_LEVEL = 5;
 export const CO_EXPERIENCE_UNLOCK_LEVEL = 20;
 
+// Rito di capstone del Tier 1: carta celebrativa di transizione (non è un gate di contenuti,
+// ma una modale di passaggio; i POI sono sempre tutti consultabili — visione utente 21/09).
+export const RITO_TIER1_LEVEL = 10;
+
+// Testi SSOT delle carte REVEAL/RITO (zero numeri magici, zero stringhe sparse).
+export const UNLOCK_REVEALS: Record<
+  number,
+  { title: string; text: string }
+> = {
+  [EVENTS_UNLOCK_LEVEL]: {
+    title: 'LA VOCE DELLA CITTÀ',
+    text: 'Eventi e itinerari si uniscono al tuo cammino: la città comincia a raccontarti la sua giornata.',
+  },
+  [COMMUNITY_UNLOCK_LEVEL]: {
+    title: 'LA PORTA DELLA CITTÀ',
+    text: 'La Community si schiude. Quel che scopri diventa memoria condivisa: senza punteggi, senza gare, solo la città che respira con te.',
+  },
+};
+
+export const RITO_TIER1 = {
+  title: 'IL RISVEGLIO DEL SEME',
+  text: 'Il Risveglio del Seme è compiuto: la tua voce ora ha un nome. Il mare ti chiama — le Radici Sommerse attendono il tuo respiro.',
+};
+
 export interface LevelThreshold {
   level: number;
   minXp: number;
@@ -262,23 +286,45 @@ import { GamificationEvent } from '../components/GamificationTransitionManager';
 export const buildLevelUpEvents = (oldLevel: number, newLevel: number, lang: 'it' | 'en' = 'it'): GamificationEvent[] => {
   if (newLevel <= oldLevel) return [];
 
-  const events = [];
-  
-  for (let lvl = oldLevel + 1; lvl <= newLevel; lvl++) {
-    events.push({
-      type: 'LEVEL_UP',
-      level: lvl
-    });
+  const events: GamificationEvent[] = [];
+  const jumpedMultiple = newLevel - oldLevel > 1;
 
+  // 1) Una SOLA carta LEVEL_UP aggregata al livello finale (anti-flood su jump multipli)
+  events.push({ type: 'LEVEL_UP', level: newLevel });
+
+  // 2) WHISPER: solo per il livello raggiunto (salto singolo) o per i KEY_LEVELS attraversati (jump)
+  const crossedKeyLevels = KEY_LEVELS.filter(lvl => lvl > oldLevel && lvl <= newLevel);
+  const whisperLevels = jumpedMultiple
+    ? (crossedKeyLevels.length > 0 ? crossedKeyLevels : [newLevel])
+    : [newLevel];
+
+  for (const lvl of whisperLevels) {
     const loreText = getLoreForLevel(lvl, lang);
     if (loreText) {
       events.push({
         type: 'WHISPER',
         title: `Pillola del Livello ${lvl}`,
-        text: loreText
+        text: loreText,
+        level: lvl,
       });
     }
   }
 
-  return events as GamificationEvent[];
+  // 3) REVEAL sulle sezioni che si sbloccano attraversando una soglia chiave (Eventi LV2, Community LV5)
+  const revealLevels = [EVENTS_UNLOCK_LEVEL, COMMUNITY_UNLOCK_LEVEL].filter(
+    lvl => oldLevel < lvl && newLevel >= lvl
+  );
+  for (const lvl of revealLevels) {
+    const reveal = UNLOCK_REVEALS[lvl];
+    if (reveal) {
+      events.push({ type: 'REVEAL', level: lvl, title: reveal.title, text: reveal.text });
+    }
+  }
+
+  // 4) RITO di capstone Tier 1 quando si attraversa LV10
+  if (oldLevel < RITO_TIER1_LEVEL && newLevel >= RITO_TIER1_LEVEL) {
+    events.push({ type: 'RITO', level: RITO_TIER1_LEVEL, title: RITO_TIER1.title, text: RITO_TIER1.text });
+  }
+
+  return events;
 };

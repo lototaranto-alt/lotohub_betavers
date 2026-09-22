@@ -1,11 +1,8 @@
 ﻿import React, { createContext, useContext, useRef, useState, useCallback, useMemo } from 'react';
-import { GamificationTransitionManager } from '../components/GamificationTransitionManager';
+import { GamificationTransitionManager, GamificationEvent } from '../components/GamificationTransitionManager';
 import { getLevelProgress, LevelProgress } from '../utils/levelUtils';
 
-export type GamificationEvent = 
-  | { type: 'LEVEL_UP'; level: number }
-  | { type: 'WHISPER'; title: string; text: string }
-  | { type: 'BADGE'; badge: { title: string; icon?: string; image?: any; color?: string; desc?: string } };
+export type { GamificationEvent };
 
 export interface GamificationSyncOptions {
   badges?: any[];

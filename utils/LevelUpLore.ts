@@ -16,8 +16,8 @@ export const LEVEL_UP_LORE: Record<number, LocalizedLore> = {
     en: "Welcome to Taranto. Your first step is not a simple track on the map: it is the seed I am about to entrust to the earth. From today every scan is a sprout: begin to explore what surrounds you."
   },
   2: {
-    it: "La città ha aperto la sua voce. Eventi e Comunità ora ti appartengono: le voci degli altri viaggiatori si uniscono alla tua, come acque che imparano a scorrere insieme.",
-    en: "The city has opened its voice. Events and Community now belong to you: the voices of other travelers join yours, like waters learning to flow together."
+    it: "La città ha aperto la sua voce. Eventi e itinerari ora ti appartengono: la città comincia a raccontarti la sua giornata, e ogni rotta che disegni diventa la tua firma sul territorio. Le voci degli altri viaggiatori le accoglierai più avanti, senza fatica.",
+    en: "The city has opened its voice. Events and itineraries now belong to you: the city begins to tell you its day, and every route you draw becomes your signature on the territory. The voices of other travelers will come to you later, without effort."
   },
   3: {
     it: "Ogni rotta è una firma sul territorio. Hai sbloccato la creazione di percorsi: disegnali lontano dalla folla e quel che troverai lungo il cammino non lo troverà nessun altro.",
