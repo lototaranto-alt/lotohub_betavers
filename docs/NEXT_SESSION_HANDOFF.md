@@ -1,3 +1,25 @@
+# Fine Sessione (22/09, II blocco): lista test APK 1.0.2 chiusa (#1-#4), commit `c72e785`
+
+## Raggiunto in questo blocco
+- **#1 (CO2 scan POI) — root cause + fix:** `scan_poi_gps`/`process_esg_impact` eseguono `UPDATE profiles SET total_co2=...` ma il DB reale NON ha `profiles.total_co2` (manca nei tipi `database.ts`). Nuova migration **`supabase/migration_v21_fix_scan_co2.sql`** (idempotente): `+total_co2`, `+total_liters` su `profiles`; `+co2_saved`, `+xp_awarded`, `+is_shadowbanned` su `user_pois`. ⚠️ **DA APPLICARE SUL CLOUD DALL'UTENTE** (AGENTS §8: migrations mai EAS/automatiche, azione utente).
+- **#2 (popup permessi GPS/BT all'avvio) — fix radicale:**
+  - **5° slide onboarding** "Accendi i Tuoi Sensori" (`utils/onboardingContent.ts`, `action:'sensors'`) con pulsante **"Attiva Sensori (GPS)"** visibile SOLO al primo avvio (`isFirstLaunch`), riusa `requestSensors` centralizzato; procede comunque senza (zero frizione, si attiva dopo dai Tips).
+  - **`LotoHardwareGate` RISCITTO**: ora fa SOLO check in sola lettura a ogni mount (`getForegroundPermissionsAsync` + BT check + `getProviderStatusAsync`), **MAI più una richiesta spontanea** → la notifica nativa che compariva all'avvio è eliminata alla radice. Tre stati: `ok` (nulla) / `missing` (LotoPermissionModal classico) / `gpsOff` (permesso dato ma GPS spento → modale brandizzata). Prop `suppressed` (usata con `showOnboarding` per non sovrapporsi alla 5° slide / onboarding).
+  - **`LotoPermissionModal` esteso** con nuovo stato `gpsOff`: titolo "Il Tuo Sensore È Spento", icona `gps-off`, pulsante **"Attiva il GPS (Impostazioni)"** → `openLocationSettings()` (`Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS')`, fallback `openSettings`), più "Ora no, esploro in silenzio" (non più bloccante).
+  - **FAB mappa "centra posizione"** (`map.tsx`): non chiama più `requestForegroundPermissionsAsync()` diretta → `getSensorGateState()`; se `gpsOff` apre impostazioni, se `missing` richiesta esplicita custom, poi centra; errori GPS → `Alert` custom LOTO (non nativo).
+  - **Helper esportati dal gate**: `requestSensors()`, `getSensorGateState()`, `openLocationSettings()` (riusati da onboarding + mappa, niente duplicazione).
+- **#3 (fiore di oggi) — fix:** `FioreDeiTrePetali` **rimosso dalla Home**; nuova **icona-lotus glow** (MaterialIcons `spa`, bg `#3B5F31`, bordo/lucentezza `#D4AF37`, 36×36, absolute top:12/right:12 zIndex:5) nella Prestige Card verde (`#2D4A22`) che apre **`ProfileModal` sul tab `diario`** (Diario di Bordo); `ProfileModal` esteso con prop `initialTab`/`distanceToday`/`co2Kg`/`checkinsToday`; fiore renderizzato in cima al tab DIARIO (`marginTop:6`); avatar Home con `marginRight:44` per far spazio all'icona.
+- **#4 (testo livello float) — fix:** `Math.round(levelProgress.rankPercent)` nel testo della barra verde (era `1.201965…` → ora `1°`).
+- **Verifiche PFS FASE 1:** `npx tsc --noEmit` EXIT 0 · `eslint` 0 errori (35 warning pre-esistenti, di cui 1 nuovo risolto hook-deps `runCheck`) · `git diff --check` pulito. Commit **`c72e785`** (9 file, +307/-101) — migration inclusa.
+
+## Prossime Task (in ordine)
+1. **Applicare sul cloud** `supabase/migration_v21_fix_scan_co2.sql` (azione utente, SUPABASE SQL Editor) → poi rieseguire lo scan GPS/strada CO2 per confermare #1.
+2. **QA visivo su dispositivo (utente):** icona-lotus nella barra verde + apertura Diario di Bordo; 5° slide onboarding al primo avvio; modale "GPS spento" (provare: consentire → spegnere GPS → riaprire app); comando FAB mappa con GPS spento.
+3. **Build prossima release** da `C:\loto_app\android` (lezione per percorsi lunghi): sync worktree→clone, `git -C C:\loto_app pull origin fix/...`, `gradlew assembleRelease`. Sync anche la migration per aggiornare eventuali seed locali.
+4. Pending storici da chiudere: **RPC `recover_loto_pass`** verifica DB cloud (§8d) · **`migration_v20_vault_currency_fix`** (sblocco media end-to-end) · **Notifiche Eco-Passi** su device · **F3** (resa `in corso`: #2 chiuso, restano `Alert` di sistema residui da censire).
+
+---
+
 # Fine Sessione (22/09): G18 realizzata (rampa + rito + anti-flood), **RELEASE 1.0.2 BUILT ✔**, **LINT PULITO ✔**
 
 ## Raggiunto in questa sessione
