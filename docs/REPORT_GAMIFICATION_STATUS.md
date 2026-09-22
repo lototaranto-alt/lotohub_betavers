@@ -13,6 +13,9 @@
 
 | Commit | Contenuto |
 |---|---|
+| `16d5460` | **RELEASE 1.0.2** — bump `app.json` (version 1.0.2, versionCode 4, buildNumber 4); APK locale generato e verificato (`com.lotohub.app` v4/1.0.2, 212 MB) |
+| `d1afd36` `3739ac4` | **G18 cadenza** — SSOT `SECTION_UNLOCK_LEVELS` [2,4,6,8] + `UNLOCK_REVEALS` 4 voci; gate `map.tsx` via `useGamification().level`; zona Memorie LV6 `ProfileModal`; lore LV2/3/4/6/8 |
+| `b6bf361` `1655788` | **G18** — anti-flood `buildLevelUpEvents`, carte REVEAL+RITO in `GamificationTransitionManager`, `GamificationEvent` SSOT dedup; docs Vivente |
 | `de6e4c6` | Home: cornice avatar evolutiva `getAvatarFrameStyle` (avanza a ogni livello, aura per tier) + check-in senza "reload brutale" |
 | `f24d5a3` | SSOT rank/XP nel context-store, catalogo badge unico, barra di progresso verso il rank |
 | `0510c1d` | Scheda POI aperta al tap sulla mappa (`onSelected`) |
@@ -136,6 +139,7 @@
 | 10 | Utente (21/09, terminale): rampa primi 10 livelli | "strutturare le basi: da quanti POI vedere (solo monumenti attualmente) a sezioni tipo community... quante XP per sblocco e tutte le modali concatenate (futuro gruppo = bonus exp)" | **G18** — analisi POI reali (179 seed), design `gamification_rampa_early_game.md` (Bozza, Q1-Q5) |
 | 11 | Utente (21/09): risposte Q1-Q5 | POI/categorie **mai toccati** ("i p.o.i  e le categorie non vanno toccate è gia tutto ok cosi"), p.o.i sempre consultabili, nessun badge "nuovo strato", rito LV10 sì, itinerari già a LV2 | **G18 → Vivente** — doc riscritto con le decisioni; anti-flood (1 LEVEL_UP aggregato + whisper solo KEY_LEVELS, max 3 carte) + REVEAL LV2/LV5 + RITO LV10 in `buildLevelUpEvents`/`GamificationTransitionManager`; tipo `GamificationEvent` deduplicato (SSOT manager); lore LV2 corretto ("Comunità" a LV2 → rimandata) |
 | 12 | Utente (22/09): cadenza "ogni 2 livelli" | "arrivare a sbloccare le sezioni ogni 2 lv... sbloccando le sezioni più interne un pò per volta per rendere capibile l'avanzamento dell'esperienza utente" → Q&A: **Rigida** (1 sezione/livello pari) · **Community LV8** · **LV5 narrativo** | **G18 cadenza** — SSOT `SECTION_UNLOCK_LEVELS` [2,4,6,8] + `UNLOCK_REVEALS` 4 voci (Eventi/Itin/Memorie/Community); gate `map.tsx` via `useGamification().level` (rimosso `xp>=30` hardcoded); zona Memorie gated LV6 in `ProfileModal`; lore LV2/3/4/6/8 ricalibrati; doc rampa riscritto (sez. 0 + tabella cadenza) |
+| 13 | Utente (22/09): "procede tutto ok?" / build | Lancio build → **fail worktree** (`react-native-worklets` `ninja dirty` per path >250 char del worktree) → **fix: build canonica `C:\loto_app\android`** (clone sincronizzato, percorso corto, `local.properties` SDK presente) | **RELEASE 1.0.2** — bundle JS rigenerato (2464 moduli), `BUILD SUCCESSFUL` 9m12s, APK `app-release.apk` 212 MB verificato con `aapt` (versionCode 4 / versionName 1.0.2). **Lezione memorizzata nell'handoff: build sola `C:\loto_app`** |
 
 ### D.2 Osservazioni utente VERBATIM (turno #3)
 
