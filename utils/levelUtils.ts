@@ -1,5 +1,7 @@
 import { getLoreForLevel } from './LevelUpLore';
 
+import { GamificationEvent } from '../components/GamificationTransitionManager';
+
 // ---------------------------------------------------------------------------
 // KEY_LEVELS — soglie di Progressive Disclosure (SSOT, zero numeri magici)
 // I livelli chiave in cui l'utente "impara" una nuova sezione del gioco.
@@ -300,8 +302,6 @@ export const getAvatarFrameStyle = (level: number) => {
     elevation: 1 + (progressInRank / 2),
   };
 };
-
-import { GamificationEvent } from '../components/GamificationTransitionManager';
 export const buildLevelUpEvents = (oldLevel: number, newLevel: number, lang: 'it' | 'en' = 'it'): GamificationEvent[] => {
   if (newLevel <= oldLevel) return [];
 

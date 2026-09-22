@@ -1,11 +1,11 @@
-﻿import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, StyleSheet, Dimensions, Switch } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, StyleSheet, Switch, Alert } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
 import { getAvatarFrameStyle, CO_EXPERIENCE_UNLOCK_LEVEL, DIARY_CURATION_UNLOCK_LEVEL } from '../utils/levelUtils';
 import QRCode from 'react-native-qrcode-svg';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Alert } from 'react-native';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FeatureLockSheet from './FeatureLockSheet';
 import VaultModal from './VaultModal';
@@ -43,7 +43,7 @@ const [editingNickname, setEditingNickname] = useState(false);
       setActiveTab('identity');
       AsyncStorage.getItem(FOG_KEY).then(val => setFogOfWar(val === '1'));
     }
-  }, [visible, userProfile?.id]);
+  }, [visible, userProfile?.id, userProfile?.nickname]);
 
   const toggleFogOfWar = async (value: boolean) => {
     setFogOfWar(value);

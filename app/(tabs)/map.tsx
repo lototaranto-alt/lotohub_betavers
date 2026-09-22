@@ -1,32 +1,31 @@
-﻿import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../utils/supabase';
-import { startBackgroundTracking, stopBackgroundTracking } from '../../utils/SincroAvventura';
 
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobility } from '../../context/MobilityContext';
 import { useGamification } from '../../context/GamificationContext';
 import { EVENTS_UNLOCK_LEVEL, ITINERARIES_UNLOCK_LEVEL } from '../../utils/levelUtils';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import RouteSummarySheet from '../../components/RouteSummarySheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
+
 import { useFocusEffect } from 'expo-router';
-import UserAvatar from '../../components/MapCursor';
 import Constants from 'expo-constants';
 
 // Inizializza Mapbox con la chiave pubblica
 try {
   Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_KEY || 'pk.eyJ1IjoibG90b2h1YiIsImEiOiJjbW5yOGY4bXYwMTliMnNzNG84c2YwbXFqIn0.wUjhbriAWqmuGh0tn-zHtw');
-} catch(e) {}
+} catch {
+  // Token già caricato o chiave mancante: la mappa tenterà comunque la fallback
+}
 
-const { width, height } = Dimensions.get('window');
 const INITIAL_COORDS = [17.234050, 40.472850];
 
 export default function MapScreen() {
@@ -69,7 +68,7 @@ export default function MapScreen() {
   
   // UI States
   
-  const [routePois, setRoutePois] = useState<any[]>([]);
+  const [routePois] = useState<any[]>([]);
   const [activeLayer, setActiveLayer] = useState('monument');
   const [heatmapOn, setHeatmapOn] = useState(true);
 
@@ -90,7 +89,6 @@ export default function MapScreen() {
 
 
     const [isLayerDropdownOpen, setIsLayerDropdownOpen] = useState(false);
-  const [eventsEverToggled, setEventsEverToggled] = useState(false);
 
     const layers = [
     { id: 'tutti', title: 'Tutti', icon: 'layers' },
@@ -366,7 +364,7 @@ export default function MapScreen() {
           {userLevel >= EVENTS_UNLOCK_LEVEL && (
 <TouchableOpacity 
             style={[styles.pillBtn, { borderColor: eventsOn ? '#10B981' : theme.border, backgroundColor: eventsOn ? 'rgba(16, 185, 129, 0.1)' : 'transparent', paddingHorizontal: 12 }]}
-            onPress={() => { setEventsOn(!eventsOn); setEventsEverToggled(true); setIsLayerDropdownOpen(false); }}
+            onPress={() => { setEventsOn(!eventsOn); setIsLayerDropdownOpen(false); }}
           >
             <MaterialIcons name="event" size={14} color={eventsOn ? '#10B981' : theme.primary} />
             <Text style={[styles.pillText, { color: eventsOn ? '#10B981' : theme.text }]} numberOfLines={1}>Eventi</Text>
