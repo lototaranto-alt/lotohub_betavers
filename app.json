@@ -27,7 +27,7 @@
         "NSMotionUsageDescription": "L'app usa il contapassi per calcolare i km percorsi in mobilitÃ  dolce e le emissioni di CO2 risparmiate per la tua gamification ecologica.",
         "NSLocationWhenInUseUsageDescription": "L'App usa il GPS per ottimizzare l'esperienza in mappa, permetterti di fare i check-in e mostrarti i POI vicini."
       },
-      "buildNumber": "3"
+      "buildNumber": "4"
     },
     "android": {
       "adaptiveIcon": {
@@ -56,7 +56,7 @@
         "android.permission.WAKE_LOCK",
         "android.permission.CAMERA"
       ],
-      "versionCode": 3,
+      "versionCode": 4,
       "navigationBar": {
         "visible": "sticky-immersive"
       }
