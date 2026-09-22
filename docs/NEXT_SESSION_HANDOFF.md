@@ -5,12 +5,17 @@
 - **Anti-flood modali** in `levelUtils.buildLevelUpEvents`: 1 solo LEVEL_UP aggregato al livello finale, WHISPER solo per i KEY_LEVELS attraversati (max 3 carte), ordine LEVEL_UP→WHISPER→REVEAL→BADGE.
 - **Carte nuove** in `GamificationTransitionManager`: `REVEAL` (sezioni aperte: Eventi/Itinerari LV2, Community LV5 — testo SSOT `UNLOCK_REVEALS`) + `RITO` capstone Tier 1 (LV10, card con Condividi). Tipi `GamificationEvent` deduplicati (SSOT = manager).
 - **Lore corretto:** LV2 non promette più "Comunità" (rimandata alle REVEAL LV5).
+- **Cadenza "ogni 2 livelli" (decisione utente, tool):** 1 sezione per livello PARI — **Eventi LV2 · Itinerari LV4 · Visioni Sospese LV6 · Community LV8 (era LV5) · Rito LV10 · Co-Experience LV20**. LV5 resta KEY_LEVEL narrativo (CO₂ nel Profilo). SSOT `SECTION_UNLOCK_LEVELS` + `UNLOCK_REVEALS` (4 voci); gate `map.tsx` via `useGamification().level` (rimosso `xp>=30` hardcoded, FAB Itinerari LV4); zona Memorie gated LV6 in `ProfileModal`; lore LV2/3/4/6/8 ricalibrati alle soglie reali.
 - **Verifiche:** `tsc --noEmit` EXIT 0; eslint nessun errore nuovo (solo `react/display-name` su forwardRef pre-esistente); `git diff --check` pulito.
 
 ## Prossime Task (in ordine)
 1. **Version bump 1.0.2 / versionCode 4 / buildNumber 4** in `app.json` + **build locale `android\gradlew assembleRelease`** (EAS cloud vietato da AGENTS §8).
 2. **RPC `recover_loto_pass`:** verifica sul DB cloud (introspection §8d) — in attesa risposta utente.
-3. QA finale manuale: catena modali su jump multipli (es. LV9→LV11) e rito LV10.
+3. QA finale manuale: catena modali su jump multipli (es. LV3→LV5) con cadenza 2/4/6/8; rito LV10; gate Memorie LV6 e Community LV8.
+4. **Task a sé: pulizia warning lint** (19 pre-esistenti, non bloccanti — decisione 22/09 di NON correggerli prima della release). Inventario:
+   - `map.tsx` (13): BOM; import duplicati react-native (2); dead code `Animated`, `startBackgroundTracking`, `stopBackgroundTracking`, `SafeAreaView`, `UserAvatar`, `setRoutePois`, `eventsEverToggled`, `e`, `width`, `height` — **verificare intento prima di rimuovere** (es. `UserAvatar`/`MapCursor` potrebbe essere destinato al riuso).
+   - `ProfileModal.tsx` (5): BOM; `Dimensions` inutilizzato; import duplicati react-native (2); `react-hooks/exhaustive-deps` su `userProfile.nickname` (l'unico con impatto reale — valutare useReducer).
+   - `levelUtils.ts` (1): import `GamificationEvent` in corpo modulo da spostare in cima (violazione `import/first`).
 
 ---
 

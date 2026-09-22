@@ -60,7 +60,7 @@
 | `UX_GPS_STARTUP_GUIDELINES.md` | Vivente | Linee guida GPS/primo avvio/mappa |
 | `gamification_struttura_narrativa.md` | Vivente | Tier narrativi 5x10, nomi e tono |
 | `gamification_experience.md` | **Nuovo (Vivente)** | L'esperienza gamification complessiva + scenari + decisioni (es. Fog of War) |
-| `gamification_rampa_early_game.md` | **Nuovo (Vivente)** | Rampa primi 10 livelli: POI sempre consultabili (nessun gate XP), sezioni/rIti come sola progressive disclosure, anti-flood modali, gancio feature di gruppo |
+| `gamification_rampa_early_game.md` | **Nuovo (Vivente)** | Rampa primi 10 livelli: POI sempre consultabili (nessun gate XP), cadenza pari 1 sezione ogni 2 LV (Eventi2/Itin4/Memorie6/Community8), riti, anti-flood modali, gancio feature di gruppo |
 | `audio_feedback.md` | **Nuovo (Vivente)** | Gestione completa dei feedback audio/SFX |
 | `WHATSAPP_BOT_SPECS.md` | Vivente | Spec bot B2B e template (complementare a `commercial/whatsapp_bot_architecture.md`) |
 | `gamification_auth_plan.md` | Bozza | Piano auth/gamification |
