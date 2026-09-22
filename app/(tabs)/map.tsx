@@ -11,6 +11,8 @@ import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobility } from '../../context/MobilityContext';
+import { useGamification } from '../../context/GamificationContext';
+import { EVENTS_UNLOCK_LEVEL, ITINERARIES_UNLOCK_LEVEL } from '../../utils/levelUtils';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import RouteSummarySheet from '../../components/RouteSummarySheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -34,6 +36,7 @@ export default function MapScreen() {
   const { currentTenant } = useTenant();
   const { theme } = useTheme();
   const { isAccessibleMode, toggleAccessibleMode } = useMobility();
+  const { level: userLevel } = useGamification();
 
   const [pois, setPois] = useState<any[]>([]);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
@@ -99,14 +102,6 @@ export default function MapScreen() {
   ];
   const [eventsOn, setEventsOn] = useState(false);
   const [isRouteSheetOpen, setIsRouteSheetOpen] = useState(false);
-  const [userXp, setUserXp] = useState(0);
-
-  useEffect(() => {
-    AsyncStorage.getItem('loto_fallback_xp').then(val => {
-      if (val) setUserXp(parseInt(val, 10));
-    });
-  }, []);
-
 
   useEffect(() => {
     (async () => {
@@ -368,7 +363,7 @@ export default function MapScreen() {
 
           <View style={{ width: 1, height: 16, backgroundColor: theme.border, marginHorizontal: 8 }} />
 
-          {userXp >= 30 && (
+          {userLevel >= EVENTS_UNLOCK_LEVEL && (
 <TouchableOpacity 
             style={[styles.pillBtn, { borderColor: eventsOn ? '#10B981' : theme.border, backgroundColor: eventsOn ? 'rgba(16, 185, 129, 0.1)' : 'transparent', paddingHorizontal: 12 }]}
             onPress={() => { setEventsOn(!eventsOn); setEventsEverToggled(true); setIsLayerDropdownOpen(false); }}
@@ -424,8 +419,8 @@ export default function MapScreen() {
           <MaterialIcons name="my-location" size={20} color={hasLocationPermission ? theme.primary : theme.text} />
         </TouchableOpacity>
 
-        {/* FAB 3: Crea Percorso / Itinerario */}
-        {userXp >= 30 && (
+        {/* FAB 3: Crea Percorso / Itinerario (cadenza pari: LV4) */}
+        {userLevel >= ITINERARIES_UNLOCK_LEVEL && (
 <TouchableOpacity 
           style={[styles.fabCircle, { backgroundColor: routePois.length > 0 ? theme.primary : theme.surface }]}
           onPress={() => {

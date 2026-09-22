@@ -16,16 +16,16 @@ export const LEVEL_UP_LORE: Record<number, LocalizedLore> = {
     en: "Welcome to Taranto. Your first step is not a simple track on the map: it is the seed I am about to entrust to the earth. From today every scan is a sprout: begin to explore what surrounds you."
   },
   2: {
-    it: "La città ha aperto la sua voce. Eventi e itinerari ora ti appartengono: la città comincia a raccontarti la sua giornata, e ogni rotta che disegni diventa la tua firma sul territorio. Le voci degli altri viaggiatori le accoglierai più avanti, senza fatica.",
-    en: "The city has opened its voice. Events and itineraries now belong to you: the city begins to tell you its day, and every route you draw becomes your signature on the territory. The voices of other travelers will come to you later, without effort."
+    it: "La città ha aperto la sua voce: gli Eventi Pubblici si aggiungono al tuo cammino e ogni annuncio è un invito a uscire. I percorsi che disegnerai verranno più avanti: per ora lascia che sia la città a mostrarti la strada.",
+    en: "The city has opened its voice: Public Events join your journey and every announcement is an invitation to go out. The routes you will draw will come later: for now let the city show you the way."
   },
   3: {
-    it: "Ogni rotta è una firma sul territorio. Hai sbloccato la creazione di percorsi: disegnali lontano dalla folla e quel che troverai lungo il cammino non lo troverà nessun altro.",
-    en: "Every route is a signature on the territory. You have unlocked route creation: draw them far from the crowds and what you find along the way no one else will find."
+    it: "Ogni passo che scegli fuori dalla folla è una firma sul territorio. Anche senza tracciare rotte, la città si stende davanti a te: continua a cercare, le porte si aprono a chi bussa con costanza.",
+    en: "Every step you choose away from the crowds is a signature on the territory. Even without charting routes, the city spreads out before you: keep seeking, doors open to those who knock with constancy."
   },
   4: {
-    it: "L'acqua è la memoria di questo golfo. Cerca la tua prima fontanella: compiere un Refill è il primo patto di rispetto con il mare, e le sue sorgenti lo ricorderanno.",
-    en: "Water is the memory of this gulf. Seek your first drinking fountain: making a Refill is the first pact of respect with the sea, and its springs will remember."
+    it: "L'acqua è la memoria di questo golfo, e le tue rotte ne sono le scritture. Cerca la tua prima fontanella: compiere un Refill è il primo patto di rispetto con il mare, e le sue sorgenti lo ricorderanno lungo il cammino.",
+    en: "Water is the memory of this gulf, and your routes are its writings. Seek your first drinking fountain: making a Refill is the first pact of respect with the sea, and its springs will remember it along the way."
   },
   5: {
     it: "Hai registrato la prima metrica di CO₂ risparmiata. Non è un numero: è la prova che la città respira in modo diverso quando scegli di muoverti in leggerezza.",
@@ -40,8 +40,8 @@ export const LEVEL_UP_LORE: Record<number, LocalizedLore> = {
     en: "Just beneath the surface your identity is weaving itself, thread after thread. Every exploration leaves a visible echo in the project's network: your milestones are already making us recognizable to one another."
   },
   8: {
-    it: "Esplora, mappa, proteggi. Con i tuoi traguardi è compiuto il passaggio da semplice visitatore a custode attivo del nostro ecosistema: ora il territorio sa il tuo nome.",
-    en: "Explore, map, protect. With your milestones, the passage from simple visitor to active guardian of our ecosystem is complete: now the territory knows your name."
+    it: "Esplora, mappa, proteggi. Con i tuoi traguardi è compiuto il passaggio da semplice visitatore a custode attivo del nostro ecosistema, e ora la città ti riconosce: la Community si apre a chi ha imparato a leggere il territorio.",
+    en: "Explore, map, protect. With your milestones, the passage from simple visitor to active guardian of our ecosystem is complete, and now the city recognizes you: the Community opens to those who have learned to read the territory."
   },
   9: {
     it: "Il primo grande traguardo è vicino e la tua rotta lo ha già alleggerito. Hai scelto percorsi meno battuti e la città se n'è accorta: preparati a distinguerti tra i fondatori di questa mappa.",

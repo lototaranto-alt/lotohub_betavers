@@ -11,9 +11,20 @@ import { getLoreForLevel } from './LevelUpLore';
 export const KEY_LEVELS: readonly number[] = [1, 2, 5, 11, 20, 21, 30, 31, 41];
 
 // Gate specifici per sezione/funzione. Usare SEMPRE questi, mai il numero a mano.
+// Cadenza "ogni 2 livelli" (decisione utente 22/09): 1 sezione ad ogni livello PARI.
 export const EVENTS_UNLOCK_LEVEL = 2;
-export const COMMUNITY_UNLOCK_LEVEL = 5;
+export const ITINERARIES_UNLOCK_LEVEL = 4;
+export const DIARY_CURATION_UNLOCK_LEVEL = 6;
+export const COMMUNITY_UNLOCK_LEVEL = 8;
 export const CO_EXPERIENCE_UNLOCK_LEVEL = 20;
+
+// Ordine della cadenza pari (SSOT per le REVEAL e per la galleria sezioni).
+export const SECTION_UNLOCK_LEVELS = [
+  EVENTS_UNLOCK_LEVEL,
+  ITINERARIES_UNLOCK_LEVEL,
+  DIARY_CURATION_UNLOCK_LEVEL,
+  COMMUNITY_UNLOCK_LEVEL,
+];
 
 // Rito di capstone del Tier 1: carta celebrativa di transizione (non è un gate di contenuti,
 // ma una modale di passaggio; i POI sono sempre tutti consultabili — visione utente 21/09).
@@ -26,7 +37,15 @@ export const UNLOCK_REVEALS: Record<
 > = {
   [EVENTS_UNLOCK_LEVEL]: {
     title: 'LA VOCE DELLA CITTÀ',
-    text: 'Eventi e itinerari si uniscono al tuo cammino: la città comincia a raccontarti la sua giornata.',
+    text: 'Eventi Pubblici si uniscono al tuo cammino: la città comincia a raccontarti la sua giornata, e ogni notizia è un invito a uscire.',
+  },
+  [ITINERARIES_UNLOCK_LEVEL]: {
+    title: 'IL TUO SEGNO SUL TERRITORIO',
+    text: 'Itinerari e Percorsi si aprono: disegna rotte lontano dalla folla, e quel che troverai lungo il cammino lo troverà solo chi cammina con te.',
+  },
+  [DIARY_CURATION_UNLOCK_LEVEL]: {
+    title: 'LA MEMORIA PRENDE COLORE',
+    text: 'Il Diario di Bordo si accende: archivi musicali, documenti e Visioni Sospese — i filtri fotografici — diventano la cura della tua memoria di viaggio.',
   },
   [COMMUNITY_UNLOCK_LEVEL]: {
     title: 'LA PORTA DELLA CITTÀ',
@@ -310,8 +329,8 @@ export const buildLevelUpEvents = (oldLevel: number, newLevel: number, lang: 'it
     }
   }
 
-  // 3) REVEAL sulle sezioni che si sbloccano attraversando una soglia chiave (Eventi LV2, Community LV5)
-  const revealLevels = [EVENTS_UNLOCK_LEVEL, COMMUNITY_UNLOCK_LEVEL].filter(
+  // 3) REVEAL sulle sezioni che si sbloccano attraversando una soglia della cadenza pari (2/4/6/8)
+  const revealLevels = SECTION_UNLOCK_LEVELS.filter(
     lvl => oldLevel < lvl && newLevel >= lvl
   );
   for (const lvl of revealLevels) {

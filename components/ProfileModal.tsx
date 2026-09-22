@@ -2,7 +2,7 @@
 import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, StyleSheet, Dimensions, Switch } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
-import { getAvatarFrameStyle, CO_EXPERIENCE_UNLOCK_LEVEL } from '../utils/levelUtils';
+import { getAvatarFrameStyle, CO_EXPERIENCE_UNLOCK_LEVEL, DIARY_CURATION_UNLOCK_LEVEL } from '../utils/levelUtils';
 import QRCode from 'react-native-qrcode-svg';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Alert } from 'react-native';
@@ -34,6 +34,7 @@ const [editingNickname, setEditingNickname] = useState(false);
   const [isVaultVisible, setIsVaultVisible] = useState(false);
   const [isMemoriesVisible, setIsMemoriesVisible] = useState(false);
   const [isCoLockSheetVisible, setIsCoLockSheetVisible] = useState(false);
+  const [isMemoriesLockSheetVisible, setIsMemoriesLockSheetVisible] = useState(false);
 
   React.useEffect(() => {
     if (visible && userProfile?.id) {
@@ -268,20 +269,22 @@ const [editingNickname, setEditingNickname] = useState(false);
                   />
                 </View>
 
-                {/* ② MEMORIE + Camera filtri */}
+                {/* ② MEMORIE + Camera filtri (cadenza pari: Visioni Sospese LV6) */}
                 <TouchableOpacity
                   activeOpacity={0.9}
-                  onPress={() => setIsMemoriesVisible(true)}
+                  onPress={() => { if (computedLevel >= DIARY_CURATION_UNLOCK_LEVEL) setIsMemoriesVisible(true); else setIsMemoriesLockSheetVisible(true); }}
                   style={[styles.zoneCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 >
-                  <View style={[styles.zoneIcon, { backgroundColor: '#DFAB55' }]}>
+                  <View style={[styles.zoneIcon, { backgroundColor: computedLevel >= DIARY_CURATION_UNLOCK_LEVEL ? '#DFAB55' : '#6B6B6B' }]}>
                     <MaterialIcons name="camera" size={26} color="#FFF" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.zoneTitle, { color: theme.text }]}>Memorie</Text>
                     <Text style={[styles.zoneDesc, { color: theme.textMuted }]}>Visioni Sospese: filtri fotografici che si sbloccano col livello.</Text>
                   </View>
-                  <MaterialIcons name="chevron-right" size={24} color={theme.textMuted} />
+                  <Text style={[styles.zoneTag, { color: computedLevel >= DIARY_CURATION_UNLOCK_LEVEL ? theme.primary : theme.textMuted }]}>
+                    {computedLevel >= DIARY_CURATION_UNLOCK_LEVEL ? 'ATTIVA' : `??? (LV.${DIARY_CURATION_UNLOCK_LEVEL})`}
+                  </Text>
                 </TouchableOpacity>
 
                 {/* ③ CO-EXPERIENCE */}
@@ -324,6 +327,12 @@ const [editingNickname, setEditingNickname] = useState(false);
             onClose={() => setIsCoLockSheetVisible(false)}
             featureName="Co-Experience"
             unlockLevel={CO_EXPERIENCE_UNLOCK_LEVEL}
+          />
+          <FeatureLockSheet
+            visible={isMemoriesLockSheetVisible}
+            onClose={() => setIsMemoriesLockSheetVisible(false)}
+            featureName="Visioni Sospese"
+            unlockLevel={DIARY_CURATION_UNLOCK_LEVEL}
           />
         </View>
       </View>
