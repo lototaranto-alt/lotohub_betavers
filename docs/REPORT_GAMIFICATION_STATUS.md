@@ -13,6 +13,9 @@
 
 | Commit | Contenuto |
 |---|---|
+| `eee4598` | **REVEAL naviga sezioni sbloccate** — carte LV2/4/6/8 con pulsante "Esplora la Sezione" → `router.push` (Eventi=map, Itinerari=route-creation, Diario=index+`openDiary`, Community=community); SSOT `UNLOCK_REVEALS.target`; `displayName` fisso |
+| `e4622cc` | docs: diario turno 16 chiave — chiusura lista test APK 1.0.2 (#1-#4) commit `c72e785` |
+| `c72e785` | **fix(street-test) APK 1.0.2** — #1 migration `migration_v21_fix_scan_co2.sql` (profiles `+total_co2`/`+total_liters`, user_pois `+co2_saved`/`+xp_awarded`/`+is_shadowbanned`); #2 onboarding 5° slide "Accendi i Tuoi Sensori" + gate GPS/BT (`LotoHardwareGate` riscritto, modale gpsOff, FAB mappa brandizzato); #3 icona-lotus glow → ProfileModal tab diario; #4 `Math.round` rank% |
 | `ee904a6` | **Lint pulito** — 19 warning rimossi (dead code `map.tsx`, `ProfileModal`, `import/first` `levelUtils`) |
 | `16d5460` | **RELEASE 1.0.2** — bump `app.json` (version 1.0.2, versionCode 4, buildNumber 4); APK locale generato e verificato (`com.lotohub.app` v4/1.0.2, 212 MB) |
 | `d1afd36` `3739ac4` | **G18 cadenza** — SSOT `SECTION_UNLOCK_LEVELS` [2,4,6,8] + `UNLOCK_REVEALS` 4 voci; gate `map.tsx` via `useGamification().level`; zona Memorie LV6 `ProfileModal`; lore LV2/3/4/6/8 |

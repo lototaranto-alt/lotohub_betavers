@@ -1,3 +1,29 @@
+# Fine Sessione (22/09, III blocco): REVEAL "Esplora la Sezione" + analisi scan POI end-to-end
+
+## Raggiunto in questo blocco
+- **Nuova richiesta utente:** "le sezioni sbloccate ai lv chiave, al raggiungimento di ogni feature sbloccata vengano illustrate brevemente da un popup, che richiami l'utente nella schermata appena sbloccata" → **REVEAL card** ora hanno pulsante **"Esplora la Sezione"** (`MaterialIcons explore`) che chiude la modale e **naviga alla sezione appena sbloccata** via `router.push`:
+  - LV2 Eventi → `/(tabs)/map`
+  - LV4 Itinerari → `/route-creation-mockup`
+  - LV6 Diario → `/(tabs)/index` + segnale URL param `openDiary=1` (Home lo consuma in `useLocalSearchParams` → apre `ProfileModal` sul tab `diario`)
+  - LV8 Community → `/(tabs)/community`
+  - SSOT: `UNLOCK_REVEALS` in `utils/levelUtils.ts` ora include `target`; tipo `GamificationEvent` esteso con `target?: string`; `buildLevelUpEvents` lo propaga.
+  - Fix pre-esistente: `GamificationTransitionManager.displayName` aggiunto (era l'errore lint `react/display-name`).
+- **Analisi scan POI END-TO-END (#1):** catena verificata in tre sorgenti:
+  1. `anti_spoofing_scan_poi_gps.sql` (file root, + `supabase/migration_master_reset.sql`) — `scan_poi_gps` fa `UPDATE profiles SET total_co2 = COALESCE(total_co2,0)+...` e `INSERT INTO user_pois`.
+  2. Tipi `types/database.ts` (generati da Supabase): Row `profiles` **SENZA `total_co2`/`total_liters`** (bug reale); Row `user_pois` **SENZA `total_co2`** ma **CON `co2_saved`/`xp_awarded`/`is_shadowbanned`/`lat`/`lng`**. NOTA: i tipi dicono `user_pois.profile_id` mentre la RPC anti-spoofing INSERT `user_id` → il DB reale usa `user_id` (i tipi generati sono datati o la migration non l'ha rinominata). Da riconciliare.
+  3. Client: `components/PoiDetailSheet.tsx:141` chiama `supabase.rpc('scan_poi_gps', {p_poi_id, p_lat, p_lng})` → legge `data.new_total_xp`, calcola level-up, `queueEvents(buildLevelUpEvents(...))`. `OfflineQueueManager.ts:140` stesso RPC in coda offline.
+  - **Verdetto:** la migration **`migration_v21_fix_scan_co2.sql`** (commit `c72e785`) aggiunge esattamente le colonne mancanti (`profiles.total_co2`, `profiles.total_liters` + `user_pois.co2_saved/xp_awarded/is_shadowbanned`). Con quella applicata sul cloud, l'intero processo scan POI funziona. **⚠️ MA va applicata sul DB cloud dall'utente** (AGENTS §8: migrations mai automatiche).
+- Commit: `eee4598` (feat REVEAL naviga sezioni). Verifiche: tsc EXIT 0, eslint 0 errori (49 warning pre-esistenti), `git diff --check` ok.
+
+## Prossime Task (in ordine)
+1. **BLOCKER scan POI:** applicare `supabase/migration_v21_fix_scan_co2.sql` sul cloud (SQL Editor) → poi QA scan GPS in strada.
+2. **Reconciliare tipi:** rigenerare `types/database.ts` dal DB aggiornato (oppure allineare manualmente Row `profiles` + `user_pois`) dopo la migration, per eliminare la discrepanza `user_id`/`profile_id` e aggiungere `total_co2`/`total_liters`.
+3. **QA REVEAL:** verificare il richiamo sezioni su jump multipli (es. LV3→LV5 con cadenza 2/4), col pulsante "Esplora la Sezione".
+4. **Prossima release:** sync `C:\loto_app` → `gradlew assembleRelease` (lezione percorsi lunghi). Sync migration per i seed locali.
+5. Pending storici: **F2 Risonanza Civica** (analisi chiusa §7.1, implementazione dopo QA) · **RPC `recover_loto_pass`** verifica DB cloud · **migration_v20_vault_currency_fix** · **Notifiche Eco-Passi** su device · **F3 residui Alert di sistema**.
+
+---
+
 # Fine Sessione (22/09, II blocco): lista test APK 1.0.2 chiusa (#1-#4), commit `c72e785`
 
 ## Raggiunto in questo blocco
