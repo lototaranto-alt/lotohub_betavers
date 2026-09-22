@@ -1,24 +1,21 @@
-# Fine Sessione (22/09): G18 realizzata (rampa + rito + anti-flood), **RELEASE 1.0.2 BUILT ✔**
+# Fine Sessione (22/09): G18 realizzata (rampa + rito + anti-flood), **RELEASE 1.0.2 BUILT ✔**, **LINT PULITO ✔**
 
 ## Raggiunto in questa sessione
+- **PULIZIA 19 WARNING LINT (task registrata chiusa)** — commit `ee904a6` "chore(lint)…": `map.tsx` (13: rimosso BOM + import duplicati react-native + dead code `Animated`, `Dimensions`+`width/height`, `startBackgroundTracking`/`stopBackgroundTracking`, `SafeAreaView`, `UserAvatar`, `e` in catch, `setRoutePois`, `eventsEverToggled`), `ProfileModal.tsx` (5: BOM, import duplicati, `Dimensions`, exhaustive-deps `userProfile.nickname` aggiunto alle deps), `levelUtils.ts` (1: `import/first` — import `GamificationEvent` spostato in cima). Ora **`eslint` e `tsc --noEmit` su quei file: ZERO problemi**.
 - **RELEASE 1.0.2 diramata:** version bump `app.json` (1.0.2 / versionCode **4** / buildNumber **4**) committato `16d5460`; `android/app/build.gradle` allineato (versionCode 4, versionName "1.0.2").
-- **APK generato e VERIFICATO** (`aapt`): `C:\loto_app\android\app\build\outputs\apk\release\app-release.apk` — `com.lotohub.app` versionCode 4 / versionName 1.0.2, **212 MB**, `BUILD SUCCESSFUL` (9m12s, 1270 task, bundle JS 2464 moduli rigenerato).
+- **APK generato e VERIFICATO** (`aapt`): `C:\loto_app\android\app\build\outputs\apk\release\app-release.apk` — `com.lotohub.app` versionCode 4 / versionName 1.0.2, **212 MB**, `BUILD SUCCESSFUL` (9m12s, 1270 task, bundle JS 2464 moduli rigenerato). Utente al lavoro con l'APK installato — test in corso.
 - **⚠️ BLOCKER BUILD RISOLTO (da memorizzare):** la build GRADLE fallisce nel worktree (path profondissimo `C:\Users\Sem\.gemini\antigravity\worktrees\...` → oggetti .o `react-native-worklets` a 195/250 char → `ninja: manifest 'build.ninja' still dirty after 100 tries`). **La build canonica è SOLO `C:\loto_app\android`** (clone con `origin` = questo worktree, branch `fix/ripristino-lavoro-15-set-selective`, `local.properties` SDK già presente). Flusso: stash modifiche locali → `checkout fix/...-set-selective` → `git -C C:\loto_app pull origin branch` → lancia `.\\gradlew.bat assembleRelease`.
 - **G18 → VIVENTE e IMPLEMENTATA:** l'utente ha risposto Q1-Q5 — POI e categorie **mai gated da XP** ("i p.o.i  e le categorie non vanno toccate è gia tutto ok cosi"), POI sempre consultabili, **nessun badge** "nuovo strato", **rito LV10 sì**, **itinerari già a LV2**. `gamification_rampa_early_game.md` riscritto (sez. 0 = decisioni verbatim).
 - **Anti-flood modali** in `levelUtils.buildLevelUpEvents`: 1 solo LEVEL_UP aggregato al livello finale, WHISPER solo per i KEY_LEVELS attraversati (max 3 carte), ordine LEVEL_UP→WHISPER→REVEAL→BADGE.
 - **Carte nuove** in `GamificationTransitionManager`: `REVEAL` (sezioni aperte: Eventi/Itinerari LV2, Community LV5 — testo SSOT `UNLOCK_REVEALS`) + `RITO` capstone Tier 1 (LV10, card con Condividi). Tipi `GamificationEvent` deduplicati (SSOT = manager).
 - **Lore corretto:** LV2 non promette più "Comunità" (rimandata alle REVEAL LV5).
 - **Cadenza "ogni 2 livelli" (decisione utente, tool):** 1 sezione per livello PARI — **Eventi LV2 · Itinerari LV4 · Visioni Sospese LV6 · Community LV8 (era LV5) · Rito LV10 · Co-Experience LV20**. LV5 resta KEY_LEVEL narrativo (CO₂ nel Profilo). SSOT `SECTION_UNLOCK_LEVELS` + `UNLOCK_REVEALS` (4 voci); gate `map.tsx` via `useGamification().level` (rimosso `xp>=30` hardcoded, FAB Itinerari LV4); zona Memorie gated LV6 in `ProfileModal`; lore LV2/3/4/6/8 ricalibrati alle soglie reali.
-- **Verifiche:** `tsc --noEmit` EXIT 0; eslint nessun errore nuovo (solo `react/display-name` su forwardRef pre-esistente); `git diff --check` pulito.
-- Git log sessione: `b6bf361` (anti-flood+REVEAL+RITO), `1655788` (docs G18), `d1afd36` (cadenza 2/4/6/8), `3739ac4` (docs cadenza+task lint), `16d5460` (bump 1.0.2).
+- **Verifiche:** `tsc --noEmit` EXIT 0; eslint ZERO problemi sui file toccati; `git diff --check` pulito.
+- Git log sessione: `b6bf361`, `1655788`, `d1afd36`, `3739ac4`, `16d5460`, `a1243dc`, `ee904a6`.
 
 ## Prossime Task (in ordine)
 1. **RPC `recover_loto_pass`:** verifica sul DB cloud (introspection §8d) — in attesa risposta utente.
-2. QA finale manuale su APK 1.0.2: catena modali su jump multipli (es. LV3→LV5) con cadenza 2/4/6/8; rito LV10; gate Memorie LV6 e Community LV8.
-3. **Task a sé: pulizia warning lint** (19 pre-esistenti, non bloccanti — decisione 22/09 di NON correggerli prima della release). Inventario:
-   - `map.tsx` (13): BOM; import duplicati react-native (2); dead code `Animated`, `startBackgroundTracking`, `stopBackgroundTracking`, `SafeAreaView`, `UserAvatar`, `setRoutePois`, `eventsEverToggled`, `e`, `width`, `height` — **verificare intento prima di rimuovere** (es. `UserAvatar`/`MapCursor` potrebbe essere destinato al riuso).
-   - `ProfileModal.tsx` (5): BOM; `Dimensions` inutilizzato; import duplicati react-native (2); `react-hooks/exhaustive-deps` su `userProfile.nickname` (l'unico con impatto reale — valutare useReducer).
-   - `levelUtils.ts` (1): import `GamificationEvent` in corpo modulo da spostare in cima (violazione `import/first`).
+2. QA finale manuale su APK 1.0.2 (in corso da parte dell'utente): catena modali su jump multipli (es. LV3→LV5) con cadenza 2/4/6/8; rito LV10; gate Memorie LV6 e Community LV8.
 
 ---
 
