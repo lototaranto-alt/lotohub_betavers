@@ -9,6 +9,7 @@ import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
 import { getRankInfo as getRankInfoSSOT } from '../utils/levelUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -17,7 +18,7 @@ const RANK_ASSET = require('../assets/images/logo-LOTO.png');
 export type GamificationEvent = 
   | { type: 'LEVEL_UP'; level: number; title?: string; text?: string; rarity?: number; badge?: any }
   | { type: 'WHISPER'; title: string; text: string; rarity?: number; level?: number; badge?: any }
-  | { type: 'REVEAL'; title: string; text: string; level?: number; rarity?: number; badge?: any }
+  | { type: 'REVEAL'; title: string; text: string; level?: number; rarity?: number; badge?: any; target?: string }
   | { type: 'RITO'; title: string; text: string; level?: number; rarity?: number; badge?: any }
   | { type: 'BADGE'; badge: any; title?: string; text?: string; rarity?: number; level?: number };
 
@@ -27,6 +28,7 @@ export interface GamificationTransitionManagerRef {
 
 export const GamificationTransitionManager = forwardRef<GamificationTransitionManagerRef, {}>((props, ref) => {
   const { theme } = useTheme();
+  const router = useRouter();
   
   const [queue, setQueue] = useState<GamificationEvent[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -61,7 +63,7 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
     }
   }, [currentIndex, visible]);
 
-  const handleNext = () => {
+const handleNext = () => {
     if (currentIndex < queue.length - 1) {
       Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
         setCurrentIndex(prev => prev + 1);
@@ -73,6 +75,23 @@ export const GamificationTransitionManager = forwardRef<GamificationTransitionMa
         setCurrentIndex(0);
       });
     }
+  };
+
+  // G18: la carta REVEAL richiama l'utente nella sezione appena sbloccata (es. Eventi, Itinerari, Diario, Community).
+  const handleGoToSection = (target?: string) => {
+    const route = target || '/(tabs)/map';
+    Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start(() => {
+      setVisible(false);
+      setQueue([]);
+      setCurrentIndex(0);
+      if (route === '/(tabs)/index') {
+        // Il Diario di Bordo vive dentro ProfileModal: atterriamo sulla Home
+        // con il segnale `openDiary` che la Home consuma al focus.
+        router.push({ pathname: '/(tabs)/index' as any, params: { openDiary: '1' } });
+      } else {
+        router.push(route as any);
+      }
+    });
   };
 
   
@@ -169,7 +188,7 @@ const renderLevelUp = (level: number) => {
     );
   };
 
-  const renderReveal = (title: string = "LA CITTÀ SI SCHIUDE", text: string) => {
+  const renderReveal = (title: string = "LA CITTÀ SI SCHIUDE", text: string, target?: string) => {
     return (
       <Animated.View style={[
         styles.glassCard,
@@ -185,8 +204,9 @@ const renderLevelUp = (level: number) => {
           <ScrollView style={styles.whisperScroll} showsVerticalScrollIndicator={false}>
             <Text style={styles.whisperText}>“{text}”</Text>
           </ScrollView>
-          <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary, marginTop: 20, width: '100%' }]} onPress={handleNext}>
-            <Text style={styles.btnText}>Avanti</Text>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary, marginTop: 20, width: '100%' }]} onPress={() => handleGoToSection(target)} activeOpacity={0.9}>
+            <MaterialIcons name="explore" size={20} color="#FFF" style={{ marginRight: 8 }} />
+            <Text style={styles.btnText}>Esplora la Sezione</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -266,13 +286,15 @@ const renderLevelUp = (level: number) => {
 
 {currentEvent.type === 'LEVEL_UP' && renderLevelUp(currentEvent.level)}
         {currentEvent.type === 'WHISPER' && renderWhisper(currentEvent.title, currentEvent.text)}
-        {currentEvent.type === 'REVEAL' && renderReveal(currentEvent.title, currentEvent.text)}
+        {currentEvent.type === 'REVEAL' && renderReveal(currentEvent.title, currentEvent.text, currentEvent.target)}
         {currentEvent.type === 'RITO' && renderRito(currentEvent.title, currentEvent.text, currentEvent.level)}
         {currentEvent.type === 'BADGE' && renderBadge(currentEvent.badge)}
       </View>
     </Modal>
   );
 });
+
+GamificationTransitionManager.displayName = 'GamificationTransitionManager';
 
 const styles = StyleSheet.create({
   container: {

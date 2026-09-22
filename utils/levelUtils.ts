@@ -33,25 +33,31 @@ export const SECTION_UNLOCK_LEVELS = [
 export const RITO_TIER1_LEVEL = 10;
 
 // Testi SSOT delle carte REVEAL/RITO (zero numeri magici, zero stringhe sparse).
+// `target` = schermata verso cui la carta REVEAL richiama l'utente appena sbloccata
+// (rotta expo-router esatta: tab, modale o schermata stack).
 export const UNLOCK_REVEALS: Record<
   number,
-  { title: string; text: string }
+  { title: string; text: string; target: string }
 > = {
   [EVENTS_UNLOCK_LEVEL]: {
     title: 'LA VOCE DELLA CITTÀ',
     text: 'Eventi Pubblici si uniscono al tuo cammino: la città comincia a raccontarti la sua giornata, e ogni notizia è un invito a uscire.',
+    target: '/(tabs)/map',
   },
   [ITINERARIES_UNLOCK_LEVEL]: {
     title: 'IL TUO SEGNO SUL TERRITORIO',
     text: 'Itinerari e Percorsi si aprono: disegna rotte lontano dalla folla, e quel che troverai lungo il cammino lo troverà solo chi cammina con te.',
+    target: '/route-creation-mockup',
   },
   [DIARY_CURATION_UNLOCK_LEVEL]: {
     title: 'LA MEMORIA PRENDE COLORE',
     text: 'Il Diario di Bordo si accende: archivi musicali, documenti e Visioni Sospese — i filtri fotografici — diventano la cura della tua memoria di viaggio.',
+    target: '/(tabs)/index',
   },
   [COMMUNITY_UNLOCK_LEVEL]: {
     title: 'LA PORTA DELLA CITTÀ',
     text: 'La Community si schiude. Quel che scopri diventa memoria condivisa: senza punteggi, senza gare, solo la città che respira con te.',
+    target: '/(tabs)/community',
   },
 };
 
@@ -336,7 +342,13 @@ export const buildLevelUpEvents = (oldLevel: number, newLevel: number, lang: 'it
   for (const lvl of revealLevels) {
     const reveal = UNLOCK_REVEALS[lvl];
     if (reveal) {
-      events.push({ type: 'REVEAL', level: lvl, title: reveal.title, text: reveal.text });
+      events.push({
+        type: 'REVEAL',
+        level: lvl,
+        title: reveal.title,
+        text: reveal.text,
+        target: reveal.target,
+      });
     }
   }
 

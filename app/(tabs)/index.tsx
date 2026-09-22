@@ -1,7 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Alert, Dimensions, DeviceEventEmitter, FlatList, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Animated, Easing, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -253,6 +253,7 @@ export default function VetrinaScreen() {
 
   // Store gamification SSOT: tutti i contatori della Home leggono qui (no copie locali disconnesse)
   const gamification = useGamification();
+  const localParams = useLocalSearchParams();
 
   const t = DICTIONARY[lang];
   const tickerText = currentTenant?.localization?.onboarding_subtitle || t.ticker;
@@ -263,6 +264,15 @@ export default function VetrinaScreen() {
       caricaDati();
     }, [])
   );
+
+  // G18: la carta REVEAL del Diario (LV6) richiama qui con il segnale openDiary
+  useEffect(() => {
+    if (localParams.openDiary === '1') {
+      setProfileInitialTab('diario');
+      setIsExpModalVisible(true);
+      router.setParams({ openDiary: undefined });
+    }
+  }, [localParams.openDiary]);
 
   useEffect(() => {
     if (currentTenant?.id) {
