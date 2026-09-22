@@ -612,18 +612,12 @@ export default function VetrinaScreen() {
     return (
       <View style={{ paddingBottom: 10 }}>
         
-        {/* --- 1. HEADER BOUTIQUE --- */}
-        <View style={{ alignItems: 'center', marginBottom: 15, marginTop: 30 }}>
-          <Text style={{ fontFamily: 'PlayfairDisplay_400Regular', fontSize: 48, color: '#1A3621', letterSpacing: 3, textAlign: 'center' }}>
-            LOTO MAP
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-            <MaterialIcons name="eco" size={18} color="#BCA37F" />
-            <Text style={{ fontFamily: 'Raleway_400Regular', fontSize: 18, color: '#6A5638', marginHorizontal: 12, letterSpacing: 1 }}>
-              Co - ExpErience Engine
-            </Text>
-            <MaterialIcons name="eco" size={18} color="#BCA37F" />
-          </View>
+        {/* --- 1. HEADER BOUTIQUE (logo orizzontale ufficiale) --- */}
+        <View style={{ alignItems: 'center', marginTop: 30, marginBottom: 15, paddingHorizontal: 20 }}>
+          <Image
+            source={require('../../assets/images/loto_map_logo_orizzontale_con_foglioline.png')}
+            style={{ width: '100%', maxWidth: 420, aspectRatio: 2.333, resizeMode: 'contain' }}
+          />
         </View>
 
         {/* --- PRESTIGE CARD COMPATTA --- */}
