@@ -148,7 +148,7 @@ export default function VetrinaScreen() {
     (async () => {
       const { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted') return;
-      const last = await Location.getLastPositionAsync();
+      const last = await Location.getLastKnownPositionAsync();
       if (last) setUserLocation(last);
       sub = await Location.watchPositionAsync({ distanceInterval: 20 }, (loc) => {
         setUserLocation(loc);
