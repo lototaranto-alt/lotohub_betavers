@@ -624,11 +624,9 @@ const handleRiscattaVisitaGPS = async () => {
             {activeTab === 'media' && (
               <View style={styles.tabContent}>
             
-              <Text style={{color: 'red', fontSize: 10}}>DEBUG WHISPERS COUNT: {poiWhispers.length} POI_ID: {poi.id}</Text>
-
             {poiWhispers.length > 0 && (
               <View style={[styles.vaultSection, { borderBottomColor: theme.border }]}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>ðŸ¤« MISTERI E WHISPERS</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>MISTERI E WHISPERS</Text>
                 {poiWhispers.map(whisper => {
                    const isUnlocked = inRoute; // Qui assumiamo che se fa checkin (o mockato con inRoute) li veda
                    // Idealmente dovremmo controllare esg_raw_logs o se l'utente l'ha sbloccato.

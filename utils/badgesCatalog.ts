@@ -1,6 +1,9 @@
 // Catalogo UFFICIALE e UNICO dei badge LOTO.
-// I badge si sbloccano SOLO per azioni specifiche sul territorio (mai per il livello/rank).
-// Nome file: badgesCatalog.ts - SSOT anche per il calcolo del progresso reale.
+// SSOT allineata alla tabella `badges` del DB cloud (verificata via introspection 24/09):
+//   - id = `badges.id` (text)  -> la chiave vera usata anche da user_badges.badge_id
+//   - requisito = `badges.req_xp`  -> metrica viva `profiles.total_xp`
+// NESSUN badge fittizio: se non esiste la riga nel DB, non esiste nel catalogo.
+// Nome file: badgesCatalog.ts
 
 export type LotoBadge = {
   id: string;
@@ -15,89 +18,65 @@ export type LotoBadge = {
   color: string;
 };
 
+// Requisiti reali dal DB (SELECT id, name, icon, description, req_xp FROM badges)
 export const ALL_BADGES: LotoBadge[] = [
   {
-    id: 'badge_first_scan',
-    name: 'Battesimo del Loto',
-    icon: 'location-on',
-    desc: 'Effettua il tuo primo check-in o scansione NFC in un Luogo o Monumento LOTO.',
+    id: 'eco_warrior',
+    name: 'Eco Warrior',
+    icon: 'eco',
+    desc: 'Hai dimostrato un amore profondo per l\'ambiente urbano.',
     actionLabel: 'Vai alla Mappa',
     actionType: 'map',
-    target: 1,
-    unit: 'POI',
-    metricKey: 'pois_discovered',
-    color: '#2ECC71',
-  },
-  {
-    id: 'badge_civic_3',
-    name: 'Sentinella Civica',
-    icon: 'security',
-    desc: 'Invia almeno 3 segnalazioni civiche con geolocalizzazione per preservare il decoro urbano.',
-    actionLabel: 'Fai Segnalazione',
-    actionType: 'report',
-    target: 3,
-    unit: 'Segnalazioni',
-    metricKey: 'reports_count',
-    color: '#2196F3',
-  },
-  {
-    id: 'badge_eco_5kg',
-    name: 'Eco-Sostenitore',
-    icon: 'eco',
-    desc: 'Risparmia 5.0 kg di CO₂ muovendoti a piedi, in bici o con mezzi sostenibili.',
-    actionLabel: 'Monitora CO₂',
-    actionType: 'co2',
-    target: 5.0,
-    unit: 'kg CO₂',
-    metricKey: 'total_co2',
+    target: 500,
+    unit: 'XP',
+    metricKey: 'total_xp',
     color: '#4CAF50',
   },
   {
-    id: 'badge_marathon_3',
-    name: 'Maratoneta Jonico',
-    icon: 'directions-run',
-    desc: 'Completa 3 itinerari culturali integrali tra i vicoli e i monumenti della città.',
-    actionLabel: 'Scegli Itinerario',
-    actionType: 'itinerary',
-    target: 3,
-    unit: 'Itinerari',
-    metricKey: 'itineraries_count',
+    id: 'pioniere',
+    name: 'Pioniere',
+    icon: 'explore',
+    desc: 'Uno dei primi esploratori a tracciare la via.',
+    actionLabel: 'Vai alla Mappa',
+    actionType: 'map',
+    target: 1000,
+    unit: 'XP',
+    metricKey: 'total_xp',
     color: '#FF9800',
   },
   {
-    id: 'badge_partner',
-    name: 'Amico delle Botteghe',
-    icon: 'storefront',
-    desc: 'Visita e sostieni le botteghe artigiane e le boutique partner del territorio.',
-    actionLabel: 'Vedi Botteghe',
-    actionType: 'boutiques',
-    target: 2,
-    unit: 'Check-in',
-    metricKey: 'partner_checkins',
-    color: '#9B59B6',
+    id: 'custode',
+    name: 'Custode LOTO',
+    icon: 'verified-user',
+    desc: 'Hai sbloccato il tuo primo finanziamento civico.',
+    actionLabel: 'Vedi Impatto',
+    actionType: 'impact',
+    target: 1500,
+    unit: 'XP',
+    metricKey: 'total_xp',
+    color: '#2196F3',
   },
 ];
 
 // Legge la metrica reale dal profilo utente per il badge dato. SSOT dei contatori.
+// NB: le metriche SI allineano alle colonne REALI di `profiles` (introspection 24/09).
 export const getBadgeMetric = (badge: LotoBadge, profile: any): number => {
   if (!profile) return 0;
   switch (badge.metricKey) {
+    case 'total_xp':
+      return profile.total_xp || 0;
     case 'pois_discovered':
       return profile.pois_discovered || 0;
     case 'total_co2':
       return profile.total_co2 || 0;
-    case 'reports_count':
-      return profile.reports_count || 0;
-    case 'itineraries_count':
-      return profile.itineraries_count || 0;
-    case 'partner_checkins':
-      return profile.partner_checkins || 0;
+    case 'total_distance_meters':
+      return profile.total_distance_meters || 0;
     default:
       return 0;
   }
 };
 
-// Progresso condiviso: niente liste fittizie, tutto calcolato dal profilo reale.
+// Progresso condiviso: tutto calcolato dal profilo reale, nessuna lista fittizia.
 export const getBadgeProgress = (badge: LotoBadge, profile: any, unlockedIds: string[] = []) => {
   const current = getBadgeMetric(badge, profile);
   const isCompleted = unlockedIds.includes(badge.id) || current >= badge.target;

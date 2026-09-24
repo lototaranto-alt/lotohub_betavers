@@ -99,7 +99,7 @@ export default function TraguardiModal({ visible, onClose, userBadges, userProfi
                       <TouchableOpacity 
                         key={b.id} 
                         style={[styles.badgeWrapper, { borderColor: isUnlocked ? b.color : 'rgba(0,0,0,0.1)', backgroundColor: isUnlocked ? b.color + '10' : 'transparent' }]}
-                        onPress={() => setSelectedBadge({ ...b, unlocked: isUnlocked })}
+                        onPress={() => setSelectedBadge({ ...b, unlocked: isUnlocked, current, percent })}
                       >
                         <MaterialIcons name={b.icon as any} size={32} color={isUnlocked ? b.color : 'rgba(0,0,0,0.2)'} />
                         <Text style={[styles.badgeTitle, { color: isUnlocked ? theme.text : 'rgba(0,0,0,0.3)' }]}>{b.name}</Text>
@@ -111,10 +111,42 @@ export default function TraguardiModal({ visible, onClose, userBadges, userProfi
               </View>
             )}
 
-            {/* TAB: RANK */}
+{/* TAB: RANK */}
             {activeTab === 'rank' && (
               <View>
-                <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>La Gerarchia della Citta' (Ogni 10 Livelli)</Text>
+                {/* Specchietto Progressione: gemma + XP verso il PROSSIMO RANK (fedele alla barra verde) */}
+                <View style={[styles.rankMirrorCard, { backgroundColor: '#2D4A22' }]}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      <View style={[styles.rankMirrorGem, { backgroundColor: levelProgress.gemColor }]}>
+                        <MaterialIcons name="diamond" size={18} color="#FFF" />
+                      </View>
+                      <View style={{ marginLeft: 10, flex: 1 }}>
+                        <Text style={styles.rankMirrorTitle}>{levelProgress.levelTitle}</Text>
+                        <Text style={styles.rankMirrorSubtitle}>Gemma: {levelProgress.gemName}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.rankMirrorLvlTag}>
+                      <Text style={styles.rankMirrorLvlText}>LVL {levelProgress.currentLevel}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.rankMirrorBar}>
+                    <View style={[styles.rankMirrorFill, { width: `${levelProgress.rankPercent}%`, backgroundColor: levelProgress.gemColor }]} />
+                  </View>
+                  <View style={styles.rankMirrorRow}>
+                    <Text style={styles.rankMirrorText}>{Math.floor(levelProgress.rankXpInBlock)} / {levelProgress.rankXpBlockSpan} XP verso il Rank</Text>
+                    <Text style={styles.rankMirrorText}>Totale: {Math.floor(xpForProgress)} XP</Text>
+                  </View>
+                  <View style={styles.rankMirrorNext}>
+                    <MaterialIcons name="arrow-circle-up" size={12} color="#D4AF37" />
+                    <Text style={styles.rankMirrorNextText}>
+                      Prossimo Rank: {levelProgress.rankInfo.nextRank === 'MAX' ? 'Rank Massimo' : `${levelProgress.rankInfo.nextRank} (LV ${levelProgress.rankInfo.requiredLvl})`}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>La Gerarchia della Città (Ogni 10 Livelli)</Text>
                 {baseRanks.map((rank, idx) => {
                   const isReached = currentLevel >= rank.level;
                   return (
@@ -177,8 +209,21 @@ const styles = StyleSheet.create({
   badgeTitle: { fontSize: 13, fontWeight: 'bold', marginTop: 10, marginBottom: 5, textAlign: 'center' },
   badgeTarget: { fontSize: 10, fontWeight: 'bold' },
   
-  rankRow: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 16, borderWidth: 1, marginBottom: 12 },
+rankRow: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 16, borderWidth: 1, marginBottom: 12 },
   rankName: { fontSize: 16, fontWeight: '900', fontFamily: 'serif' },
   rankReq: { fontSize: 11, marginTop: 4 },
-  futureRanksText: { fontSize: 11, fontStyle: 'italic', textAlign: 'center', marginTop: 15, lineHeight: 18 }
+  futureRanksText: { fontSize: 11, fontStyle: 'italic', textAlign: 'center', marginTop: 15, lineHeight: 18 },
+
+  rankMirrorCard: { borderRadius: 20, padding: 18, marginBottom: 20, elevation: 4, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 },
+  rankMirrorGem: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#FFF' },
+  rankMirrorTitle: { color: '#FFF', fontSize: 15, fontWeight: 'bold', fontFamily: 'serif' },
+  rankMirrorSubtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 10 },
+  rankMirrorLvlTag: { backgroundColor: '#D4AF37', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, marginLeft: 10 },
+  rankMirrorLvlText: { color: '#1A3621', fontSize: 10, fontWeight: 'bold' },
+  rankMirrorBar: { height: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 4, marginTop: 15, overflow: 'hidden' },
+  rankMirrorFill: { height: '100%', borderRadius: 4 },
+  rankMirrorRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
+  rankMirrorText: { color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: '600' },
+  rankMirrorNext: { flexDirection: 'row', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)', gap: 6 },
+  rankMirrorNextText: { color: '#D4AF37', fontSize: 11, fontWeight: 'bold' },
 });

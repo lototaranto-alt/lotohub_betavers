@@ -8,7 +8,6 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FeatureLockSheet from './FeatureLockSheet';
-import VaultModal from './VaultModal';
 import MemoriesCameraModal from './MemoriesCameraModal';
 import FioreDeiTrePetali from './FioreDeiTrePetali';
 
@@ -38,7 +37,6 @@ const [editingNickname, setEditingNickname] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [fogOfWar, setFogOfWar] = useState(false);
-  const [isVaultVisible, setIsVaultVisible] = useState(false);
   const [isMemoriesVisible, setIsMemoriesVisible] = useState(false);
   const [isCoLockSheetVisible, setIsCoLockSheetVisible] = useState(false);
   const [isMemoriesLockSheetVisible, setIsMemoriesLockSheetVisible] = useState(false);
@@ -251,22 +249,6 @@ const [editingNickname, setEditingNickname] = useState(false);
                   Tre esperienze si intrecciano nel tuo passaggio in città. Ogni zona si svela con il tuo avanzamento.
                 </Text>
 
-                {/* ① SCOPERTE + Vault */}
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={() => setIsVaultVisible(true)}
-                  style={[styles.zoneCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
-                >
-                  <View style={[styles.zoneIcon, { backgroundColor: '#2D4A22' }]}>
-                    <MaterialIcons name="photo-library" size={26} color="#FFF" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.zoneTitle, { color: theme.text }]}>Scoperte</Text>
-                    <Text style={[styles.zoneDesc, { color: theme.textMuted }]}>Audio-guide e documenti sbloccati con i tuoi check-in.</Text>
-                  </View>
-                  <MaterialIcons name="chevron-right" size={24} color={theme.textMuted} />
-                </TouchableOpacity>
-
                 {/* Toggle Nebbia della Memoria (Fog of War) */}
                 <View style={[styles.fogRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                   <View style={[styles.zoneIcon, { backgroundColor: '#3B5F31' }]}>
@@ -328,12 +310,6 @@ const [editingNickname, setEditingNickname] = useState(false);
 
 </ScrollView>
 
-          <VaultModal
-            visible={isVaultVisible}
-            onClose={() => setIsVaultVisible(false)}
-            userProfile={userProfile}
-            theme={theme}
-          />
           <MemoriesCameraModal
             visible={isMemoriesVisible}
             onClose={() => setIsMemoriesVisible(false)}

@@ -286,15 +286,13 @@ export default function MapScreen() {
               iconSize: fogOfWar ? [
                 'case',
                 ['get', 'discovered'], 1.5,
-                1.1,
-                1.5
+                1.1
               ] : 1.5,
               iconAllowOverlap: true,
               iconOpacity: fogOfWar ? [
                 'case',
                 ['get', 'discovered'], 1,
-                0.35,
-                1
+                0.35
               ] : 1,
               textField: ['get', 'name'],
               textSize: 10,
@@ -306,8 +304,7 @@ export default function MapScreen() {
               textOpacity: fogOfWar ? [
                 'case',
                 ['get', 'discovered'], 1,
-                0.25,
-                1
+                0.25
               ] : 1
             }}
           />

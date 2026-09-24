@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../context/ThemeContext';
 
+type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
+
 // --- Obiettivi giornalieri (Zeigarnik: loop quotidiano a 3 petali) ---
 const WALK_TARGET_M = 2000; // 🟢 2 km a piedi
 const WALK_ALT_CO2 = 1;     // ... oppure 1 kg CO₂ evitata
@@ -10,7 +12,7 @@ const CHECKIN_TARGET = 1;   // 🟡 1 check-in
 
 interface DailyChallenge {
   title: string;
-  icon: string;
+  icon: MaterialIconName;
   type: 'walk' | 'co2' | 'checkins';
   value: number;
 }
@@ -31,6 +33,11 @@ function getTodayIndex(): number {
   return dayOfYear % DAILY_CHALLENGES.length;
 }
 
+// SSOT per la sfida del giorno: usata dal Fiore (Diario) e dall'icona-rituale della Home.
+export function getTodayChallenge(): DailyChallenge {
+  return DAILY_CHALLENGES[getTodayIndex()];
+}
+
 interface FioreDeiTrePetaliProps {
   distanceToday: number; // metri
   co2Kg: number;
@@ -45,7 +52,7 @@ function Petalo({
   accent,
   done,
 }: {
-  icon: any;
+  icon: MaterialIconName;
   label: string;
   percent: number;
   accent: string;
@@ -86,7 +93,7 @@ function Petalo({
 
 export default function FioreDeiTrePetali({ distanceToday, co2Kg, checkinsToday, onPress }: FioreDeiTrePetaliProps) {
   const { theme } = useTheme();
-  const challenge = DAILY_CHALLENGES[getTodayIndex()];
+  const challenge = getTodayChallenge();
 
   // 🟢 Petalo Camminata: 2 km a piedi OPPURE 1 kg CO₂
   const walkPercent = Math.max(

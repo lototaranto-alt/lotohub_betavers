@@ -610,7 +610,9 @@ export type Database = {
           pois_discovered: number | null
           premium_until: string | null
           profile_completed: boolean | null
+          total_co2: number | null
           total_distance_meters: number | null
+          total_liters: number | null
           total_tokens: number | null
           total_xp: number | null
           updated_at: string | null
@@ -630,7 +632,9 @@ export type Database = {
           pois_discovered?: number | null
           premium_until?: string | null
           profile_completed?: boolean | null
+          total_co2?: number | null
           total_distance_meters?: number | null
+          total_liters?: number | null
           total_tokens?: number | null
           total_xp?: number | null
           updated_at?: string | null
@@ -650,7 +654,9 @@ export type Database = {
           pois_discovered?: number | null
           premium_until?: string | null
           profile_completed?: boolean | null
+          total_co2?: number | null
           total_distance_meters?: number | null
+          total_liters?: number | null
           total_tokens?: number | null
           total_xp?: number | null
           updated_at?: string | null

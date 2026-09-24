@@ -24,9 +24,12 @@ import TipsBoutiqueSheet from '../../components/TipsBoutiqueSheet';
 import PoiTrophyPassport from '../../components/PoiTrophyPassport';
 import PoiCard from '../../components/PoiCard';
 import BreathingLeaf from '../../components/BreathingLeaf';
+import FioreIconaRituale from '../../components/FioreIconaRituale';
+
 import ImpactStatsModal from '../../components/ImpactStatsModal';
 import VaultModal from '../../components/VaultModal';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
+import { ensureEarnedBadges } from '../../utils/badgeAssignment';
 import { useMobility } from '../../context/MobilityContext';
 import { useGamification } from '../../context/GamificationContext';
 import { useTenant } from '../../context/TenantContext';
@@ -138,6 +141,21 @@ export default function VetrinaScreen() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // --- Sincronizzazione posizione live per calcolo distanze nelle card POI Home ---
+  useEffect(() => {
+    let sub: any;
+    (async () => {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const last = await Location.getLastPositionAsync();
+      if (last) setUserLocation(last);
+      sub = await Location.watchPositionAsync({ distanceInterval: 20 }, (loc) => {
+        setUserLocation(loc);
+      });
+    })();
+    return () => { if (sub) sub.remove(); };
+  }, []);
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [userItineraries, setUserItineraries] = useState<any[]>([]);
   const [userBadges, setUserBadges] = useState<any[]>([]);
@@ -337,6 +355,27 @@ export default function VetrinaScreen() {
     }
   };
 
+  const loadTransactions = async (profileId: string) => {
+    const [impactRes, gpsRes] = await Promise.all([
+      supabase.from('impact_transactions').select('*').eq('profile_id', profileId).order('created_at', { ascending: false }).limit(20),
+      supabase.from('user_pois').select('*').eq('profile_id', profileId).order('visited_at', { ascending: false }).limit(20),
+    ]);
+    const gpsTx: any[] = (gpsRes.data || []).map((g: any) => ({
+      id: `gps_${g.id}`,
+      poi_id: g.poi_id,
+      action_type: 'Check-in GPS',
+      created_at: g.visited_at,
+      co2_saved: g.co2_saved || 0,
+      liters_saved: 0,
+      tokens_earned: 0,
+      xp_earned: g.xp_awarded || 0,
+      profile_id: profileId,
+    }));
+    setUserTransactions([...(impactRes.data || []), ...gpsTx].sort((a: any, b: any) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    ));
+  };
+
   const caricaDati = async () => {
     try {
       let fetchedPois: any[] = [];
@@ -381,8 +420,7 @@ export default function VetrinaScreen() {
         if (profile) {
           setUserProfile(profile);
           fetchCheckinsToday();
-          const { data: trans } = await supabase.from('impact_transactions').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(20);
-          if (trans) setUserTransactions(trans);
+          loadTransactions(user.id);
           
           // Fetch itinerari
           const { data: itinData } = await supabase.rpc('get_user_itineraries');
@@ -396,6 +434,16 @@ export default function VetrinaScreen() {
             .select('*, badges(*)')
             .eq('user_id', user.id);
           if (badges) setUserBadges(badges);
+
+          // Sistema badge VIVO: assegna i badge con requisiti reali già soddisfatti
+          const newlyAssigned = await ensureEarnedBadges(supabase, profile, badges);
+          if (newlyAssigned.length > 0) {
+            const { data: refreshed } = await supabase
+              .from('user_badges')
+              .select('*, badges(*)')
+              .eq('user_id', user.id);
+            if (refreshed) setUserBadges(refreshed);
+          }
 
           // Sincronizza lo Store Gamification (SSOT): niente calcoli o copie locali disconnesse
           const [[, fbXp], [, fbTok], [, fbPois]] = await AsyncStorage.multiGet(['loto_fallback_xp', 'loto_fallback_tokens', 'loto_fallback_pois']);
@@ -451,10 +499,14 @@ export default function VetrinaScreen() {
       if (!profile) return;
       setUserProfile(profile);
       fetchCheckinsToday();
-      const { data: trans } = await supabase.from('impact_transactions').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(20);
-      if (trans) setUserTransactions(trans);
+      loadTransactions(user.id);
       const { data: badges } = await supabase.from('user_badges').select('*, badges(*)').eq('user_id', user.id);
       if (badges) setUserBadges(badges);
+      const newlyAssigned = await ensureEarnedBadges(supabase, profile, badges);
+      if (newlyAssigned.length > 0) {
+        const { data: refreshed } = await supabase.from('user_badges').select('*, badges(*)').eq('user_id', user.id);
+        if (refreshed) setUserBadges(refreshed);
+      }
       gamification.syncProfile(profile, {
         badges: badges || [],
         fallbackXp: fbXp ? parseInt(fbXp) : 0,
@@ -622,31 +674,38 @@ export default function VetrinaScreen() {
     return (
       <View style={{ paddingBottom: 10 }}>
         
-        {/* --- 1. HEADER BOUTIQUE (logo orizzontale ufficiale) --- */}
+        {/* --- 1. HEADER BOUTIQUE (logo abbellito ridimensionato + sottotitolo con foglioline) --- */}
         <View style={{ alignItems: 'center', marginTop: 30, marginBottom: 15, paddingHorizontal: 20 }}>
           <Image
             source={require('../../assets/images/loto_map_logo_orizzontale_con_foglioline.png')}
-            style={{ width: '100%', maxWidth: 420, aspectRatio: 2.333, resizeMode: 'contain' }}
+            style={{ width: '100%', maxWidth: 196, aspectRatio: 2.333, resizeMode: 'contain' }}
           />
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            <MaterialIcons name="eco" size={18} color="#BCA37F" />
+            <Text style={{ fontFamily: 'Raleway_400Regular', fontSize: 18, color: '#6A5638', marginHorizontal: 12, letterSpacing: 1 }}>
+              Co-ExpErience
+            </Text>
+            <MaterialIcons name="eco" size={18} color="#BCA37F" />
+          </View>
         </View>
 
         {/* --- PRESTIGE CARD COMPATTA --- */}
         <View style={{ backgroundColor: '#2D4A22', borderRadius: 20, padding: 15, marginHorizontal: 20, marginBottom: 15, elevation: 6, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10 }}>
           
-          {/* Fiore di Oggi: icona-rituale della barra verde, apre il Diario di Bordo (F4/P.S.) */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => { setProfileInitialTab('diario'); setIsExpModalVisible(true); }}
-            style={{
-              position: 'absolute', top: 12, right: 12, zIndex: 5,
-              width: 36, height: 36, borderRadius: 18,
-              backgroundColor: '#3B5F31', borderWidth: 1, borderColor: '#D4AF37',
-              justifyContent: 'center', alignItems: 'center',
-              shadowColor: '#D4AF37', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.55, shadowRadius: 6, elevation: 6,
-            }}
-          >
-            <MaterialIcons name="spa" size={20} color="#D4AF37" />
-          </TouchableOpacity>
+{/* Fiore di Oggi: icona-rituale della barra verde, apre il Diario di Bordo (F4/P.S.) */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => { setProfileInitialTab('diario'); setIsExpModalVisible(true); }}
+              style={{
+                position: 'absolute', top: 12, right: 12, zIndex: 5,
+                width: 36, height: 36, borderRadius: 18,
+                backgroundColor: '#3B5F31', borderWidth: 1, borderColor: '#D4AF37',
+                justifyContent: 'center', alignItems: 'center',
+                shadowColor: '#D4AF37', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.55, shadowRadius: 6, elevation: 6,
+              }}
+            >
+              <FioreIconaRituale size={20} color="#D4AF37" />
+            </TouchableOpacity>
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             
@@ -683,13 +742,13 @@ export default function VetrinaScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* XP Bar inside Card: progresso REALE verso il prossimo Rank (blocco da 10 livelli, no salti) */}
+              {/* XP Bar inside Card: progresso REALE verso il prossimo livello + contatore numerico XP */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1, height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3 }}>
-                  <View style={{ width: `${levelProgress.rankPercent}%`, height: '100%', backgroundColor: levelProgress.color || '#D4AF37', borderRadius: 3 }} />
+                  <View style={{ width: `${levelProgress.percent}%`, height: '100%', backgroundColor: levelProgress.color || '#D4AF37', borderRadius: 3 }} />
                 </View>
                 <Text style={{ fontSize: 10, color: '#FFF', fontWeight: 'bold', marginLeft: 8 }}>
-                  {Math.round(levelProgress.rankPercent)}% verso {levelProgress.rankInfo.nextRank === 'MAX' ? 'il Rank Massimo' : levelProgress.rankInfo.nextRank}
+                  {Math.floor(gamification.xp)} / {levelProgress.nextXp} XP
                 </Text>
               </View>
 

@@ -88,7 +88,7 @@ export default function ImpactStatsModal({ visible, onClose, userProfile, userTr
                 <Text style={styles.statLabel}>Totale LOTO PTI</Text>
                 
                 <View style={{ width: '100%', marginTop: 30 }}>
-                  <Text style={[styles.sectionTitle, { color: theme.text }]}>CRONOLOGIA GUADAGNI</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>CRONOLOGIA PUNTI</Text>
                   {userTransactions.filter(tx => tx.tokens_earned > 0).length === 0 ? (
                     <Text style={[styles.emptyText, { color: theme.textMuted }]}>Nessun LOTO PTI accumulato finora.</Text>
                   ) : (

@@ -14,6 +14,17 @@ interface SingleBadgeSheetProps {
 export default function SingleBadgeSheet({ visible, onClose, badge, theme }: SingleBadgeSheetProps) {
   if (!badge) return null;
 
+  const displayName = badge.name || badge.title || 'Badge Misterioso';
+  const displayDesc = badge.desc || badge.actionDescription || 'Completa specifiche azioni nel mondo reale per sbloccare questo badge.';
+  const isUnlocked = !!(badge.unlocked || badge.isUnlocked);
+  const percent = Math.min(100, Math.max(0,
+    badge.percent ?? badge.progress ??
+    (badge.target ? Math.round(((badge.current ?? 0) / badge.target) * 100) : 0)
+  ));
+  const progressLabel = badge.current !== undefined && badge.target !== undefined
+    ? `Progresso: ${typeof badge.current === 'number' ? badge.current.toFixed(badge.current % 1 === 0 ? 0 : 1) : badge.current} / ${badge.target} ${badge.unit || ''}`
+    : `Progresso: ${percent}%`;
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -29,23 +40,21 @@ export default function SingleBadgeSheet({ visible, onClose, badge, theme }: Sin
                 <MaterialIcons name={badge.icon || 'star'} size={40} color={badge.color} />
               )}
             </View>
-            <Text style={[styles.title, { color: theme.text }]}>{badge.title || 'Badge Misterioso'}</Text>
-            <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-              {badge.actionDescription || 'Completa specifiche azioni nel mondo reale per sbloccare questo badge.'}
-            </Text>
+            <Text style={[styles.title, { color: theme.text }]}>{displayName}</Text>
+            <Text style={[styles.subtitle, { color: theme.textMuted }]}>{displayDesc}</Text>
             
-            {!badge.isUnlocked && (
+            {!isUnlocked && (
               <View style={styles.progressContainer}>
                 <View style={[styles.progressBar, { backgroundColor: theme.border }]}>
-                  <View style={[styles.progressFill, { backgroundColor: badge.color, width: `${badge.progress || 0}%` }]} />
+                  <View style={[styles.progressFill, { backgroundColor: badge.color, width: `${percent}%` }]} />
                 </View>
                 <Text style={{ color: theme.text, marginTop: 8, fontSize: 12 }}>
-                  Progresso: {badge.progress || 0}%
+                  {progressLabel}
                 </Text>
               </View>
             )}
             
-            {badge.isUnlocked && (
+            {isUnlocked && (
               <View style={[styles.unlockedBadge, { backgroundColor: badge.color + '20' }]}>
                 <Text style={{ color: badge.color, fontWeight: 'bold' }}>✓ Sbloccato!</Text>
               </View>

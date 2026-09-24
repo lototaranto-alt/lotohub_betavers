@@ -13,6 +13,7 @@ import { useFocusEffect } from 'expo-router';
 import { useRouteBuilder } from '../../context/RouteContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLevelProgress } from '../../utils/levelUtils';
+import { ensureEarnedBadges } from '../../utils/badgeAssignment';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -87,6 +88,16 @@ export default function ProfileScreen() {
             .select('*, badges(*)')
             .eq('user_id', user.id);
           if (badgesData) setUserBadges(badgesData);
+
+          // Sistema badge VIVO: assegna i badge i cui requisiti reali sono già raggiunti
+          const newlyAssigned = await ensureEarnedBadges(supabase, profile, badgesData);
+          if (newlyAssigned.length > 0) {
+            const { data: refreshed } = await supabase
+              .from('user_badges')
+              .select('*, badges(*)')
+              .eq('user_id', user.id);
+            if (refreshed) setUserBadges(refreshed);
+          }
 
           // Fetch Itineraries (solo dati REALI dal DB)
           const { data: itinData } = await supabase.rpc('get_user_itineraries');

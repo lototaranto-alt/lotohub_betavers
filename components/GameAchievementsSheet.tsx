@@ -61,13 +61,19 @@ export default function GameAchievementsSheet({ visible, onClose, userXp, userBa
                 </View>
               </View>
 
-              {/* Progress Bar */}
+              {/* Progress Bar: verso il PROSSIMO RANK (blocco da 10 livelli), non il prossimo LV */}
               <View style={styles.xpBarContainer}>
-                <View style={[styles.xpBarFill, { width: `${progress.percent}%`, backgroundColor: progress.gemColor }]} />
+                <View style={[styles.xpBarFill, { width: `${progress.rankPercent}%`, backgroundColor: progress.gemColor }]} />
               </View>
               <View style={styles.xpTextRow}>
-                <Text style={styles.xpTextSmall}>{progress.xpInLevel} / {progress.xpNeededForNext} XP nel Livello</Text>
+                <Text style={styles.xpTextSmall}>{Math.floor(progress.rankXpInBlock)} / {progress.rankXpBlockSpan} XP verso il Rank</Text>
                 <Text style={styles.xpTextSmall}>Totale: {Math.floor(userXp)} XP</Text>
+              </View>
+              <View style={styles.nextRankRow}>
+                <MaterialIcons name="arrow-circle-up" size={12} color="#D4AF37" />
+                <Text style={styles.nextRankText}>
+                  Prossimo Rank: {progress.rankInfo.nextRank === 'MAX' ? 'Rank Massimo' : `${progress.rankInfo.nextRank} (LV ${progress.rankInfo.requiredLvl})`}
+                </Text>
               </View>
             </View>
 
@@ -147,6 +153,8 @@ const styles = StyleSheet.create({
   xpBarFill: { height: '100%', borderRadius: 4 },
   xpTextRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   xpTextSmall: { color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: '600' },
+  nextRankRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)', gap: 6 },
+  nextRankText: { color: '#D4AF37', fontSize: 11, fontWeight: 'bold' },
   sectionHeader: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1, color: '#8C7A5E', textTransform: 'uppercase' },
   challengeCard: { backgroundColor: '#FFF', padding: 16, borderRadius: 18, marginTop: 10, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', elevation: 2 },
   challengeIconBox: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E8F0E4', justifyContent: 'center', alignItems: 'center' },
