@@ -1,3 +1,25 @@
+# Fine Sessione (24/09): REPORT ADB 2 — feed reale senza polling, header ottimizzato, distanza live, pulizia emoji/mojibake
+
+## Raggiunto in questo turno
+- **Consolidazione repo unica (decisione utente):** eliminato il worktree annidato `...\worktrees\loto-app-fresh\fix-conversation-stuck-issue`; **`C:\loto_app` è ora l'UNICO posto per edit+commit+build** (remote ri-puntata su GitHub `lototaranto-alt/lotohub_betavers`, branch `fix/ripristino-lavoro-15-set-selective`, HEAD oggi `9444c9f`). Commit `34a471b` per il fix `getLastKnownPositionAsync`. Cartella vecchia vuota residua rimossa. Sessione riavviata da `C:\loto_app`.
+- **Feed community REALE senza polling:** nuovo `utils/communityFeed.ts` (`fetchCommunityFeed`: aggrega `user_pois`+`user_badges`+`impact_transactions`+`profiles`, ordina per timestamp, `relativeTime`, icon/color). `LiveFeedBanner` + `CommunityFeedSheet` ora leggono il feed reale (addio mock). **Niente `setInterval`** (batteria + validazioni store): fetch solo al mount e al focus della tab (`useFocusEffect`) — banner con permanenza prolungata (resta sull'ultimo evento finché non ne arriva uno nuovo).
+- **Header brand ottimizzato (iterazioni live su device):** logo ingrandito fino a **331px** (`maxWidth`); rimosso il **sottotitolo "Co-ExpErience" duplicato** che il codice stampava sotto l'immagine `loto_map_logo_orizzontale_con_foglioline.png` (il logo contiene GIÀ marchio completo: titolo + logo dx + foglioline); spacing compattato (`marginTop` 8, `marginBottom` 0, `paddingBottom` 2).
+- **Barra rank verde → Traguardi:** al tap apre `TraguardiModal`; `GameAchievementsSheet` **archiviato** in `archive_dead_code/`.
+- **ProfileModal tab riordinati:** IDENTITÀ → DIARIO → CO-EXPERIENCE/??? (LV.20).
+- **Fiore di oggi:** petalo centrale da "1 CHECK-IN (NFC)" a **"1 POI pubblico"** (icona `place`, scoperta GPS) — nessun piazzato NFC richiesto; `DAILY_CHALLENGES` aggiornate.
+- **REPORT ADB 2 — distanza card POI Home live:** `userLocation` sincronizzato in `index.tsx` via effect (`getForegroundPermissionsAsync` → `getLastKnownPositionAsync` → `watchPositionAsync` distanceInterval 20); riga debug rossa `DEBUG WHISPERS COUNT: ... POI_ID:` rimossa (`PoiDetailSheet.tsx`).
+- **Pulizia emoji infantili + mojibake:** `🌟`→`workspace-premium` (eventi premium), emoji nei titoli sezione (Vault, RouteSummary, EventDetail, CivicReport, MobilityWizard) sostituite con icone MaterialIcons; testi corrotti in `DICTIONARY` (ticker/refillBadge/crowdWarning/recommended/modalDev/pill mobilità/motorizedToast) e `âœ¨ Evento Completato` ripuliti.
+- Verifiche: `tsc --noEmit` EXIT 0; eslint **0 errori nuovi** sui file toccati (errori `react/no-unescaped-entities` su PoiDetailSheet/EventDetailSheet/RouteSummarySheet = pre-esistenti, +1 warning nuovo BOM in LiveFeedBanner); `git diff --check` ok. Commit codice **`8815fcf`** + `gitignore` **`9444c9f`**.
+
+## Prossime Task (in ordine)
+1. **Verifica su device (utente, in corso):** distanze card POI live · feed reale (persistente) · header 331px · nebbia memoria (fix Mapbox `case` icons da confermare) · FOOM delle card.
+2. **QA REVEAL + cadenza modali** su jump multipli (LV3→LV5) con CDN attiva.
+3. **Aggregazione dati per DB** (segmenti/log/report) — nuova richiesta ADB 2 (calcolare metriche per la Prestige Card + report).
+4. **POI card testi / LV sblocco XP:** quando si arriva alla consegna XP reale, discutere il LV di sblocco; testi schede POI ancora da rifinire.
+5. Pending storici: RPC `recover_loto_pass` DB cloud · `migration_v20_vault_currency_fix` · Notifiche Eco-Passi · F3 residui Alert di sistema · CO₂ quadrante 2 (totale cumulato vs "di oggi" da chiarire).
+
+---
+
 # Fine Sessione (22/09, III blocco): REVEAL "Esplora la Sezione" + analisi scan POI end-to-end
 
 ## Raggiunto in questo blocco
