@@ -119,7 +119,7 @@ export default function VaultModal({ visible, onClose, userProfile, theme }: Vau
 
                 {imageMedia.length > 0 && (
                   <View style={styles.sectionContainer}>
-                    <Text style={[styles.sectionTitle, { color: '#D6734E' }]}>🖼️ GALLERIA STORICA</Text>
+                    <Text style={[styles.sectionTitle, { color: '#D6734E' }]}>GALLERIA STORICA</Text>
                     {imageMedia.map(renderMediaRow)}
                   </View>
                 )}

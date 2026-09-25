@@ -2,32 +2,17 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity, Modal } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { CommunityFeedItem } from '../utils/communityFeed';
 
 const { height } = Dimensions.get('window');
-
-interface FeedItem {
-  id: string;
-  user: string;
-  action: string;
-  time: string;
-  icon: any;
-  color: string;
-}
-
-const MOCK_FEED: FeedItem[] = [
-  { id: '1', user: 'Viaggiatore Anonimo', action: 'ha scoperto il Museo MarTa', time: '2 min fa', icon: 'location-on', color: '#2ECC71' },
-  { id: '2', user: 'Marco', action: 'ha raggiunto la Fioritura del Loto', time: '15 min fa', icon: 'eco', color: '#D4AF37' },
-  { id: '3', user: 'Anna', action: 'ha donato 50 PTI alla causa "Pulizia Spiagge"', time: '1 ora fa', icon: 'water-drop', color: '#3498DB' },
-  { id: '4', user: 'Viaggiatore Anonimo', action: 'ha rivelato un antico Whisper', time: '2 ore fa', icon: 'record-voice-over', color: '#9B59B6' },
-  { id: '5', user: 'Squadra LOTO', action: 'ha sbloccato il Bonus Sincronia a Taranto Vecchia', time: '3 ore fa', icon: 'people', color: '#E67E22' },
-];
 
 interface CommunityFeedSheetProps {
   isVisible: boolean;
   onClose: () => void;
+  feed: CommunityFeedItem[];
 }
 
-export default function CommunityFeedSheet({ isVisible, onClose }: CommunityFeedSheetProps) {
+export default function CommunityFeedSheet({ isVisible, onClose, feed }: CommunityFeedSheetProps) {
   const { theme } = useTheme();
 
   return (
@@ -35,29 +20,38 @@ export default function CommunityFeedSheet({ isVisible, onClose }: CommunityFeed
       <View style={styles.overlay}>
         <View style={[styles.sheet, { backgroundColor: theme.surface }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.text }]}>L'Ecosistema</Text>
+            <Text style={[styles.title, { color: theme.text }]}>L&apos;Ecosistema</Text>
             <Text style={[styles.subtitle, { color: theme.textMuted }]}>La tua community in tempo reale</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <MaterialIcons name="close" size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
-          <FlatList
-            data={MOCK_FEED}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.scrollContent}
-            renderItem={({ item }) => (
-              <View style={[styles.feedItem, { backgroundColor: theme.background }]}>
-                <View style={[styles.iconBox, { backgroundColor: item.color + '20' }]}>
-                  <MaterialIcons name={item.icon} size={24} color={item.color} />
+          {feed.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <MaterialIcons name="eco" size={60} color={theme.border} />
+              <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+                Nessuna attività recente. Scopri un luogo per essere la prima azione della community!
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={feed}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.scrollContent}
+              renderItem={({ item }) => (
+                <View style={[styles.feedItem, { backgroundColor: theme.background }]}>
+                  <View style={[styles.iconBox, { backgroundColor: item.color + '20' }]}>
+                    <MaterialIcons name={item.icon as any} size={24} color={item.color} />
+                  </View>
+                  <View style={styles.textContent}>
+                    <Text style={[styles.userText, { color: theme.text }]}>{item.user}</Text>
+                    <Text style={[styles.actionText, { color: theme.textMuted }]}>{item.action}</Text>
+                  </View>
+                  <Text style={[styles.timeText, { color: theme.textMuted }]}>{item.time}</Text>
                 </View>
-                <View style={styles.textContent}>
-                  <Text style={[styles.userText, { color: theme.text }]}>{item.user}</Text>
-                  <Text style={[styles.actionText, { color: theme.textMuted }]}>{item.action}</Text>
-                </View>
-                <Text style={[styles.timeText, { color: theme.textMuted }]}>{item.time}</Text>
-              </View>
-            )}
-          />
+              )}
+            />
+          )}
         </View>
       </View>
     </Modal>
@@ -130,5 +124,18 @@ const styles = StyleSheet.create({
   timeText: {
     fontFamily: 'Raleway_400Regular',
     fontSize: 11,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    marginTop: 15,
+    fontSize: 15,
+    textAlign: 'center',
+    fontFamily: 'Raleway_400Regular',
+    lineHeight: 22,
   }
 });

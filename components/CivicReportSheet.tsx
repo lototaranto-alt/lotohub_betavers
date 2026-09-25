@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
 import { useCity } from '../context/CityContext';
 import { useTenant } from '../context/TenantContext';
@@ -12,11 +13,11 @@ interface Props {
 }
 
 const CATEGORIES = [
-  { id: 'barrier', label: 'Barriera Architettonica', icon: '🚧' },
-  { id: 'degradation', label: 'Degrado Urbano', icon: '🏚️' },
-  { id: 'lighting', label: 'Illuminazione', icon: '💡' },
-  { id: 'accessibility', label: 'Accessibilità', icon: '♿' },
-  { id: 'other', label: 'Altro', icon: '💬' },
+  { id: 'barrier', label: 'Barriera Architettonica', icon: 'stairs' },
+  { id: 'degradation', label: 'Degrado Urbano', icon: 'home-repair-service' },
+  { id: 'lighting', label: 'Illuminazione', icon: 'lightbulb-outline' },
+  { id: 'accessibility', label: 'Accessibilità', icon: 'accessible' },
+  { id: 'other', label: 'Altro', icon: 'chat-bubble-outline' },
 ];
 
 export const CivicReportSheet: React.FC<Props> = ({ visible, onClose, userId, initialLocation }) => {
@@ -79,7 +80,7 @@ export const CivicReportSheet: React.FC<Props> = ({ visible, onClose, userId, in
 
           {result === 'confirmed' ? (
             <View style={styles.resultBox}>
-              <Text style={styles.resultIcon}>✅</Text>
+              <MaterialIcons name="check-circle" size={48} color="#10B981" style={styles.resultIcon} />
               <Text style={styles.resultTitle}>Confermato!</Text>
               <Text style={styles.resultText}>
                 Un altro cittadino ha riscontrato lo stesso problema. +25 PTI bonus!
@@ -87,7 +88,7 @@ export const CivicReportSheet: React.FC<Props> = ({ visible, onClose, userId, in
             </View>
           ) : result === 'pending' ? (
             <View style={styles.resultBox}>
-              <Text style={styles.resultIcon}>🕐</Text>
+              <MaterialIcons name="schedule" size={48} color="#94A3B8" style={styles.resultIcon} />
               <Text style={styles.resultTitle}>Grazie per la segnalazione!</Text>
               <Text style={styles.resultText}>
                 In attesa di conferma da un altro cittadino nel raggio di 50 metri...
@@ -102,7 +103,7 @@ export const CivicReportSheet: React.FC<Props> = ({ visible, onClose, userId, in
                     style={[styles.catBtn, category === cat.id && styles.catActive]}
                     onPress={() => setCategory(cat.id)}
                   >
-                    <Text style={styles.catIcon}>{cat.icon}</Text>
+                    <MaterialIcons name={cat.icon as any} size={22} style={styles.catIcon} />
                     <Text style={[styles.catText, category === cat.id && styles.catTextActive]}>
                       {cat.label}
                     </Text>

@@ -32,7 +32,7 @@ export default function MobilityWizard() {
             onPress={() => saveMobilityChoice('dolce', 2)}
             activeOpacity={0.8}
           >
-            <Text style={styles.btnDolceText}>🌱 A piedi, Bici, Monopattino</Text>
+            <Text style={styles.btnDolceText}>A piedi, Bici, Monopattino</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

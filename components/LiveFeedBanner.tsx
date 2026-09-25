@@ -1,85 +1,54 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { View, Text, Animated, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import CommunityFeedSheet from './CommunityFeedSheet';
+import { CommunityFeedItem } from '../utils/communityFeed';
 
 const { width } = Dimensions.get('window');
 
 interface LiveFeedBannerProps {
-  pois: any[];
+  feed: CommunityFeedItem[];
 }
 
-const MOCK_MESSAGES = [
-  "Marco ha appena raggiunto la Fioritura del Loto! 🌸",
-  "Viaggiatore Anonimo ha scoperto il Museo MarTa",
-  "Anna ha donato 50 PTI per pulire le spiagge",
-  "Squadra LOTO ha sbloccato il Bonus Sincronia 🤝",
-  "Un antico Whisper è stato rivelato in Via Cava 🤫"
-];
-
-export default function LiveFeedBanner({ pois }: LiveFeedBannerProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export default function LiveFeedBanner({ feed }: LiveFeedBannerProps) {
+  const [sheetVisible, setSheetVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(15)).current;
-  const [sheetVisible, setSheetVisible] = useState(false);
 
-  useEffect(() => {
-    // Animazione di ciclo: Fade In -> Attesa -> Fade Out
-    const cycleAnimation = () => {
-      slideAnim.setValue(15);
-      
-      Animated.sequence([
-        // Fade in + slide up
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim, {
-            toValue: 0,
-            duration: 800,
-            useNativeDriver: true,
-          })
-        ]),
-        // Attendi 4 secondi affinché l'utente possa leggere con calma
-        Animated.delay(4000),
-        // Fade out + slide up
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim, {
-            toValue: -15,
-            duration: 800,
-            useNativeDriver: true,
-          })
-        ])
-      ]).start(() => {
-        // Passa al prossimo messaggio
-        setCurrentIndex((prev) => (prev + 1) % MOCK_MESSAGES.length);
-      });
-    };
+  const latest = feed.length > 0 ? feed[0] : null;
 
-    cycleAnimation();
-    const interval = setInterval(cycleAnimation, 5600); // 800+4000+800
+  // Permanenza prolungata: il banner mostra l'ultimo evento reale e resta visibile.
+  // La transizione avviene SOLO quando arriva un evento più recente dal DB.
+  React.useEffect(() => {
+    if (!latest) return;
+    slideAnim.setValue(15);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, [latest?.id]);
 
-    return () => clearInterval(interval);
-  }, []);
+  const display = latest
+    ? `${latest.user} ${latest.action}`
+    : 'La community si sta muovendo... scopri il primo luogo per iniziare.';
 
   return (
     <>
-      <Animated.View style={[styles.bannerContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[styles.bannerContainer, { opacity: latest ? fadeAnim : 1, transform: [{ translateY: latest ? slideAnim : 0 }] }]}>
         <TouchableOpacity style={styles.bannerContent} activeOpacity={0.8} onPress={() => setSheetVisible(true)}>
-          <MaterialIcons name="eco" size={16} color="#D4AF37" />
-          <Text style={styles.bannerText} numberOfLines={1}>{MOCK_MESSAGES[currentIndex]}</Text>
+          <MaterialIcons name={latest ? (latest.icon as any) : 'eco'} size={16} color={latest ? latest.color : '#D4AF37'} />
+          <Text style={styles.bannerText} numberOfLines={1}>{display}</Text>
           <MaterialIcons name="chevron-right" size={18} color="#D4AF37" />
         </TouchableOpacity>
       </Animated.View>
 
-      <CommunityFeedSheet isVisible={sheetVisible} onClose={() => setSheetVisible(false)} />
+      <CommunityFeedSheet isVisible={sheetVisible} onClose={() => setSheetVisible(false)} feed={feed} />
     </>
   );
 }
@@ -98,12 +67,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 }
   },
   bannerContent: {
-    backgroundColor: 'rgba(26, 54, 33, 0.95)', // Verde scuro LOTO trasparente elegante
+    backgroundColor: 'rgba(26, 54, 33, 0.95)',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.5)', // Oro semitrasparente
+    borderColor: 'rgba(212, 175, 55, 0.5)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10

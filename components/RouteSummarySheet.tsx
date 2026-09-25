@@ -100,7 +100,7 @@ export default function RouteSummarySheet({ visible, onClose }: RouteSummaryShee
             {/* SFIDE ATTIVE (Eventi Selezionati) */}
             {routeEvents.length > 0 && (
               <View style={{ marginTop: 20 }}>
-                <Text style={[styles.sectionTitleSmall, { color: theme.text }]}>⚔️ SFIDE ATTIVE</Text>
+                <Text style={[styles.sectionTitleSmall, { color: theme.text }]}>SFIDE ATTIVE</Text>
                 {routeEvents.map(ev => (
                   <View key={ev.id} style={[styles.activeEventRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                     <MaterialIcons name={ev.icon as any} size={20} color="#10B981" />

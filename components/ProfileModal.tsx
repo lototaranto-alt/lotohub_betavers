@@ -107,11 +107,11 @@ const [editingNickname, setEditingNickname] = useState(false);
             <TouchableOpacity style={[styles.tab, activeTab === 'identity' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => setActiveTab('identity')}>
               <Text style={[styles.tabText, { color: activeTab === 'identity' ? theme.accent : theme.textMuted }]}>IDENTITÀ</Text>
             </TouchableOpacity>
-<TouchableOpacity style={[styles.tab, activeTab === 'squad' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => { if (computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL) setActiveTab('squad'); else setIsCoLockSheetVisible(true); }}>
-              <Text style={[styles.tabText, { color: activeTab === 'squad' ? theme.accent : theme.textMuted }]}>{computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL ? 'CO-EXPERIENCE' : `??? (LV.${CO_EXPERIENCE_UNLOCK_LEVEL})`}</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={[styles.tab, activeTab === 'diario' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => setActiveTab('diario')}>
               <Text style={[styles.tabText, { color: activeTab === 'diario' ? theme.accent : theme.textMuted }]}>DIARIO</Text>
+            </TouchableOpacity>
+<TouchableOpacity style={[styles.tab, activeTab === 'squad' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]} onPress={() => { if (computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL) setActiveTab('squad'); else setIsCoLockSheetVisible(true); }}>
+              <Text style={[styles.tabText, { color: activeTab === 'squad' ? theme.accent : theme.textMuted }]}>{computedLevel >= CO_EXPERIENCE_UNLOCK_LEVEL ? 'CO-EXPERIENCE' : `??? (LV.${CO_EXPERIENCE_UNLOCK_LEVEL})`}</Text>
             </TouchableOpacity>
           </View>
 

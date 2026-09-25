@@ -8,7 +8,7 @@ type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 // --- Obiettivi giornalieri (Zeigarnik: loop quotidiano a 3 petali) ---
 const WALK_TARGET_M = 2000; // 🟢 2 km a piedi
 const WALK_ALT_CO2 = 1;     // ... oppure 1 kg CO₂ evitata
-const CHECKIN_TARGET = 1;   // 🟡 1 check-in
+const CHECKIN_TARGET = 1;   // 🟡 1 POI pubblico scoperto oggi (GPS)
 
 interface DailyChallenge {
   title: string;
@@ -19,11 +19,11 @@ interface DailyChallenge {
 
 // Sfide quotidiane CURATE (no UGC) e misurabili dai contatori della Home.
 const DAILY_CHALLENGES: DailyChallenge[] = [
-  { title: '1 NUOVO INDIZIO', icon: 'nfc', type: 'checkins', value: 1 },
+  { title: '1 POI PUBBLICO', icon: 'place', type: 'checkins', value: 1 },
   { title: '1 KM DI LEGGEREZZA', icon: 'self-improvement', type: 'walk', value: 1000 },
   { title: '0,5 KG CO₂ EVITATA', icon: 'eco', type: 'co2', value: 0.5 },
   { title: '2 KM DI LINFA', icon: 'directions-walk', type: 'walk', value: 2000 },
-  { title: '1 CHECK-IN SILENZIOSO', icon: 'water-drop', type: 'checkins', value: 1 },
+  { title: '1 POI SCOPERTO', icon: 'explore', type: 'checkins', value: 1 },
 ];
 
 function getTodayIndex(): number {
@@ -101,7 +101,7 @@ export default function FioreDeiTrePetali({ distanceToday, co2Kg, checkinsToday,
     co2Kg / WALK_ALT_CO2,
   );
 
-  // 🟡 Petalo Check-in: almeno 1 check-in oggi
+  // 🟡 Petalo POI pubblico: almeno 1 luogo scoperto oggi (GPS)
   const checkinPercent = checkinsToday / CHECKIN_TARGET;
 
   // 🔵 Petalo Sfida: obiettivo curato a rotazione
@@ -133,8 +133,8 @@ export default function FioreDeiTrePetali({ distanceToday, co2Kg, checkinsToday,
           done={walkPercent >= 1}
         />
         <Petalo
-          icon="nfc"
-          label="1 CHECK-IN"
+          icon="place"
+          label="1 POI"
           percent={checkinPercent}
           accent="#D4AF37"
           done={checkinPercent >= 1}

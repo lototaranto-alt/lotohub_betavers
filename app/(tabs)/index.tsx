@@ -14,7 +14,6 @@ import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import TraguardiModal from '../../components/TraguardiModal';
-import GameAchievementsSheet from '../../components/GameAchievementsSheet';
 import ScannedPoisSheet from '../../components/ScannedPoisSheet';
 import SingleBadgeSheet from '../../components/SingleBadgeSheet';
 import TouristBaptismModal from '../../components/TouristBaptismModal';
@@ -30,6 +29,7 @@ import ImpactStatsModal from '../../components/ImpactStatsModal';
 import VaultModal from '../../components/VaultModal';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { ensureEarnedBadges } from '../../utils/badgeAssignment';
+import { fetchCommunityFeed, CommunityFeedItem } from '../../utils/communityFeed';
 import { useMobility } from '../../context/MobilityContext';
 import { useGamification } from '../../context/GamificationContext';
 import { useTenant } from '../../context/TenantContext';
@@ -50,24 +50,24 @@ const DICTIONARY = {
     impactTitle: 'IL TUO IMPATTO ECO-SOSTENIBILE',
     co2Lab: 'Kg CO2 Evitata',
     ptsLab: 'LOTO PTI',
-    ticker: 'ðŸƒ COMMUNITY TARANTO OGGI: 1.240 Litri risparmiati • 45kg Plastica • 12kg CO2',
+    ticker: 'COMMUNITY TARANTO OGGI: 1.240 Litri risparmiati • 45kg Plastica • 12kg CO2',
     btnCheckin: 'Check-in',
     btnEvents: 'Eventi',
     btnMap: 'Mappa',
     sectionSpots: 'METE CONSIGLIATE',
-    recommended: 'âœ¨ ✨ CONSIGLIATO: BONUS +10 PTI',
+    recommended: 'CONSIGLIATO: BONUS +10 PTI',
     scanBtn: 'SCANSIONA SCONTRINO',
     checkinAction: 'CHECK-IN (+15 XP)',
     userBadge: 'Utente Loto',
     modalCo2: 'CO2 Evitata',
     modalPlast: 'Plastica Ridotta',
     modalTok: 'Token Accumulati',
-    modalDev: 'DEV TOOLS ðŸ› ï¸ (Modalità Super User)',
+    modalDev: 'DEV TOOLS (Modalità Super User)',
     levelGold: 'EROE DEL MARE',
     levelSilver: 'CUSTODE DELLA CITTÀ',
     levelBronze: 'ECO-NAVIGATORE',
-    refillBadge: 'ðŸš° 💧 STAZIONE REFILL: BONUS IDRICO',
-    crowdWarning: 'ðŸ”´ 🔥 META MOLTO AFFOLLATA',
+    refillBadge: 'STAZIONE REFILL: BONUS IDRICO',
+    crowdWarning: 'META MOLTO AFFOLLATA',
     btnAlternative: 'VEDI ALTERNATIVA CONSIGLIATA',
     btnUnlockStory: 'SBLOCCA STORIA (+30 XP)'
   },
@@ -77,24 +77,24 @@ const DICTIONARY = {
     impactTitle: 'YOUR ECO-SUSTAINABLE IMPACT',
     co2Lab: 'Kg COâ‚‚ avoided',
     ptsLab: 'LOTO PTS',
-    ticker: 'ðŸƒ TARANTO COMMUNITY TODAY: 1.240 Liters saved • 45kg Plastic • 12kg CO2',
+    ticker: 'TARANTO COMMUNITY TODAY: 1.240 Liters saved • 45kg Plastic • 12kg CO2',
     btnCheckin: 'Check-in',
     btnEvents: 'Events',
     btnMap: 'Map',
     sectionSpots: 'RECOMMENDED SPOTS',
-    recommended: 'âœ¨ ✨ RECOMMENDED: +10 PTS BONUS',
+    recommended: 'RECOMMENDED: +10 PTS BONUS',
     scanBtn: 'SCAN RECEIPT',
     checkinAction: 'CHECK-IN (+15 XP)',
     userBadge: 'Loto User',
     modalCo2: 'CO2 Avoided',
     modalPlast: 'Plastic Reduced',
     modalTok: 'Tokens Earned',
-    modalDev: 'DEV TOOLS ðŸ› ï¸ (Super User Mode)',
+    modalDev: 'DEV TOOLS (Super User Mode)',
     levelGold: 'SEA HERO',
     levelSilver: 'CITY GUARDIAN',
     levelBronze: 'ECO-NAVIGATOR',
-    refillBadge: 'ðŸš° REFILL STATION: WATER BONUS',
-    crowdWarning: 'ðŸ”´ VERY CROWDED DESTINATION',
+    refillBadge: 'REFILL STATION: WATER BONUS',
+    crowdWarning: 'VERY CROWDED DESTINATION',
     btnAlternative: 'SEE RECOMMENDED ALTERNATIVE',
     btnUnlockStory: 'UNLOCK STORY (+30 XP)'
   }
@@ -107,19 +107,19 @@ const getMobilityPillStyle = (type: string) => {
       return {
         bg: '#ECFDF5', // Sfondo verde leggero
         text: '#10B981', // Testo verde
-        label: 'ðŸŒ± Dolce',
+        label: 'Dolce',
       };
     case 'pubblica':
       return {
         bg: '#F0F9FF', // Sfondo blu leggero
         text: '#0a7ea4', // Testo blu
-        label: 'ðŸšŒ Pubblica',
+        label: 'Pubblica',
       };
     case 'privata':
       return {
         bg: '#F1F5F9', // Sfondo grigio leggero
         text: '#4B5563', // Testo grigio
-        label: 'ðŸš— Privata',
+        label: 'Privata',
       };
     default:
       return {
@@ -176,43 +176,29 @@ export default function VetrinaScreen() {
   
   const sparkleAnim = useRef(new Animated.Value(1)).current;
   const [tipsAnim] = useState(new Animated.Value(1));
-  const [liveFeedIndex, setLiveFeedIndex] = useState(0);
-  const [liveFeeds, setLiveFeeds] = useState<string[]>([
-    "Un VIAGGIATORE ha scoperto un nuovo POI!",
-    "La community ha raggiunto 120kg di CO2 risparmiata oggi!"
-  ]);
 
-  useEffect(() => {
-    const fetchLiveFeed = async () => {
-      try {
-        const { data } = await supabase.from('profiles').select('nickname, level').limit(10);
-        if (data && data.length > 0) {
-          const feedTypes = ['scan', 'badge', 'level', 'report'];
-          const builtFeed = data.map((p, i) => {
-            const type = feedTypes[i % feedTypes.length];
-            const name = p.nickname || 'Un VIAGGIATORE';
-            if (type === 'scan') return `${name} ha scoperto un nuovo POI!`;
-            if (type === 'badge') return `${name} ha sbloccato il badge Sentinella`;
-            if (type === 'level') return `${name} ha raggiunto il Livello ${p.level || 2}`;
-            return `${name} ha inviato una segnalazione civica`;
-          });
-          setLiveFeeds(builtFeed);
-        }
-      } catch(e) {}
-    };
-    fetchLiveFeed();
+  // Feed community REALE: gli eventi persistono (permanenza prolungata) finché non arriva il prossimo dal DB.
+  // Niente polling/interval (batteria + validazioni store): fetch solo al mount e al ritorno in primo piano.
+  const [communityFeed, setCommunityFeed] = useState<CommunityFeedItem[]>([]);
 
-    const interval = setInterval(() => {
-      setLiveFeedIndex((prev) => (prev + 1) % liveFeeds.length);
-    }, 8000); // Cambia ogni 8 secondi per dare senso di vita
-    return () => clearInterval(interval);
-  }, [liveFeeds.length]);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const refreshFeed = async () => {
+        try {
+          const feed = await fetchCommunityFeed(10);
+          if (active) setCommunityFeed(feed);
+        } catch (e) {}
+      };
+      refreshFeed();
+      return () => { active = false; };
+    }, [])
+  );
   const [isExpModalVisible, setIsExpModalVisible] = useState(false); // --- NUOVI STATI GAMIFICATION ---
   const [profileInitialTab, setProfileInitialTab] = useState<'identity' | 'squad' | 'diario'>('identity'); // F4: tab di apertura dell'L.O.T.O. HUB (fiore → Diario)
   const [isBadgeModalVisible, setIsBadgeModalVisible] = useState(false);
   const [isImpactModalVisible, setIsImpactModalVisible] = useState(false);
   const [isVaultModalVisible, setIsVaultModalVisible] = useState(false);
-  const [isGameAchievementsVisible, setIsGameAchievementsVisible] = useState(false);
   const [isScannedPoisVisible, setIsScannedPoisVisible] = useState(false);
   const [isSingleBadgeVisible, setIsSingleBadgeVisible] = useState(false);
   const [selectedBadgeData, setSelectedBadgeData] = useState<any>(null);
@@ -672,21 +658,14 @@ export default function VetrinaScreen() {
     const mobilityConfig = getMobilityPillStyle(mobilityType || 'dolce');
 
     return (
-      <View style={{ paddingBottom: 10 }}>
+      <View style={{ paddingBottom: 2 }}>
         
         {/* --- 1. HEADER BOUTIQUE (logo abbellito ridimensionato + sottotitolo con foglioline) --- */}
-        <View style={{ alignItems: 'center', marginTop: 30, marginBottom: 15, paddingHorizontal: 20 }}>
+        <View style={{ alignItems: 'center', marginTop: 8, marginBottom: 0, paddingHorizontal: 20 }}>
           <Image
             source={require('../../assets/images/loto_map_logo_orizzontale_con_foglioline.png')}
-            style={{ width: '100%', maxWidth: 196, aspectRatio: 2.333, resizeMode: 'contain' }}
+            style={{ width: '100%', maxWidth: 331, aspectRatio: 2.333, resizeMode: 'contain' }}
           />
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-            <MaterialIcons name="eco" size={18} color="#BCA37F" />
-            <Text style={{ fontFamily: 'Raleway_400Regular', fontSize: 18, color: '#6A5638', marginHorizontal: 12, letterSpacing: 1 }}>
-              Co-ExpErience
-            </Text>
-            <MaterialIcons name="eco" size={18} color="#BCA37F" />
-          </View>
         </View>
 
         {/* --- PRESTIGE CARD COMPATTA --- */}
@@ -720,7 +699,7 @@ export default function VetrinaScreen() {
               
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
                 <TouchableOpacity 
-                  onPress={() => setIsGameAchievementsVisible(true)}
+                  onPress={() => setIsBadgeModalVisible(true)}
                   style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}
                 >
                   <MaterialIcons name={levelProgress.stemma as any} size={12} color={levelProgress.color} style={{ marginRight: 4 }} />
@@ -856,7 +835,7 @@ export default function VetrinaScreen() {
         </View>
 
         {/* --- LIVE COMMUNITY FEED --- */}
-        <LiveFeedBanner pois={pois} />
+        <LiveFeedBanner feed={communityFeed} />
 
 
       </View>
@@ -1022,7 +1001,7 @@ export default function VetrinaScreen() {
 
         {isMotorized && (
           <View style={styles.motorizedToast}>
-            <Text style={styles.motorizedToastText}>ðŸšŒ MODO MOTORIZZATO ATTIVO</Text>
+            <Text style={styles.motorizedToastText}>MODO MOTORIZZATO ATTIVO</Text>
           </View>
         )}
 
@@ -1119,18 +1098,6 @@ export default function VetrinaScreen() {
         userProfile={userProfile}
         userXp={userXp}
         theme={theme}
-      />
-
-      <GameAchievementsSheet
-        visible={isGameAchievementsVisible}
-        onClose={() => setIsGameAchievementsVisible(false)}
-        userXp={userXp}
-        userBadges={userBadges}
-        theme={theme}
-        onOpenBadgeCollection={() => {
-          setIsGameAchievementsVisible(false);
-          setTimeout(() => setIsBadgeModalVisible(true), 300);
-        }}
       />
 
       {/* MODALE SCELTA MOBILITA RAPIDA DALLA HOME */}

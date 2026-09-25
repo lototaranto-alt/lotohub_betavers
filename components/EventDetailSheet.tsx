@@ -72,7 +72,7 @@ export default function EventDetailSheet({ event, visible, onClose }: EventDetai
 
             {/* Sfide e Obiettivi */}
             <View style={[styles.section, { borderTopColor: theme.border }]}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>🎯 OBIETTIVI</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>OBIETTIVI</Text>
               <Text style={[styles.descText, { color: theme.textMuted }]}>{event.short_description || event.description}</Text>
               
               <View style={[styles.taskItem, { backgroundColor: theme.surface, borderColor: theme.border }]}>
