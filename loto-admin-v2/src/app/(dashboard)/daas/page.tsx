@@ -26,6 +26,7 @@ import {
   type HeatmapRow,
   type TelemetryDailyRow,
 } from '@/lib/daas'
+import { requireAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -218,6 +219,7 @@ function HeatmapTable({ rows }: { rows: HeatmapRow[] }) {
       <table className="min-w-full divide-y divide-slate-100">
         <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
           <tr>
+            <th className="px-5 py-3">Tenant</th>
             <th className="px-5 py-3">Griglia</th>
             <th className="px-5 py-3">Finestra 15 min</th>
             <th className="px-5 py-3">POI</th>
@@ -230,7 +232,8 @@ function HeatmapTable({ rows }: { rows: HeatmapRow[] }) {
           {rows.slice(0, 12).map((row, index) => {
             const width = Math.max(((row.checkins || 0) / maxCheckins) * 100, 4)
             return (
-              <tr key={`${row.time_block || 'block'}-${row.poi_id || 'poi'}-${index}`} className="hover:bg-slate-50">
+              <tr key={`${row.tenant_id || 'tenant'}-${row.time_block || 'block'}-${row.poi_id || 'poi'}-${index}`} className="hover:bg-slate-50">
+                <td className="px-5 py-4 text-xs font-semibold text-slate-500">{row.tenant_id || 'unassigned'}</td>
                 <td className="px-5 py-4 text-xs font-semibold text-slate-600">
                   {formatDecimal(row.grid_lat)}, {formatDecimal(row.grid_lng)}
                 </td>
@@ -261,24 +264,32 @@ function EsgTable({ rows }: { rows: EsgMonthlyRow[] }) {
       <table className="min-w-full divide-y divide-slate-100">
         <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
           <tr>
+            <th className="px-5 py-3">Tenant</th>
             <th className="px-5 py-3">Mese</th>
-            <th className="px-5 py-3">Check-in</th>
+            <th className="px-5 py-3">Check-in turisti</th>
             <th className="px-5 py-3">Utenti attivi</th>
             <th className="px-5 py-3">CO₂</th>
             <th className="px-5 py-3">Litri</th>
-            <th className="px-5 py-3">PTI</th>
+            <th className="px-5 py-3">PTI civici</th>
+            <th className="px-5 py-3">XP turisti</th>
+            <th className="px-5 py-3">Azioni civiche</th>
+            <th className="px-5 py-3">Non classificate</th>
             <th className="px-5 py-3">Report civici</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 bg-white">
           {rows.map((row, index) => (
-            <tr key={row.month || index} className="hover:bg-slate-50">
+            <tr key={`${row.tenant_id || 'tenant'}-${row.month || index}`} className="hover:bg-slate-50">
+              <td className="px-5 py-4 text-xs font-semibold text-slate-500">{row.tenant_id || 'unassigned'}</td>
               <td className="whitespace-nowrap px-5 py-4 text-xs font-bold text-slate-800">{formatDate(row.month)}</td>
               <td className="px-5 py-4 text-xs font-semibold text-slate-600">{formatInteger(row.checkins)}</td>
               <td className="px-5 py-4 text-xs font-semibold text-slate-600">{formatInteger(row.active_users)}</td>
               <td className="px-5 py-4 text-xs font-semibold text-emerald-700">{formatDecimal(row.co2_saved)} kg</td>
               <td className="px-5 py-4 text-xs font-semibold text-blue-700">{formatDecimal(row.liters_saved)} L</td>
-              <td className="px-5 py-4 text-xs font-semibold text-violet-700">{formatInteger(row.pti_generated)}</td>
+              <td className="px-5 py-4 text-xs font-semibold text-violet-700">{formatInteger(row.civic_pti_generated)}</td>
+              <td className="px-5 py-4 text-xs font-semibold text-indigo-700">{formatInteger(row.tourist_xp_earned)}</td>
+              <td className="px-5 py-4 text-xs font-semibold text-slate-600">{formatInteger(row.civic_actions)}</td>
+              <td className="px-5 py-4 text-xs font-semibold text-amber-700">{formatInteger(row.unclassified_transactions)}</td>
               <td className="px-5 py-4 text-xs font-semibold text-slate-600">
                 {formatInteger(row.confirmed_reports)} confermati · {formatInteger(row.pending_reports)} pending
               </td>
@@ -356,7 +367,8 @@ function TelemetryTable({ rows }: { rows: TelemetryDailyRow[] }) {
 }
 
 export default async function DaasReportsPage() {
-  const snapshot = await getDaasSnapshot()
+  const { supabase } = await requireAdmin()
+  const snapshot = await getDaasSnapshot(supabase)
   const latestEsg = snapshot.esgMonthly[0]
   const latestEvent = snapshot.eventAttendance[0]
   const totalEsgCheckins = sum(snapshot.esgMonthly as unknown as Record<string, unknown>[], 'checkins')
@@ -464,7 +476,7 @@ export default async function DaasReportsPage() {
           id="heatmap"
           eyebrow="Report PA · Zero-PII"
           title="Heatmap di decongestione"
-          description="Griglia territoriale aggregata e bucket temporali di 15 minuti. È il report operativo per capire dove devono essere dirottati i flussi."
+          description="Griglia territoriale aggregata e bucket temporali di 15 minuti. Le celle sotto la soglia k=5 vengono soppresse per proteggere il dato aggregato."
           icon={Map}
         >
           <ViewStatus error={snapshot.errors.heatmap} count={snapshot.heatmap.length} />
@@ -488,7 +500,7 @@ export default async function DaasReportsPage() {
           id="esg"
           eyebrow="Report B2B · Impatto"
           title="ESG mensile"
-          description="Riepilogo mensile di attività, CO₂, acqua risparmiata, PTI, XP e segnalazioni civichecertificate."
+          description="Riepilogo mensile separato: XP e check-in turisti da una parte, PTI e azioni civiche dall'altra. Le transazioni legacy non classificate restano visibili come quality gate."
           icon={Leaf}
         >
           <ViewStatus error={snapshot.errors.esg} count={snapshot.esgMonthly.length} />
@@ -567,7 +579,7 @@ export default async function DaasReportsPage() {
       <footer className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-emerald-600" />
-          <span>Report read-only · zero-PII · aggregazione server-side</span>
+          <span>Report read-only · zero-PII · k-anonimato · accesso admin/analyst</span>
         </div>
         <span>Per l’esportazione commerciale servono grant e RLS dedicati.</span>
       </footer>

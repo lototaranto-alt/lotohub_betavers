@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BarChart3, LayoutDashboard } from 'lucide-react'
+import { LogoutButton } from './LogoutButton'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -36,8 +37,9 @@ export function Sidebar() {
           )
         })}
       </nav>
-      <div className="border-t border-slate-800 p-4 text-xs text-slate-500 text-center">
-        Versione Read-Only (v2)
+      <div className="space-y-3 border-t border-slate-800 p-4 text-xs text-slate-500 text-center">
+        <p>Versione Read-Only (v2)</p>
+        <LogoutButton />
       </div>
     </div>
   )

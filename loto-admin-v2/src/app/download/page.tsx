@@ -26,10 +26,13 @@ export default function DownloadPage() {
 
           {/* Immagine con freccia/evidenza */}
           <div className="relative rounded-lg overflow-hidden border border-gray-200 shadow-sm mb-4 bg-gray-900">
-            <img 
-              src="/play-protect-warning.jpg" 
-              alt="Guida Play Protect" 
-              className="w-full h-auto opacity-90"
+            <Image
+              src="/play-protect-warning.jpg"
+              alt="Guida Play Protect"
+              width={711}
+              height={1024}
+              sizes="(max-width: 768px) 100vw, 448px"
+              className="h-auto w-full opacity-90"
             />
             {/* Cerchio rosso animato centrato su "Altri dettagli" nel nuovo ritaglio */}
             <div className="absolute bottom-[23%] left-[7%] w-32 h-8 border-2 border-red-500 rounded-lg animate-pulse bg-red-500/20"></div>

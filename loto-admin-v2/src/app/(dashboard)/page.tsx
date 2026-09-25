@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { requireAdmin } from '@/lib/supabase-server'
 import { Download, Users, AlertTriangle, Leaf, MapPin, MessageSquare } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -23,6 +23,7 @@ async function getGithubDownloads() {
 }
 
 export default async function DashboardPage() {
+  const { supabase } = await requireAdmin()
   const totalDownloads = await getGithubDownloads()
 
   const { count: ghostUsers } = await supabase

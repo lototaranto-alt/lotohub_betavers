@@ -1,18 +1,26 @@
-import { isSupabaseConfigured, supabase } from './supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type EsgMonthlyRow = {
+  tenant_id: string | null
   month: string | null
   checkins: number | null
   active_users: number | null
   co2_saved: number | null
+  tourist_co2_saved: number | null
+  civic_co2_saved: number | null
   liters_saved: number | null
   pti_generated: number | null
   xp_earned: number | null
+  tourist_xp_earned: number | null
+  civic_pti_generated: number | null
+  civic_actions: number | null
   confirmed_reports: number | null
   pending_reports: number | null
+  unclassified_transactions: number | null
 }
 
 export type HeatmapRow = {
+  tenant_id: string | null
   grid_lat: number | null
   grid_lng: number | null
   time_block: string | null
@@ -20,17 +28,19 @@ export type HeatmapRow = {
   checkins: number | null
   unique_visitors: number | null
   co2_saved_kg: number | null
+  k_anonymity_threshold: number | null
 }
 
 export type EventAttendanceRow = {
-  event_id: string | null
   tenant_id: string | null
+  event_id: string | null
   event_title: string | null
   event_date: string | null
   poi_id: string | null
   checkins: number | null
   participants: number | null
   co2_saved: number | null
+  k_anonymity_threshold: number | null
 }
 
 export type TelemetryDailyRow = {
@@ -57,44 +67,40 @@ function getErrorMessage(error: { message?: string } | null) {
   return error?.message || null
 }
 
-export async function getDaasSnapshot(): Promise<DaasSnapshot> {
-  if (!isSupabaseConfigured) {
-    const message = 'Configurazione NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY mancante.'
-    return {
-      esgMonthly: [],
-      heatmap: [],
-      eventAttendance: [],
-      telemetryDaily: [],
-      errors: {
-        esg: message,
-        heatmap: message,
-        events: message,
-        telemetry: message,
-      },
-    }
+export async function getDaasSnapshot(client: SupabaseClient, tenantId?: string): Promise<DaasSnapshot> {
+  const esgQuery = client
+    .from('vw_daas_esg_monthly')
+    .select('*')
+    .order('month', { ascending: false })
+    .limit(12)
+  const heatmapQuery = client
+    .from('vw_daas_heatmap_15min')
+    .select('*')
+    .order('time_block', { ascending: false })
+    .limit(100)
+  const eventsQuery = client
+    .from('vw_daas_event_attendance')
+    .select('*')
+    .order('event_date', { ascending: false })
+    .limit(50)
+  const telemetryQuery = client
+    .from('vw_dev_telemetry_daily')
+    .select('*')
+    .order('day', { ascending: false })
+    .limit(50)
+
+  if (tenantId) {
+    esgQuery.eq('tenant_id', tenantId)
+    heatmapQuery.eq('tenant_id', tenantId)
+    eventsQuery.eq('tenant_id', tenantId)
+    telemetryQuery.eq('tenant_id', tenantId)
   }
 
   const [esgResult, heatmapResult, eventsResult, telemetryResult] = await Promise.all([
-    supabase
-      .from('vw_daas_esg_monthly')
-      .select('*')
-      .order('month', { ascending: false })
-      .limit(12),
-    supabase
-      .from('vw_daas_heatmap_15min')
-      .select('*')
-      .order('time_block', { ascending: false })
-      .limit(100),
-    supabase
-      .from('vw_daas_event_attendance')
-      .select('*')
-      .order('event_date', { ascending: false })
-      .limit(50),
-    supabase
-      .from('vw_dev_telemetry_daily')
-      .select('*')
-      .order('day', { ascending: false })
-      .limit(50),
+    esgQuery,
+    heatmapQuery,
+    eventsQuery,
+    telemetryQuery,
   ])
 
   return {

@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_telemetry_events: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          event_name: string
+          id: string
+          os_name: string | null
+          payload: unknown | null
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          event_name: string
+          id?: string
+          os_name?: string | null
+          payload?: unknown | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          event_name?: string
+          id?: string
+          os_name?: string | null
+          payload?: unknown | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_telemetry_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       b2b_feedbacks: {
         Row: {
           category: string | null
@@ -338,29 +379,35 @@ export type Database = {
       }
       impact_transactions: {
         Row: {
+          action_type: string | null
           co2_saved: number
           created_at: string | null
           id: string
           liters_saved: number
           profile_id: string | null
+          tenant_id: string | null
           tokens_earned: number
           xp_earned: number
         }
         Insert: {
+          action_type?: string | null
           co2_saved: number
           created_at?: string | null
           id?: string
           liters_saved: number
           profile_id?: string | null
+          tenant_id?: string | null
           tokens_earned: number
           xp_earned: number
         }
         Update: {
+          action_type?: string | null
           co2_saved?: number
           created_at?: string | null
           id?: string
           liters_saved?: number
           profile_id?: string | null
+          tenant_id?: string | null
           tokens_earned?: number
           xp_earned?: number
         }
@@ -596,6 +643,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_role: string | null
           avatar_url: string | null
           created_at: string | null
           email: string | null
@@ -618,6 +666,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          admin_role?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -640,6 +689,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          admin_role?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -1326,6 +1376,67 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_daas_esg_monthly: {
+        Row: {
+          active_users: number | null
+          checkins: number | null
+          civic_actions: number | null
+          civic_co2_saved: number | null
+          civic_pti_generated: number | null
+          co2_saved: number | null
+          confirmed_reports: number | null
+          liters_saved: number | null
+          month: string | null
+          pending_reports: number | null
+          pti_generated: number | null
+          tenant_id: string | null
+          tourist_co2_saved: number | null
+          tourist_xp_earned: number | null
+          unclassified_transactions: number | null
+          xp_earned: number | null
+        }
+        Relationships: []
+      }
+      vw_daas_event_attendance: {
+        Row: {
+          checkins: number | null
+          co2_saved: number | null
+          event_date: string | null
+          event_id: string | null
+          event_title: string | null
+          k_anonymity_threshold: number | null
+          participants: number | null
+          poi_id: string | null
+          tenant_id: string | null
+        }
+        Relationships: []
+      }
+      vw_daas_heatmap_15min: {
+        Row: {
+          checkins: number | null
+          co2_saved_kg: number | null
+          grid_lat: number | null
+          grid_lng: number | null
+          k_anonymity_threshold: number | null
+          poi_id: string | null
+          tenant_id: string | null
+          time_block: string | null
+          unique_visitors: number | null
+        }
+        Relationships: []
+      }
+      vw_dev_telemetry_daily: {
+        Row: {
+          affected_users: number | null
+          app_version: string | null
+          day: string | null
+          event_name: string | null
+          events: number | null
+          os_name: string | null
+          tenant_id: string | null
+        }
+        Relationships: []
+      }
       vw_pois_frontend: {
         Row: {
           base_co2: number | null
@@ -1410,6 +1521,21 @@ export type Database = {
           tenant_id?: string | null
           updated_at?: string | null
           xp_reward?: number | null
+        }
+        Relationships: []
+      }
+      vw_user_dashboard_metrics: {
+        Row: {
+          badges_count: number | null
+          checkins_today: number | null
+          co2_saved: number | null
+          last_activity_at: string | null
+          liters_saved: number | null
+          nickname: string | null
+          pois_discovered: number | null
+          profile_id: string | null
+          tokens: number | null
+          total_xp: number | null
         }
         Relationships: []
       }
