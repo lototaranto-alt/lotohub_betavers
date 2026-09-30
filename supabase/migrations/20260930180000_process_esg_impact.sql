@@ -26,7 +26,23 @@
 --   semplicemente passando un altro UUID. E' lo stesso difetto di
 --   get_poi_vetrina, gia' corretto il 30/09, e per la stessa ragione.
 --
+--   p_party_size neutralizzato. Il client inviava il valore come
+--   moltiplicatore degli importi, senza alcun tetto lato server: bastava
+--   inviare 1000000 per amplificare CO2 e litri di un milione di volte.
+--   Ora LEAST(GREATEST(p_party_size,1),1) restituisce sempre 1. Il valore
+--   richiesto resta nel registro come party_size_reported.
+--
 --   search_path fissato. Vedere la nota su pg_temp nel migration 20260930120000.
+--
+-- Cosa NON e' risolto qui, e va detto perche' il file esiste:
+--   gli importi p_co2, p_liters, p_tokens e p_xp arrivano ancora dal client
+--   e non hanno tetto. Con questa funzione attiva, un client modificato puo'
+--   chiamarla da solo, senza check-in, e accreditarsi a se stesso qualunque
+--   cifra. Neutralizzare party_size chiude l'amplificatore, non la forgia.
+--   La soluzione e' rendere questa funzione interna (REVOKE EXECUTE da
+--   authenticated) e lasciare che scan_poi_gps, che calcola gli importi sul
+--   server, sia l'unico ingresso pubblico. Vedi docs_v2/tooling/autorita.json,
+--   dominio 'gate-prossimita-attivo'. Fino ad allora non e' chiuso.
 --
 -- SULLA TABELLA: impact_transactions non aveva un CREATE TABLE in nessuna
 -- delle migration ufficiali, solo in due file d'archivio. Il repository non
@@ -60,6 +76,7 @@ CREATE TABLE IF NOT EXISTS public.impact_transactions (
   tokens_earned INTEGER NOT NULL DEFAULT 0,
   xp_earned     INTEGER NOT NULL DEFAULT 0,
   is_takeaway   BOOLEAN NOT NULL DEFAULT false,
+  party_size_reported INTEGER NOT NULL DEFAULT 1,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -70,6 +87,11 @@ COMMENT ON COLUMN public.impact_transactions.is_takeaway IS
   'Trasporto proprio o ristorazione. Accumulato perche'' il client lo invia, '
   'ma NON altera i saldi: stabilire se debba ridurli e'' una decisione di '
   'modello, non un dettaglio da indovinare in una migration.';
+COMMENT ON COLUMN public.impact_transactions.party_size_reported IS
+  'Valore di p_party_size come inviato dal client. Non moltiplica nulla: la '
+  'funzione forza un tetto di 1 (vedi neutralizzazione del 30/09). Conservato '
+  'solo perche'' se un domani i gruppi si puo'' misurare quanto il client '
+  'chiedeva, senza doverlo ricostruire a posteriori.';
 
 CREATE INDEX IF NOT EXISTS idx_impact_transactions_profile
   ON public.impact_transactions (profile_id, created_at DESC);
@@ -111,6 +133,7 @@ DECLARE
   v_liters INTEGER;
   v_tokens INTEGER;
   v_xp     INTEGER;
+  v_size   INTEGER;
 BEGIN
   IF v_user IS NULL THEN
     -- Nessun silenzio: un impatto senza identita' non si puo' attribuire.
@@ -118,8 +141,19 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
-  v_co2    := COALESCE(p_co2, 0)    * GREATEST(COALESCE(p_party_size, 1), 1);
-  v_liters := COALESCE(p_liters, 0) * GREATEST(COALESCE(p_party_size, 1), 1);
+  -- NEUTRALIZZAZIONE DEL MOLTIPLICATORE, 30/09.
+  -- Il client invia p_party_size, ma la feature "Gruppi a Tempo" non e'
+  -- implementata: `party_size` non e' una colonna di profiles in nessuna
+  -- migration, quindi il valore arriva gia' a 1. Il parametro resta pero' sul
+  -- filo e un client modificato puo' inventarlo.
+  -- LEAST(GREATEST(x, 1), 1) restituisce 1 per qualunque x, quindi il
+  -- coefficiente e' morto per costruzione e non per convenzione.
+  -- Il valore richiesto resta in impact_transactions.party_size_reported:
+  -- se un domani i gruppi, si puo' misurare quanto il client chiedeva.
+  v_size   := LEAST(GREATEST(COALESCE(p_party_size, 1), 1), 1);
+
+  v_co2    := COALESCE(p_co2, 0)    * v_size;
+  v_liters := COALESCE(p_liters, 0) * v_size;
   v_tokens := GREATEST(COALESCE(p_tokens, 0), 0);
   v_xp     := GREATEST(COALESCE(p_xp, 0), 0);
 
@@ -142,9 +176,11 @@ BEGIN
   END IF;
 
   INSERT INTO public.impact_transactions
-    (profile_id, receipt_hash, co2_saved, liters_saved, tokens_earned, xp_earned, is_takeaway)
+    (profile_id, receipt_hash, co2_saved, liters_saved, tokens_earned, xp_earned,
+     is_takeaway, party_size_reported)
   VALUES
-    (v_user, p_hash, v_co2, v_liters, v_tokens, v_xp, COALESCE(p_takeaway, false));
+    (v_user, p_hash, v_co2, v_liters, v_tokens, v_xp,
+     COALESCE(p_takeaway, false), p_party_size);
 
   RETURN json_build_object(
     'success',    true,
@@ -197,3 +233,18 @@ SELECT policyname, cmd, qual, with_check
 SELECT profile_id, co2_saved, liters_saved, tokens_earned, xp_earned, created_at
   FROM public.impact_transactions
  ORDER BY created_at DESC LIMIT 5;
+
+-- V6: il moltiplicatore e' morto. Si prova dal SQL Editor con ruolo anonimo
+--     o authenticated, non dalla shell con i privilegi del proprietario.
+--     Con p_party_size = 999999 i saldi NON devono cambiare.
+SELECT public.process_esg_impact(p_co2 => 1.0, p_liters => 1, p_tokens => 1,
+                                 p_xp => 1, p_party_size => 999999);
+-- atteso: il registro mostra co2_saved = 1.0 e liters_saved = 1.
+--         party_size_reported = 999999, che e' esattamente il punto:
+--         si vede cosa il client chiedeva e cosa e' stato concesso.
+SELECT co2_saved, liters_saved, party_size_reported
+  FROM public.impact_transactions ORDER BY created_at DESC LIMIT 1;
+
+-- V7: la funzione non e' eseguibile da anon.
+SELECT has_function_privilege('anon', 'public.process_esg_impact(numeric,integer,integer,integer,boolean,integer,text)', 'EXECUTE') AS anon_ha_execute;
+-- atteso: anon_ha_execute = false
