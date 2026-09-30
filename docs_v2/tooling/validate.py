@@ -249,12 +249,18 @@ def main():
                     continue
             if rel in registrati or rel.startswith("docs_v2/tooling/"):
                 continue
-            # un file gia' dichiarato Bozza o Storico non rivendica piu' autorita'
+            # un file gia' dichiarato Bozza o Storico non rivendica piu' autorita'.
+            # I file di docs/ (v1) non hanno frontmatter, quindi si controlla anche il banner
+            # di archiviazione che viene appeso in fondo quando il file viene declassato.
             try:
                 meta, _ = parse_frontmatter(full)
             except Exception:  # noqa: BLE001
                 meta = None
             if meta and meta.get("stato") in ("Bozza", "Storico"):
+                continue
+            with open(full, encoding="utf-8") as fh:
+                head = "".join([next(fh, "") for _ in range(40)])
+            if "ARCHIVIO. Documento storico" in head:
                 continue
             notes.append(
                 "[autorita'] '%s' si dichiara definitiva ma non e' nel registro: "

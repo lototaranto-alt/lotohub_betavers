@@ -203,6 +203,63 @@ rende obbligatorio che ogni cifra sia vera, perché è la cifra di tutti.
 
 ---
 
+### 3.5 La meccanica civica, verificata nel codice
+
+Recuperata dalla lettura dei quattro documenti di luglio e verificata riga per riga. Era assente
+qui, ed è la parte che spiega a cosa serve tutto il resto.
+
+**Due valute, due destini, nessuna sovrapposizione.** È la riga che tiene in piedi il modello e la
+più facile da rovinare per sbaglio:
+
+| | a cosa serve | chi lo accumula | dove finisce |
+|---|---|---|---|
+| **XP** (Esperienza) | sbloccare contenuti della Vetrina e i badge narrativi | il **turista**, esplorando POI culturali | resta personale, non muove nulla di pubblico |
+| **PTI** (Loto Punti) | il contributo civico | chi partecipa a **eventi e Nodi Civici** | riempie la **Barra Civica**, che è pubblica |
+
+La separazione è **codificata**: `XpToast.tsx:10` dichiara `type?: 'XP' | 'PTI'` e le icone divergono
+di proposito, `eco` per i PTI e `stars` per gli XP (`XpToast.tsx:85-86`). Il popup blu è il
+turista che esplora, il verde è la persona che agisce. Non è decorazione: è la traduzione visiva
+della regola che i PTI non sono di nessuno.
+
+**I Custodi.** Partner B2B che cofinanziano un obiettivo civico, con un tetto di **massimo 3
+attività commerciali per obiettivo**, per evitare che un singolo operatore monopolizzi la barra.
+Ricevono badge dedicati.
+
+**Eventi Temporanei, o "Luogo X".** Per eventi in zone non mappate si mettono **1 o 2 tag NFC
+fisici**, anche duplicati per smaltire le code. È la decisa risposta al "va tutto bene solo dove ci
+sono già i dati".
+
+**Handshake GPS doppio, anti-attivazione a distanza.** Due scan e un incrocio di coordinate:
+l'operatore posa il tag e registra la coordinata X al momento dello scan; il partner fa il suo primo
+tap e il sistema verifica che la sua coordinata Y coincida con X. Solo allora il locale è
+autorizzato e si sblocca il concierge. Impedisce di attivare un partner da casa: per un sistema che
+misura presenze reali, una presenza non verificata è una cifra inventata.
+
+**Concierge WhatsApp, Zero-UI.** Un partner non impara un software. Vede la sua Pass Card e un
+pulsante che apre la chat. Il ruolo è davvero implementato: `index.tsx:652` verifica
+`userProfile?.flow_role === 'LOTO Partner'`.
+
+**I tre report DaaS.** L'unica moneta del progetto è la fiducia negli altri, quindi i report sono
+articolati per destinatario, non per destinatario generico:
+1. **Decongestione** — alla PA: colli di bottiglia e efficacia delle politiche di deviazione traffico.
+2. **Impatto Civico** — ai Custodi: quanti PTI ha generato il traffico, tradotti in impatto reale
+   ("hai finanziato la pulizia di 500 mq di litorale"). È il pezzo di bilancio per la CSRD.
+3. **Attivazione** — alle Associazioni: affluenza fisica certificata agli eventi.
+
+**Il triangolo di convalida, con la sua correzione.** L'idea è giusta e l'implementazione è
+diversa da quella documentata. Il Tap certifica l'azione e genera il record ESG primario
+(*Proof of Action*). Poi parte una micro-scansione BLE in foreground di **5 secondi**
+(`utils/bleManager.ts:11`, `BLE_SCAN_DURATION_MS = 5000`) che separa le *ancore* dagli altri
+dispositivi: un device che raggiunge il **quorum** di rilevamenti è hardware di zona e viene
+scartato dal conteggio folla, tutto il resto incrementa `crowdCount` (`bleManager.ts:124-128`).
+
+> Qui i documenti di luglio si contraddicevano e il codice ha ragione. Si parlava di una "media
+> device per utente"; **non esiste**: il codice conta sotto soglia, non fa medie. E la "seconda
+> tabella" `crowd_predictions` **non ha un `CREATE TABLE` in nessuna migration**: esiste solo come
+> nome in un elenco di introspezione. Il dato predittivo oggi non ha una casa.
+
+---
+
 ## 4. Il metro
 
 Il criterio di giudizio di questo progetto non è quante funzioni ha.
@@ -218,3 +275,71 @@ regola che tiene insieme tutto, in [`METODICA.md`](METODICA.md): **nessuna affer
 
 Il Blocco 0 è il primo caso in cui la regola ha retto: verificato a runtime il 29/09, non dichiarato
 risolto. È la differenza fra un progetto che funziona e uno che qualcuno sta guardando.
+
+---
+
+## 5. Triangolazione dei documenti di luglio
+
+Il 30/09/2026 i quattro documenti che si contendevano l'architettura sono stati letti riga per riga e
+confrontati con il codice. Il risultato è la tabella che avrebbe dovuto esistere dal giorno 15 di
+luglio, quando il primo di loro è stato scritto e dichiarato "congelato e operativo".
+
+**Cinque affermazioni tecniche risultate non implementate.** Non per errore: perché sono state
+scritte come specifica e poi lette come descrizione di qualcosa che esisteva già.
+
+| affermazione | stato reale | prova |
+|---|---|---|
+| "GPS e Haversine" | impreciso: il gate usa **`ST_Distance`** con PostGIS | `20260929160000_restore_proximity_gate.sql:106` |
+| "media device per utente" per il dato predittivo | **non esiste**, il codice conta sotto quorum | `utils/bleManager.ts:124-128` |
+| `crowd_predictions` come "seconda tabella" | **nessun `CREATE TABLE`** in alcuna migration | unico riferimento: `supabase/schema/introspection.sql:102`, come nome da ispezionare |
+| "l'app usa Mock Dati per simulare questi flussi" | **superato**: l'iniettore è disattivato e non ha import | `utils/mockInjector.ts:4` |
+| "Opzione B: modulo classico con Email e Password" | **non implementato**: nessun percorso email/password nell'app | nessun `signUp` né `signInWithPassword` sotto `app/` e `components/` |
+
+**Una scoperta che cambia il perimetro.** `process_esg_impact`, descritta come la RPC che "elabora i
+log grezzi e aggiorna i saldi in modo sicuro", **non è nella catena ufficiale delle migration**:
+esiste solo in `supabase/archive_scattered_sql/LOTO_RESURRECTION_FULL.sql:148`, un archivio.
+
+E il client la chiama davvero, per ogni check-in:
+
+```ts
+// app/(tabs)/index.tsx:597
+const { error } = await supabase.rpc('process_esg_impact', {
+  user_id: userProfile.id, p_co2: 0.5 * multiplier, p_liters: 5 * multiplier,
+  p_tokens: 50, p_xp: 50, p_takeaway: false, p_party_size: multiplier });
+```
+
+Quindi ci sono due esiti possibili e **nessuno dei due è buono senza una verifica**. O la funzione
+esiste nel database ma non è mai stata committata in una migration, e allora il repo non la
+riproduce (`A3-T14` non è chiuso, è chiuso solo per i file che *abbiamo visto*). Oppure non esiste, e
+ogni check-in finisce in `Alert.alert("Errore", "Impossibile completare la scansione.")`
+(`index.tsx:606`). L'errore è gestito, il che è meglio di niente, ma un utente che scansiona un POI e
+si becca un errore non è un utente servito.
+
+**Da risolvere prima di qualunque altra cosa:** leggere dal cloud se `process_esg_impact` esiste e con
+quale firma. Una sola query. Finché quel `?` non è tolto, la promessa "nessun calcolo pesante sul
+telefono, il server garantisce i saldi" è una promessa senza corpo che la applichi — che è
+esattamente il difetto che ha fatto trovare il proximity gate.
+
+**Un secondo controllo di prossimità, di cui nessuno parla.** `index.tsx:591` non è la RPC: è un
+controllo **lato client** che cerca un check-in nelle ultime 12 ore e, se non lo trova, mostra
+"Troppo Lontano". Esistono quindi due gate, uno nel server e uno nel telefono, con criteri diversi. Va
+deciso quale dei due è la regola e cosa succede quando non concordano.
+
+**Nota sul `party_size`.** I documenti di luglio davano il wizard Party Size per superato dal Tap.
+Non è così: `index.tsx:594` legge ancora `userProfile?.party_size` e lo usa come `multiplier` per
+scalare CO₂, litri e token. Il wizard potrebbe essere sparito dall'interfaccia mentre il dato
+continua a comandare il calcolo dell'impatto.
+
+**Una precisazione sul modello di identità.** I documenti di luglio descrivevano un modello ibrido,
+con UUID anonimo e backup alternativo via email. Il codice implementa **solo** lo UUID anonimo. Il
+documento di luglio non era dunque bugiardo sul merito: era semplicemente ahead of the code, e non
+lo dichiarava. Zero-PII è quindi corretto come *stato*, non come *compromesso*.
+
+**Una riga che nessuno dei quattro documenti riportava.** `index.tsx:591` intercetta l'esito
+"Troppo Lontano" e mostra un avviso all'utente. Esiste dunque un controllo di distanza anche lato
+client, indipendente dalla RPC. È rilevante per il Blocco 1 e verificabile subito senza cloud.
+
+**Cosa resta vivo dei documenti di luglio.** La visione di prodotto è solida e quasi tutta
+recuperata qui: i tre report DaaS, il tetto dei 3 Custodi, la Barra Civica alimentata dai soli PTI,
+gli Eventi Temporanei, l'Handshake GPS doppio, il concierge WhatsApp, la fine delle classifiche
+pubbliche. Nessuno di questi è stato buttato via: è stato **verificato e tenuto**.

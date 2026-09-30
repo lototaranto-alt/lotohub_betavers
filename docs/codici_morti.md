@@ -21,3 +21,36 @@ Fonti storiche: `SESSION_BOOTSTRAP_RICOSTRUZIONE.md` (§6/§7/§10) e la cartell
   con la SSOT `utils/levelUtils.ts` (SESSION_BOOTSTRAP_RICOSTRUZIONE.md §10); sostituita dal
   `calculate_user_level` della migration_v20 (curva LEVEL_THRESHOLDS a 50 livelli).
 - `docs/db_migrations/02_gamification_and_events.sql` — badge e curve non allineate alla SSOT.
+
+### Definizioni di check-in superate dalla catena canonica (26/09)
+La SSOT del check-in e' ora
+`supabase/migrations/20260926120000_scan_chain_canonical.sql`. Le definizioni qui sotto
+hanno **firme identiche ma semantica opposta**: riapplicarle sovrascrive la funzione
+canonica e reintroduce i bug. Non riapplicare.
+- `supabase/migration_master_reset.sql:504` - `scan_poi_gps` scriveva solo `esg_raw_logs`
+  (tabella assente dai tipi generati) e **non** `user_pois`: le viste DaaS non ricevevano
+  nulla. E' la causa dell'assenza di dati, non un problema di vista.
+- `anti_spoofing_scan_poi_gps.sql` - `scan_poi_gps` scriveva colonne inesistenti
+  (`user_id`, `created_at` invece di `profile_id`, `visited_at`): falliva sempre.
+  La logica anti-spoofing che contiene (velocita' > 130 km/h -> shadowban) e' stata
+  recuperata e resa persistente nella catena canonica.
+- `supabase/migration_v22_daas_vendite.sql` e `supabase/migration_v23_prestige_card_metrics.sql`
+  - **non riapplicare**: fanno `DROP VIEW` + `CREATE VIEW` senza gate `is_loto_admin()` e
+  con `GRANT SELECT ... TO anon`, quindi annullerebbero l'hardening gia' committato in
+  `migrations/20260925120000_admin_dashboard_hardening.sql` (k-anonimita', tenant_id,
+  revoca ad `anon`). Le viste DaaS corrette sono quelle dell'hardening.
+
+### Trap ricorrenti da non ripetere
+- `impact_transactions.action_type` ha un CHECK che ammette **solo**
+  `tourist_checkin | civic_action | event | refill | unknown`. Valori come
+  `GPS_CHECKIN` o `gps_checkin` fanno fallire l'INSERT: usare `tourist_checkin`.
+- Non creare un `UNIQUE (profile_id, poi_id)` su `user_pois`: imporrebbe "un POI una volta
+  sola nella vita" e distruggerebbe check-in ripetuti, heatmap storiche e conteggi
+  giornalieri. Il vincolo e' il cooldown di 12h applicato in procedura.
+- `PoiDetailSheet.tsx:576` chiamava `scan_poi(p_poi_id)` senza validare GPS e senza
+  confrontare `scannedData` con il POI: qualunque QR assegnava XP. Ora `scan_poi` e' una
+  finalizzazione che richiede una visita GPS validata negli ultimi 15 minuti.
+
+### Difetto preesistente di encoding in questo file
+Alcune virgolette lunghe in questo file sono gia' corrotte in carattere di sostituzione
+U+FFFD (non retta mai: em-dash, freccia e accenti). Da ripulire in un passaggio dedicato.

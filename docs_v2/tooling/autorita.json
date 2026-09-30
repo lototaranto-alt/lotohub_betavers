@@ -45,10 +45,22 @@
       "nota": "50 soglie confrontate una a una con calculate_user_level: zero differenze (A3-T9). Non esiste una seconda fonte: il frontend e il server dicono la stessa cosa per costruzione, non per promessa."
     },
     "modello-prodotto": {
-      "stato": "candidato",
+      "stato": "canonico",
       "file": "docs_v2/loto-hub-architettura-sistema-master-2026.md",
+      "livello": "L2",
+      "nota": "SSOT del progetto,winner del conflitto fra i quattro documenti di luglio il 30/09. Le sezioni 1 e 3 sono tracciate al codice riga per riga (XpToast.tsx:10 e :85-86 per la separazione XP/PTI, index.tsx:652 per il ruolo Partner, bleManager.ts:11 per i 5 secondi, bleManager.ts:124-128 per il quorum). La sezione 5 e' la triangolazione: cosa dicevano i documenti di luglio e cosa c'e' davvero. Promosso a canonico a fronte della verifica, non a fronte del titolo."
+    },
+    "architettura-documenti-luglio": {
+      "stato": "storico",
+      "file": null,
       "livello": "L1",
-      "nota": "Sostituisce il blueprint demotato. E' l'unico documento che riporta la Sezione Community e l'economia collettiva, che e' la logica di modello mancante ovunque altrove. NON e' ancora canonico: le sue sezioni 1 e 3 sono tracciate al codice, la 2 aspetta D2-D6."
+      "nota": "Demotati il 30/09 e archiviati con banner: docs/LOTO_HUB_MASTERPLAN.md, docs/LOTO_HUB_MASTERPLAN_BETA.md, docs/LOTO_HUB_SSOT_DEFINITIVO.md, docs/architettura_definitiva_beta.md. Testo integro conservato per il confronto. Cinque affermazioni non implementate, elencate nella sezione 5 del file canonico. Non sono spariti: sono verificati."
+    },
+    "process-esg-impact": {
+      "stato": "vuoto",
+      "file": null,
+      "livello": "L1",
+      "nota": "LACUNA APERTA, PRIORITA' ALTA. Il client chiama process_esg_impact a ogni check-in (index.tsx:597) ma la funzione non e' nella catena ufficiale delle migration: esiste solo in supabase/archive_scattered_sql/LOTO_RESURRECTION_FULL.sql:148. O non e' stata committata e il repo non la riproduce, o non esiste e ogni check-in mostra 'Impossibile completare la scansione' (index.tsx:606). Una sola query sul cloud lo chiude."
     },
     "offline-coda": {
       "stato": "vuoto",

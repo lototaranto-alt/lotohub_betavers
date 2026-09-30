@@ -1,5 +1,23 @@
 # ⚙️ L.O.T.O. HUB: Logiche, Formule e Funzioni Proprietarie
 
+> ## ⛔ DOCUMENTO SUPERATO — NON LEGGERE PER LE FORMULE
+>
+> **La versione ufficiale è [`docs_v2/FORMULE-PROPRIETARIE.md`](../docs_v2/FORMULE-PROPRIETARIE.md).**
+>
+> Questo file resta in repository solo come storico. È stato verificato riga per riga il
+> 2026-09-29 e contiene **errori concreti**, non solo imprecisioni di stile:
+>
+> - **§ 2.2 (Bronzo/Argento/Oro) descrive un'economia vietata.** `utils/LevelUpLore.ts:4` scrive
+>   esplicitamente: *"VIETATO: Bronzo/Argento/Oro e ogni riferimento ai PTI come levera di
+>   crescita"*. La progressione reale è a livelli soglia (`utils/levelUtils.ts`).
+> - **§ 1.1 dichiara una RPC `get_distance` che non esiste** in alcuna migration o export.
+> - **§ 1.2 promette un crittogramma NTAG424**; il codice usa NDEF in chiaro (`NfcTech.Ndef`).
+> - **I valori mancano quasi sempre.** Le soglie 1/5/10, il filtro cinematico e i coefficienti CO₂
+>   qui descritti **non sono in questo repository**.
+>
+> Non correggere questo file a mano: ogni correzione parziale crea un terzo numero diverso.
+> Tutto va nel documento nuovo, che ha la regola delle tre colonne.
+
 Questo documento racchiude il cuore intellettuale dell'ecosistema L.O.T.O. HUB. Descrive in dettaglio le formule matematiche, i pattern architetturali e i modelli di convalida (algoritmi) che rendono la piattaforma sicura, gamificata e "Zero-Frode".
 
 ---
