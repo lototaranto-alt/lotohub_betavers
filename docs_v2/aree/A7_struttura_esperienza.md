@@ -1,11 +1,11 @@
 ---
 id: A7
 tipo: area
-ambito: struttura-finale-dell-app-esperienza-validazione-e-percorso
+ambito: struttura-finale-dell-app-validazione-poi-e-percorso
 stato: Bozza
 confidenza: Media
 owner: Agent
-aggiornato: 2026-09-26
+aggiornato: 2026-09-30
 evidenza:
   - brain/ad0b58e2-544c-4569-9d42-d0cca1625133/LOTO_4_TIER_ARCHITECTURE.md
   - brain/edf3a8e6-785a-4c0a-adf8-ccecfa355d1b/PERFECT_STATE_BLUEPRINT.md
