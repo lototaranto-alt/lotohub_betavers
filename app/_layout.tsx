@@ -69,13 +69,19 @@ export default function RootLayout() {
       }
       
       if (currentUserId) {
-        const { error: profileError } = await supabase.from('profiles').select('id').eq('id', currentUserId).single();
-        if (profileError && profileError.code === 'PGRST116') {
-           await supabase.auth.signOut();
-           // Rimuove solo i token di sessione, preservando l'onboarding
-          await AsyncStorage.removeItem('supabase-auth-token');
-           const { data: newData, error: newError } = await supabase.auth.signInAnonymously();
-           if (newError) throw newError;
+        const { data: prof, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', currentUserId)
+          .maybeSingle();
+        if (profileError) throw profileError;
+        if (!prof) {
+          // INVARIANTE: un profilo assente NON autorizza a creare un altro utente anonimo.
+          // L'identita' continua a essere quella del L.O.T.O. Pass (recover_loto_pass).
+          await AsyncStorage.setItem('loto_profile_missing', currentUserId);
+          console.warn('[Auth] Nessun profilo per questo auth.uid: attesa recupero L.O.T.O. Pass.');
+        } else {
+          await AsyncStorage.removeItem('loto_profile_missing');
         }
       }
       
@@ -84,22 +90,18 @@ export default function RootLayout() {
       setShowOnboarding(true);
 
     } catch (err: any) {
-      console.warn('[Auth] Primo tentativo fallito. Avvio Deep Recovery...', err.message);
-      try {
-        await AsyncStorage.clear();
-        await supabase.auth.signOut();
-        const { error: recoveryError } = await supabase.auth.signInAnonymously();
-        if (recoveryError) throw recoveryError;
-        setIsFirstLaunch(true);
-        setShowOnboarding(true);
-      } catch (fatalErr: any) {
-        console.error('[Auth] Deep Recovery fallita:', fatalErr.message);
-        Alert.alert(
-          "Modalità Offline",
-          "Connessione ai server instabile (Err: " + fatalErr.message + "). L'app funzionerà offline.",
-          [{ text: "OK" }]
-        );
-      }
+      // INVARIANTE: un errore di rete non cancella lo stato locale e non crea un account nuovo.
+      // L'identita' resta quella corrente; si entra solo in modalita' offline.
+      console.warn('[Auth] Sessione non disponibile, avvio in modalita offline:', err.message);
+      setAuthError(err.message);
+      const hasForcedOnboarding = await AsyncStorage.getItem('loto_onboarding_seen');
+      setIsFirstLaunch(!hasForcedOnboarding);
+      setShowOnboarding(true);
+      Alert.alert(
+        "Modalità Offline",
+        "Connessione ai server instabile (Err: " + err.message + "). L'app funzionerà offline.",
+        [{ text: "OK" }]
+      );
     } finally {
       setIsAuthReady(true);
     }
