@@ -1,0 +1,90 @@
+{
+  "_come": "Registro di autorita'. Risponde a una sola domanda: per ogni dominio, QUALE file dice il vero? Non aggiunge contenuto, indirizza la lettura. I domini con stato 'vuoto' sono esplicitamente senza risposta: e' una lacuna dichiarata, non un posto da riempire con un documento nuovo.",
+  "_legge": "Ogni dominio puo' avere UN solo file canonico. Un documento non presente in questo registro non e' fonte di autorita', per quanto dica nel titolo di essere 'definitivo'. Le verifiche in tooling/validate.py falliscono se due file rivendicano lo stesso dominio.",
+  "_stati": {
+    "canonico": "file verificato, con prova. Unico per dominio.",
+    "candidato": "esiste un file che dichiara di essere il riferimento, ma non ha ancora prova sufficiente. Va verificato o abbassato di grado.",
+    "vuoto": "nessun file attendibile. La domanda e' aperta e va chiusa con una verifica, non con un documento."
+  },
+  "livelli": {
+    "L0": "letto, non verificato",
+    "L1": "tracciato fino al codice o alla migration scritta",
+    "L2": "query eseguita sul cloud, output letto",
+    "L3": "verificato a runtime su dispositivo reale"
+  },
+  "domini": {
+    "identita-zero-pii": {
+      "stato": "canonico",
+      "file": "docs_v2/VERIFICA-RUNTIME-2026-09-29.md",
+      "codice": "app/_layout.tsx",
+      "livello": "L3",
+      "nota": "Unico dominio chiuso con prova su dispositivo: rete spenta, user_id e created_at invariati, 13 chiavi AsyncStorage, 5 UUID, nessun profilo nuovo. Commit 24adda4."
+    },
+    "database-schema": {
+      "stato": "canonico",
+      "file": "supabase/migrations/",
+      "livello": "L1",
+      "nota": "Il codice e' l'autorita' dello schema, non un documento. 5 migration timestamp 26-30/09 committate (6e969eb). I file sciolti migration_vNN sono dismessi; i 63 export sono snapshot (Q4)."
+    },
+    "catena-scan-checkin": {
+      "stato": "canonico",
+      "file": "supabase/migrations/20260929160000_restore_proximity_gate.sql",
+      "livello": "L1",
+      "nota": "Migration applicata al cloud il 30/09, verifica runtime ancora pendente. Il gate usa ST_Distance con PostGIS in schema public (D1 confermato). Finche' la query D2 non e' stata eseguita, questo resta L1 e non L2."
+    },
+    "sicurezza-vault": {
+      "stato": "candidato",
+      "file": "supabase/migrations/20260930120000_vault_security_and_search_path.sql",
+      "livello": "L1",
+      "nota": "Scritta, NON ancora applicata. Corregge il buco di get_poi_vetrina (accettava p_user_id al posto di auth.uid()) e fissa search_path. Diventa canonica solo dopo l'esecuzione e la lettura delle verifiche incluse."
+    },
+    "curva-livelli": {
+      "stato": "canonico",
+      "file": "utils/levelUtils.ts",
+      "livello": "L2",
+      "nota": "50 soglie confrontate una a una con calculate_user_level: zero differenze (A3-T9). Non esiste una seconda fonte: il frontend e il server dicono la stessa cosa per costruzione, non per promessa."
+    },
+    "modello-prodotto": {
+      "stato": "candidato",
+      "file": "docs_v2/loto-hub-architettura-sistema-master-2026.md",
+      "livello": "L1",
+      "nota": "Sostituisce il blueprint demotato. E' l'unico documento che riporta la Sezione Community e l'economia collettiva, che e' la logica di modello mancante ovunque altrove. NON e' ancora canonico: le sue sezioni 1 e 3 sono tracciate al codice, la 2 aspetta D2-D6."
+    },
+    "offline-coda": {
+      "stato": "vuoto",
+      "file": null,
+      "livello": "L1",
+      "nota": "LACUNA APERTA. La coda esiste (utils/OfflineQueueManager.ts) ma gestisce solo UNLOCK_MEDIA, riga 117. I check-in non si accodano. loto_vault vuota sul dispositivo il 29/09. La frase 'coda crittografata' non e' ancora sostenuta dal codice. A5-T8."
+    },
+    "nfc-zero-iot": {
+      "stato": "vuoto",
+      "file": null,
+      "livello": "L1",
+      "nota": "LACUNA APERTA. validate_ntag424_sdm esiste lato server e l'SDK in utils/nfcManager.ts esiste, ma nfcManager.ts non ha chiamanti. Infrastruttura presente e scollegata: e' il caso peggiore, perche' sembra implemented. A5-T6."
+    },
+    "accessibilita-softsorting": {
+      "stato": "vuoto",
+      "file": null,
+      "livello": "L0",
+      "nota": "LACUNA APERTA. Il meteo e' specificato (Q23 chiusa, migration 20260929120000). L'accessibilita' no: soglia BOOLEAN o TEXT non decisa (Q26), fonti multiple non allineate."
+    },
+    "multi-tenancy-dinamica": {
+      "stato": "vuoto",
+      "file": null,
+      "livello": "L0",
+      "nota": "LACUNA APERTA. Funzionante in visuelizzazione, ma se tenants.id e' UUID il filtro per slug di index.tsx:286 e' silenziosamente inefficace. Q17 aperta."
+    },
+    "safe-and-fast": {
+      "stato": "vuoto",
+      "file": null,
+      "livello": "L0",
+      "nota": "LACUNA DICHIARATA. Backlog. Niente da verificare finche' non si progetta: e' una decisione, non un bug."
+    },
+    "authentificazione": {
+      "stato": "vuoto",
+      "file": null,
+      "livello": "L1",
+      "nota": "LACUNA APERTA. Due difetti non diagnosticati: AuthApiError 'Invalid Refresh Token: Already Used' ripetuto, e TenantContext con messaggio vuoto 'Tenant resolution error:'. A3-T9/A3-T10 area client."
+    }
+  }
+}

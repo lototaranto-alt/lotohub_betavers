@@ -22,6 +22,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
+REPO = os.path.dirname(ROOT)
 
 VALID_STATO = {"Vivente", "Bozza", "Storico"}
 VALID_CONF = {"Alta", "Media", "Bassa"}
@@ -186,6 +187,79 @@ def main():
             target = os.path.normpath(os.path.join(os.path.dirname(path), m.group(1)))
             if not os.path.exists(target):
                 notes.append(f"[rif. non risolto] {rel}: {m.group(1)}")
+
+    # ---------- 5: corruzione di caratteri ----------
+    # I caratteri CJK sono entrati piu' volte in questo progetto, sempre per la stessa via:
+    # una copia incolla passata attraverso uno strumento di traduzione. Il danno e' silenzioso
+    # e la rilettura manuale non lo nota. La scansione automatica lo nota.
+    cjk = re.compile(r"[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]")
+    for path in files:
+        rel = os.path.relpath(path, ROOT).replace("\\", "/")
+        with open(path, encoding="utf-8") as fh:
+            for n, line in enumerate(fh, 1):
+                for hit in cjk.findall(line):
+                    problems.append(
+                        "[CJK] %s:%d carattere '%s' dentro al testo: file corrotto "
+                        "o traduzione passata di recente" % (rel, n, hit)
+                    )
+
+    # ---------- 6: registro di autorita' ----------
+    # Cinquantatre file in questo repo si dichiarano 'definitivi' e nessuno li fermava.
+    # Da qui in avanti non e' piu' possibile farlo in silenzio.
+    auth_path = os.path.join(HERE, "autorita.json")
+    registrati = set()
+    if not os.path.exists(auth_path):
+        problems.append("[autorita'] tooling/autorita.json mancante")
+    else:
+        with open(auth_path, encoding="utf-8") as fh:
+            registro = json.load(fh)
+        domini = registro.get("domini", {})
+        for dominio, voce in domini.items():
+            if voce.get("stato") == "canonico":
+                if not voce.get("file"):
+                    problems.append("[autorita'] dominio '%s' canonico ma senza file" % dominio)
+                    continue
+                registrati.add(voce["file"])
+                if not os.path.exists(os.path.join(REPO, voce["file"])):
+                    problems.append(
+                        "[autorita'] dominio '%s': canonico '%s' non esiste su disco"
+                        % (dominio, voce["file"])
+                    )
+            else:
+                if voce.get("file"):
+                    registrati.add(voce["file"])
+        vuoti = [d for d, v in domini.items() if v.get("stato") == "vuoto"]
+        notes.append("[autorita'] domini con stato 'vuoto' (lacune dichiarate): %d" % len(vuoti))
+
+    # Auto-dichiarazione: si controllano il nome del file e il primo titolo H1, non il corpo.
+    # Nel corpo il termine compare spesso per criticarlo, e segnalarlo sarebbe un falso positivo.
+    auto = re.compile(r"DEFINITIV|FINALE|FINAL|MASTER|SSOT|CANONIC", re.IGNORECASE)
+    for dirpath, dirnames, filenames in os.walk(REPO):
+        dirnames[:] = [d for d in dirnames if d not in
+                       ("node_modules", ".git", "__pycache__", "build", ".next")]
+        for fn in sorted(filenames):
+            if not fn.lower().endswith(".md"):
+                continue
+            full = os.path.join(dirpath, fn)
+            rel = os.path.relpath(full, REPO).replace("\\", "/")
+            if not auto.search(fn):
+                with open(full, encoding="utf-8") as fh:
+                    h1 = next((l for l in fh if l.startswith("# ")), "")
+                if not auto.search(h1):
+                    continue
+            if rel in registrati or rel.startswith("docs_v2/tooling/"):
+                continue
+            # un file gia' dichiarato Bozza o Storico non rivendica piu' autorita'
+            try:
+                meta, _ = parse_frontmatter(full)
+            except Exception:  # noqa: BLE001
+                meta = None
+            if meta and meta.get("stato") in ("Bozza", "Storico"):
+                continue
+            notes.append(
+                "[autorita'] '%s' si dichiara definitiva ma non e' nel registro: "
+                "da registrare o da abbassare di grado" % rel
+            )
 
     # ---------- esito ----------
     print("=" * 74)

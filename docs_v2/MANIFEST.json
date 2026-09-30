@@ -5,9 +5,9 @@
   "radice": "docs_v2",
   "nota": "Indice machine-readable del contesto v2. Generato da tooling/build_manifest.py. Non modificare a mano: il validatore controlla che corrisponda ai file su disco.",
   "conteggi": {
-    "totali": 47,
+    "totali": 48,
     "per_tipo": {
-      "analisi": 25,
+      "analisi": 26,
       "area": 7,
       "costituzione": 1,
       "decisione": 1,
@@ -18,7 +18,7 @@
     "per_stato": {
       "Bozza": 3,
       "Storico": 1,
-      "Vivente": 43
+      "Vivente": 44
     }
   },
   "documenti": [
@@ -795,6 +795,25 @@
         "app/_layout.tsx:88",
         "context/TenantContext.tsx:245",
         "supabase/migrations/20260926120000_scan_chain_canonical.sql:157"
+      ]
+    },
+    {
+      "path": "loto-hub-architettura-sistema-master-2026.md",
+      "id": "ARCHITETTURA-MASTER-2026",
+      "tipo": "analisi",
+      "ambito": "architettura-di-sistema-e-specifiche-funzionali",
+      "titolo": "L.O.T.O. HUB — Architettura di Sistema Master (2026)",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-30",
+      "evidenza": [
+        "supabase/migrations/20260929160000_restore_proximity_gate.sql:106",
+        "supabase/migrations/20260930120000_vault_security_and_search_path.sql:1",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:325",
+        "utils/levelUtils.ts:13",
+        "utils/OfflineQueueManager.ts:117",
+        "docs_v2/VERIFICA-RUNTIME-2026-09-29.md:1"
       ]
     },
     {
