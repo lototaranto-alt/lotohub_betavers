@@ -1,0 +1,907 @@
+{
+  "contesto": "L.O.T.O. Map",
+  "versione": 2,
+  "generato": "2026-09-30",
+  "radice": "docs_v2",
+  "nota": "Indice machine-readable del contesto v2. Generato da tooling/build_manifest.py. Non modificare a mano: il validatore controlla che corrisponda ai file su disco.",
+  "conteggi": {
+    "totali": 47,
+    "per_tipo": {
+      "analisi": 25,
+      "area": 7,
+      "costituzione": 1,
+      "decisione": 1,
+      "indice": 2,
+      "regola": 9,
+      "template": 2
+    },
+    "per_stato": {
+      "Bozza": 3,
+      "Storico": 1,
+      "Vivente": 43
+    }
+  },
+  "documenti": [
+    {
+      "path": "README.md",
+      "id": "COSTITUZIONE",
+      "tipo": "costituzione",
+      "ambito": "",
+      "titolo": "Costituzione del contesto L.O.T.O. Map (v2)",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "[]"
+      ]
+    },
+    {
+      "path": "FORMULE-PROPRIETARIE.md",
+      "id": "FORMULE-PROPRIETARIE",
+      "tipo": "regola",
+      "ambito": "formule-proprietarie-loto-hub",
+      "titolo": "Formule Proprietarie — la fonte unica",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "docs/logiche_proprietarie.md:1",
+        "utils/bleManager.ts:11",
+        "utils/haversine.ts:8",
+        "utils/levelUtils.ts:79",
+        "utils/BackgroundLocationTask.ts:11",
+        "supabase/pure_cloud_queries/19_reimposta_mete_consigliate_e_aggiorna_get_pois_rpc.sql:1",
+        "supabase/schema/introspection.sql:1",
+        ".agents/rules/master_business_brief.md:22"
+      ]
+    },
+    {
+      "path": "METE-CONSIGLIATE-SPEC.md",
+      "id": "METE-CONSIGLIATE-SPEC",
+      "tipo": "regola",
+      "ambito": "specifica-algoritmo-mete-consigliate",
+      "titolo": "Mete Consigliate — specifica dell'algoritmo",
+      "stato": "Vivente",
+      "confidenza": "Media",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "docs/storico_chat_vecchia.md:3555",
+        "docs/storico_chat_vecchia.md:3591",
+        "supabase/pure_cloud_queries/19_reimposta_mete_consigliate_e_aggiorna_get_pois_rpc.sql:1",
+        "components/PoiCard.tsx:30",
+        "app/(tabs)/index.tsx:857",
+        "supabase/migrations/20260825_whatsapp_bot_setup.sql:123",
+        "supabase/migrations/20260929120000_mete_consigliate_soft_sorting.sql:1"
+      ]
+    },
+    {
+      "path": "METODICA.md",
+      "id": "METODICA",
+      "tipo": "regola",
+      "ambito": "metodo-di-lavoro-anticombinazione-e-chiusura-dei-blocchi",
+      "titolo": "Metodica: come lavoriamo senza raccontarci storie",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "docs_v2/VERIFICA-RUNTIME-2026-09-29.md:1",
+        "docs_v2/NOTEBOOKLM-BRIEFING.md:1",
+        "docs_v2/loto_map/03-zero-iot-e-offline.md:1",
+        "utils/levelUtils.ts:13"
+      ]
+    },
+    {
+      "path": "MODELLO_PREDITTIVO.md",
+      "id": "MODELLO-PREDITTIVO",
+      "tipo": "regola",
+      "ambito": "come-il-modello-impara-e-si-corregge-dalle-azioni",
+      "titolo": "Modello predittivo: come la struttura impara dalla propria azione",
+      "stato": "Vivente",
+      "confidenza": "Media",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "docs_v2/DOCTRINA-ECHO.md:1",
+        "docs_v2/RICOSTRUZIONE.md:118",
+        "docs_v2/regole/R5_criteri_di_scelta.md:1"
+      ]
+    },
+    {
+      "path": "regole/R1_autorita.md",
+      "id": "R1",
+      "tipo": "regola",
+      "ambito": "risoluzione-conflitti-autorita",
+      "titolo": "R1 - Una sola SSOT per ambito, e chi vince in caso di conflitto",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "../INVENTARIO_DOCUMENTAZIONE.md sezione 3 (4 SSOT in concorrenza)",
+        "docs/LOTO_HUB_SSOT_DEFINITIVO.md riga 3 (si dichiara definitivo e invalidante)",
+        ".agents/AGENTS.md sezione 1 (Zero-PII assoluto, in contraddizione con il suddetto)"
+      ]
+    },
+    {
+      "path": "regole/R2_evidenza_e_verdetto.md",
+      "id": "R2",
+      "tipo": "regola",
+      "ambito": "metodo-di-verdetto-su-evidenza",
+      "titolo": "R2 - Si decide su evidenza, non su cronologia",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "../INVENTARIO_DOCUMENTAZIONE.md sezione 1 (perche' la cronologia ha gia' mentito)",
+        "sessione 26/09: il mtime di .git di loto-app-prerelease risultava del 25/09, il reflog diceva 11/09 22:40"
+      ]
+    },
+    {
+      "path": "regole/R3_anatomia.md",
+      "id": "R3",
+      "tipo": "regola",
+      "ambito": "anatomia-di-un-artefatto",
+      "titolo": "R3 - Anatomia di un documento: la struttura che si replica",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "docs/README.md sezione 1 regole 1-5 (criterio ereditato dalla v1)",
+        "../INVENTARIO_DOCUMENTAZIONE.md sezione 2 (88% dei file v1 senza metadati)"
+      ]
+    },
+    {
+      "path": "regole/R4_ciclo_di_vita.md",
+      "id": "R4",
+      "tipo": "regola",
+      "ambito": "ciclo-di-vita-di-un-documento",
+      "titolo": "R4 - Ciclo di vita: come un documento nasce, vive e muore",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "docs/FINE_SESSIONE_PROTOCOLLO.md (il protocollo di chiusura esiste gia' nella v1, FASE 1-5)",
+        "../INVENTARIO_DOCUMENTAZIONE.md sezione 5 (stati dichiarati nell'indice ma assenti nei file)"
+      ]
+    },
+    {
+      "path": "regole/R5_criteri_di_scelta.md",
+      "id": "R5",
+      "tipo": "regola",
+      "ambito": "criteri-di-scelta-strutturale-e-priorita-delle-evidenze",
+      "titolo": "R5 - I criteri che il progetto ha sempre applicato, e come si sceglie fra documenti che si contraddicono",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "brain/edf3a8e6/CORE_MECHANICS.md",
+        "brain/fb161e9d/logiche_proprietarie.md",
+        "brain/ad0b58e2/LOTO_4_TIER_ARCHITECTURE.md",
+        ".agents/AGENTS.md:5",
+        ".agents/AGENTS.md:36"
+      ]
+    },
+    {
+      "path": "DECISIONI.md",
+      "id": "DECISIONI",
+      "tipo": "decisione",
+      "ambito": "registro-delle-decisioni-aperte-e-presa",
+      "titolo": "Registro delle decisioni",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "utente",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "INVENTARIO_DOCUMENTAZIONE.md:104",
+        "docs_v2/aree/A1_fondazione.md:88",
+        "docs_v2/aree/A2_gamification.md:110",
+        "docs_v2/aree/A3_dati_e_sql.md:118",
+        "docs_v2/aree/A4_dashboard_daas.md:104",
+        "docs_v2/aree/A6_commerciale.md:96"
+      ]
+    },
+    {
+      "path": "aree/A1_fondazione.md",
+      "id": "A1",
+      "tipo": "area",
+      "ambito": "principi-ederale-e-regole-vincolanti-del-progetto",
+      "titolo": "A1 - Fondazione: i principi che non si negoziano",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        ".agents/AGENTS.md:5",
+        ".agents/AGENTS.md:10",
+        ".agents/AGENTS.md:15",
+        ".agents/AGENTS.md:24",
+        ".agents/AGENTS.md:36",
+        ".agents/AGENTS.md:43",
+        "../INVENTARIO_DOCUMENTAZIONE.md:41",
+        "git:bc37c59"
+      ]
+    },
+    {
+      "path": "aree/A2_gamification.md",
+      "id": "A2",
+      "tipo": "area",
+      "ambito": "progressione-utente-livelli-badge-e-sblocco-sezioni",
+      "titolo": "A2 - Gamification: progressione, livelli, badge, sblocco sezioni",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "utils/levelUtils.ts:13",
+        "utils/levelUtils.ts:17-21",
+        "utils/levelUtils.ts:24-29",
+        "utils/levelUtils.ts:38-62",
+        "utils/levelUtils.ts:132-139",
+        "utils/levelUtils.ts:315-336",
+        "components/GamificationTransitionManager.tsx:43-49",
+        "components/ProfileModal.tsx:245-305",
+        "context/GamificationContext.tsx:92"
+      ]
+    },
+    {
+      "path": "aree/A3_dati_e_sql.md",
+      "id": "A3",
+      "tipo": "area",
+      "ambito": "catena-dati-canonica-e-script-sql-morti",
+      "titolo": "A3 - Dati e SQL: la catena canonica e gli script morti",
+      "stato": "Vivente",
+      "confidenza": "Media",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:1",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:1",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:221-239",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:189-227",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:87-90",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:381-391",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:322-326",
+        "docs/codici_morti.md:25",
+        ".agents/AGENTS.md:36"
+      ]
+    },
+    {
+      "path": "aree/A4_dashboard_daas.md",
+      "id": "A4",
+      "tipo": "area",
+      "ambito": "dashboard-admin-daas-esposizione-dati-agenzie",
+      "titolo": "A4 - Dashboard admin DaaS: esposizione dei dati alle agenzie",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "loto-admin-v2/src/app/(dashboard)/daas/page.tsx:1",
+        "loto-admin-v2/src/lib/daas.ts:1",
+        "loto-admin-v2/src/middleware.ts:1",
+        "loto-admin-v2/src/lib/supabase-server.ts:1",
+        "loto-admin-v2/src/app/login/login-form.tsx:1",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:1",
+        "git:bb0fa37",
+        "git:e69492f",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:332",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:365"
+      ]
+    },
+    {
+      "path": "aree/A5_app_mobile.md",
+      "id": "A5",
+      "tipo": "area",
+      "ambito": "stato-funzionale-app-mobile-e-cantieri-aperti",
+      "titolo": "A5 - App mobile: stato funzionale e cantieri aperti",
+      "stato": "Vivente",
+      "confidenza": "Media",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "git:8815fcf",
+        "git:c72e785",
+        "git:eee4598",
+        "git:bc37c59",
+        "git:b6bf361",
+        "git:d1afd36",
+        "git:16d5460",
+        "git:ee904a6",
+        ".agents/AGENTS.md:43",
+        "app/(tabs)/index.tsx:433"
+      ]
+    },
+    {
+      "path": "aree/A6_commerciale.md",
+      "id": "A6",
+      "tipo": "area",
+      "ambito": "posizionamento-monetizzazione-e-canale-commerciale",
+      "titolo": "A6 - Commerciale: a chi si vende e con quale modello",
+      "stato": "Bozza",
+      "confidenza": "Bassa",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        ".agents/AGENTS.md:24",
+        ".agents/AGENTS.md:25",
+        "../INVENTARIO_DOCUMENTAZIONE.md:60"
+      ]
+    },
+    {
+      "path": "aree/A7_struttura_esperienza.md",
+      "id": "A7",
+      "tipo": "area",
+      "ambito": "struttura-finale-dell-app-esperienza-validazione-e-percorso",
+      "titolo": "A7 - La struttura finale dell'app",
+      "stato": "Bozza",
+      "confidenza": "Media",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "brain/ad0b58e2-544c-4569-9d42-d0cca1625133/LOTO_4_TIER_ARCHITECTURE.md",
+        "brain/edf3a8e6-785a-4c0a-adf8-ccecfa355d1b/PERFECT_STATE_BLUEPRINT.md",
+        "brain/fb161e9d-9c2c-4652-bb90-544173968410/logiche_proprietarie.md",
+        "utils/levelUtils.ts:13",
+        "utils/levelUtils.ts:17-21",
+        "utils/levelUtils.ts:38-62",
+        "utils/haversine.ts:1",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:132",
+        ".agents/AGENTS.md:5",
+        ".agents/AGENTS.md:36"
+      ]
+    },
+    {
+      "path": "template/AREA.md",
+      "id": "TEMPLATE-AREA",
+      "tipo": "template",
+      "ambito": "",
+      "titolo": "Template - Area",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "[]"
+      ]
+    },
+    {
+      "path": "template/DECISIONE.md",
+      "id": "TEMPLATE-DECISIONE",
+      "tipo": "template",
+      "ambito": "",
+      "titolo": "Template - Decisione",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "[]"
+      ]
+    },
+    {
+      "path": "TASKS-PER-AREA.md",
+      "id": "TASKS-PER-AREA",
+      "tipo": "indice",
+      "ambito": "indice-unico-dei-task-per-area-con-quesiti-aperte",
+      "titolo": "Task per area — l'indice unico",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-27",
+      "evidenza": [
+        "docs_v2/PianoOperativo-26-09.md:1",
+        "docs_v2/ANONIMATO-E-INTEGRITA-LEDGER.md:1",
+        "docs_v2/CHIUSURA-SESSIONE-27-09.md:1",
+        "docs_v2/aree/A3_dati_e_sql.md:1",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:113",
+        "app/(tabs)/index.tsx:597"
+      ]
+    },
+    {
+      "path": "loto_map/00-INDICE-LOTO-MAP.md",
+      "id": "INDICE-LOTO-MAP",
+      "tipo": "indice",
+      "ambito": "loto-map-struttura-a-punti",
+      "titolo": "L.O.T.O. Map — struttura a punti",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "docs_v2/loto_map/01-onboarding-identita.md:1",
+        "app/_layout.tsx:58",
+        "components/LotoPassRecoveryScanner.tsx:46"
+      ]
+    },
+    {
+      "path": "ANONIMATO-E-INTEGRITA-LEDGER.md",
+      "id": "ANONIMATO-E-INTEGRITA-LEDGER",
+      "tipo": "analisi",
+      "ambito": "privacy-daa-s-e-integrita-del-ledger",
+      "titolo": "Anonimato, integrita del ledger e piano dei fix",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-27",
+      "evidenza": [
+        "supabase/pure_cloud_queries/62_untitled_query.sql:1",
+        "supabase/pure_cloud_queries/54_untitled_query.sql:1",
+        "supabase/pure_cloud_queries/56_untitled_query.sql:1",
+        "supabase/pure_cloud_queries/53_untitled_query.sql:1",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:113",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:266",
+        "supabase/migrations/20260927090000_scan_chain_shadowban_and_ledger.sql:1",
+        "app/(tabs)/index.tsx:597",
+        "utils/dbAggregation.ts:35",
+        ".agents/rules/master_business_brief.md:23"
+      ]
+    },
+    {
+      "path": "BRIEFING-AGENTE.md",
+      "id": "BRIEFING-AGENTE",
+      "tipo": "analisi",
+      "ambito": "pacchetto-di-ingresso-per-un-agente-che-si-sincronizza",
+      "titolo": "Briefing per un agente che si sincronizza su L.O.T.O. Map",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        ".agents/AGENTS.md:1",
+        "docs_v2/regole/R5_criteri_di_scelta.md:1",
+        "docs_v2/MODELLO_OPERATIVO.md:1",
+        "docs_v2/aree/A7_struttura_esperienza.md:1"
+      ]
+    },
+    {
+      "path": "CHIUSURA-SESSIONE-26-09.md",
+      "id": "CHIUSURA-SESSIONE-26-09",
+      "tipo": "analisi",
+      "ambito": "passaggio-di-sessione-per-ripresa-lavora",
+      "titolo": "Chiusura sessione — ripresa fra ~6 ore",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "docs_v2/ULTIMO-MIGLIO-BLOCKS.md:1",
+        "docs_v2/FORMA-DEFINITIVA.md:1",
+        "app/_layout.tsx:58"
+      ]
+    },
+    {
+      "path": "CHIUSURA-SESSIONE-27-09.md",
+      "id": "CHIUSURA-SESSIONE-27-09",
+      "tipo": "analisi",
+      "ambito": "passaggio-di-sessione-per-ripresa-lavora",
+      "titolo": "Chiusura sessione 27-09 — il prossimo passo è una query, non un file",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-27",
+      "evidenza": [
+        "docs_v2/ANONIMATO-E-INTEGRITA-LEDGER.md:1",
+        "app/(tabs)/index.tsx:597",
+        ".agents/rules/master_business_brief.md:23",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:113",
+        "supabase/pure_cloud_queries/62_untitled_query.sql:1"
+      ]
+    },
+    {
+      "path": "COLLAUDO-ARCHIVIO.md",
+      "id": "COLLAUDO-ARCHIVIO",
+      "tipo": "analisi",
+      "ambito": "verdetto-riga-per-riga-sulle-affermazioni-di-docs-v2",
+      "titolo": "Collaudo dell'archivio: la tabella di verifica",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-27",
+      "evidenza": [
+        "types/database.ts:1",
+        "app.json:1",
+        "android/app/build.gradle:1",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:48",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:189",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:228",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:1",
+        "docs/db_migrations/02_gamification_and_events.sql:42",
+        "utils/dbAggregation.ts:26",
+        "utils/dbAggregation.ts:54",
+        "components/LotoPassRecoveryScanner.tsx:59",
+        "app/(tabs)/index.tsx:451",
+        "app/(tabs)/community.tsx:99",
+        "app/(tabs)/index.tsx:286",
+        "supabase/migration_v24_app_telemetry.sql:1",
+        "docs_v2/MODELLO_OPERATIVO.md:119"
+      ]
+    },
+    {
+      "path": "DOCTRINA-ECHO.md",
+      "id": "DOCTRINA-ECHO",
+      "tipo": "analisi",
+      "ambito": "dottrina-feedback-privato-del-partner",
+      "titolo": "La dottrina Echo: il feedback privato che il partner sbloccola col Premium",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "utente",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "supabase/migrations/20260822_create_b2b_feedbacks.sql:5",
+        "supabase/00_SETUP_ADMIN_DASHBOARD.sql:47",
+        ".agents/AGENTS.md:20"
+      ]
+    },
+    {
+      "path": "ESITO-QUERY.md",
+      "id": "ESITO-QUERY",
+      "tipo": "analisi",
+      "ambito": "esito-delle-query-di-chiusura-e-catenache-sono-confermate",
+      "titolo": "Esito delle query di chiusura: 8 su 8, e cosa ribaltano",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-27",
+      "evidenza": [
+        "docs_v2/COLLAUDO-ARCHIVIO.md:1",
+        "docs_v2/STRUTTURA-DEFINITIVA.md:1",
+        "docs_v2/QUERY-CLOUD.md:1",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:316",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:326",
+        "utils/dbAggregation.ts:35",
+        "components/LotoPassRecoveryScanner.tsx:59"
+      ]
+    },
+    {
+      "path": "FORMA-DEFINITIVA.md",
+      "id": "FORMA-DEFINITIVA",
+      "tipo": "analisi",
+      "ambito": "forma-definitiva-dell-app-e-dello-sviluppo-percorso-al-primo-euro",
+      "titolo": "La forma definitiva",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "docs_v2/MODELLO_OPERATIVO.md:1",
+        "docs_v2/MODELLO_PREDITTIVO.md:1",
+        "docs_v2/BRIEFING-AGENTE.md:1",
+        "docs_v2/PianoOperativo-26-09.md:1"
+      ]
+    },
+    {
+      "path": "INVENTARIO_DOCUMENTAZIONE.md",
+      "id": "INVENTARIO-V1",
+      "tipo": "analisi",
+      "ambito": "verdetto-di-affidabilita-sulla-documentazione-v1",
+      "titolo": "INVENTARIO E VERDETTI DI AFFIDABILITA' DELLA DOCUMENTAZIONE",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "docs/README.md:1",
+        ".agents/AGENTS.md:1"
+      ]
+    },
+    {
+      "path": "MODELLO_OPERATIVO.md",
+      "id": "MODELLO-OPERATIVO",
+      "tipo": "analisi",
+      "ambito": "modello-a-segmenti-cohesione-db-e-catena-di-fatturazione",
+      "titolo": "Modello operativo: segmenti, coesione col DB, catena di fatturazione",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "supabase/00_SETUP_ADMIN_DASHBOARD.sql:47",
+        "supabase/migrations/20260822_create_b2b_feedbacks.sql:5",
+        ".agents/AGENTS.md:24",
+        ".agents/AGENTS.md:25",
+        "utils/levelUtils.ts:13",
+        "app/(tabs)/index.tsx:370",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:132"
+      ]
+    },
+    {
+      "path": "NOTEBOOKLM-BRIEFING.md",
+      "id": "NOTEBOOKLM-BRIEFING",
+      "tipo": "analisi",
+      "ambito": "briefing-autonomo-per-la-sessione-notebooklm",
+      "titolo": "Briefing per la sessione NotebookLM",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "docs_v2/loto_map/00-INDICE-LOTO-MAP.md:1",
+        "docs_v2/loto_map/03-zero-iot-e-offline.md:1",
+        "docs_v2/loto_map/04-features-ux-e-gamification.md:1",
+        "docs_v2/TASKS-PER-AREA.md:1",
+        "app/_layout.tsx:88"
+      ]
+    },
+    {
+      "path": "PIANO-DECISIONE.md",
+      "id": "PIANO-DECISIONE",
+      "tipo": "analisi",
+      "ambito": "sequenza-consigliata-e-nodo-strategico-da-decidere",
+      "titolo": "Piano: in che ordine procedere",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "app/_layout.tsx:88",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:157",
+        "supabase/migrations/20260927090000_scan_chain_shadowban_and_ledger.sql:149",
+        "docs_v2/NOTEBOOKLM-BRIEFING.md:1",
+        "docs_v2/ULTIMO-MIGLIO-BLOCKS.md:52"
+      ]
+    },
+    {
+      "path": "PROMPT-COLLAUDO-ARCHIVIO.md",
+      "id": "PROMPT-COLLAUDO-ARCHIVIO",
+      "tipo": "analisi",
+      "ambito": "prompt-per-il-collaudo-dell-archivio-e-la-struttura-definitiva",
+      "titolo": "Prompt operativo — Collaudo dell'archivio e struttura definitiva",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "docs_v2/ULTIMO-MIGLIO-BLOCKS.md:1",
+        "docs_v2/FORMA-DEFINITIVA.md:1"
+      ]
+    },
+    {
+      "path": "PianoOperativo-26-09.md",
+      "id": "PIANO-OPERATIVO-26-09",
+      "tipo": "analisi",
+      "ambito": "piano-operativo-definitivo-e-stato-ambiente-verificato-26-09",
+      "titolo": "Piano operativo L.O.T.O. Map — stato verificato e da fare",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "docs_v2/BRIEFING-AGENTE.md:1",
+        "docs_v2/DECISIONI.md:1",
+        "docs_v2/aree/A3_dati_e_sql.md:1",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:1"
+      ]
+    },
+    {
+      "path": "QUERY-CLOUD.md",
+      "id": "QUERY-CLOUD",
+      "tipo": "analisi",
+      "ambito": "esecuzione-delle-query-di-chiusura-su-cloud",
+      "titolo": "Query di chiusura: le 5 righe che chiudono l'archivio",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-27",
+      "evidenza": [
+        "docs_v2/COLLAUDO-ARCHIVIO.md:1",
+        "docs_v2/STRUTTURA-DEFINITIVA.md:1"
+      ]
+    },
+    {
+      "path": "REPORT_SINCRONIZZAZIONE.md",
+      "id": "REPORT-SINCRONIZZAZIONE",
+      "tipo": "analisi",
+      "ambito": "snapshot-stato-sincronizzazione-agente-26-09",
+      "titolo": "REPORT SINCRONIZZAZIONE — L.O.T.O. Map (snapshot 26/09/2026)",
+      "stato": "Storico",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "utils/levelUtils.ts:13",
+        "loto-admin-v2/src/middleware.ts:1"
+      ]
+    },
+    {
+      "path": "RICOSTRUZIONE.md",
+      "id": "RICOSTRUZIONE",
+      "tipo": "analisi",
+      "ambito": "ricostruzione-dalla-documentazione-sparsa",
+      "titolo": "Ricostruzione della documentazione sparsa",
+      "stato": "Vivente",
+      "confidenza": "Media",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "brain/edf3a8e6-785a-4c0a-adf8-ccecfa355d1b/PERFECT_STATE_BLUEPRINT.md",
+        "brain/ad0b58e2-544c-4569-9d42-d0cca1625133/LOTO_4_TIER_ARCHITECTURE.md",
+        "brain/fb161e9d-9c2c-4652-bb90-544173968410/logiche_proprietarie.md",
+        "utils/levelUtils.ts:13",
+        "utils/levelUtils.ts:149",
+        "app/(tabs)/index.tsx:370",
+        "app/(tabs)/map.tsx:131"
+      ]
+    },
+    {
+      "path": "STRUTTURA-DEFINITIVA.md",
+      "id": "STRUTTURA-DEFINITIVA",
+      "tipo": "analisi",
+      "ambito": "inventario-reale-del-db-catene-e-condizioni-mancanti",
+      "titolo": "Struttura definitiva: inventario reale, catene, condizioni, decisioni",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-27",
+      "evidenza": [
+        "types/database.ts:1",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:82",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:110",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:107",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:215",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:244",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:87",
+        "components/PoiDetailSheet.tsx:141",
+        "components/PoiDetailSheet.tsx:565",
+        "components/PoiDetailSheet.tsx:576",
+        "components/LotoPassRecoveryScanner.tsx:59",
+        "utils/dbAggregation.ts:26",
+        "utils/dbAggregation.ts:30",
+        "utils/OfflineQueueManager.ts:119",
+        "utils/OfflineQueueManager.ts:140",
+        "app/(tabs)/index.tsx:286",
+        "app/(tabs)/index.tsx:370",
+        "app/(tabs)/index.tsx:451",
+        "app/(tabs)/map.tsx:131",
+        "docs/db_migrations/02_gamification_and_events.sql:42",
+        "brain/fb161e9d-9c2c-4652-bb90-544173968410/MIGRATE_PREBETA_CLEANUP.sql:63"
+      ]
+    },
+    {
+      "path": "ULTIMO-MIGLIO-BLOCKS.md",
+      "id": "ULTIMO-MIGLIO-BLOCKS",
+      "tipo": "analisi",
+      "ambito": "blocchi-di-lavoro-per-chiudere-la-struttura",
+      "titolo": "L'ultimo miglio, a blocchi",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-26",
+      "evidenza": [
+        "docs_v2/FORMA-DEFINITIVA.md:1",
+        "docs_v2/PianoOperativo-26-09.md:1",
+        "app/_layout.tsx:58",
+        "components/LotoPassRecoveryScanner.tsx:55"
+      ]
+    },
+    {
+      "path": "VERIFICA-RUNTIME-2026-09-29.md",
+      "id": "VERIFICA-RUNTIME-2026-09-29",
+      "tipo": "analisi",
+      "ambito": "verifica-runtime-reale-e-su-dispositivo",
+      "titolo": "Verifica runtime del 29/09/2026",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "app/_layout.tsx:88",
+        "context/TenantContext.tsx:245",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:157"
+      ]
+    },
+    {
+      "path": "loto-hub-master-blueprint-ssot-2026.md",
+      "id": "BLUEPRINT-VISIONE-2026",
+      "tipo": "analisi",
+      "ambito": "visione-prodotto-e-specifiche-funzionali",
+      "titolo": "L.O.T.O. HUB — Visione e Specifiche Funzionali (2026)",
+      "stato": "Bozza",
+      "confidenza": "Media",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "supabase/migrations/20260927090000_scan_chain_shadowban_and_ledger.sql:149",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:81",
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:325",
+        "supabase/ORIGINAL_MASTER_RESTORE.sql:1472",
+        "utils/levelUtils.ts:13"
+      ]
+    },
+    {
+      "path": "loto_map/01-onboarding-identita.md",
+      "id": "LM-01-ONBOARDING-IDENTITA",
+      "tipo": "analisi",
+      "ambito": "loto-map-01-onboarding-e-identita",
+      "titolo": "Punto 1 — Onboarding & Identita' (Zero-PII)",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "app/_layout.tsx:66",
+        "app/_layout.tsx:79",
+        "app/(tabs)/index.tsx:515",
+        "app/(tabs)/profile.tsx:77",
+        "app/admin/nfc-setup.tsx:71",
+        "loto-admin-v2/src/app/login/login-form.tsx:28",
+        "components/LotoPassCard.tsx:46",
+        "components/LotoPassRecoveryScanner.tsx:46",
+        "components/LotoPassRecoveryScanner.tsx:63",
+        "components/LotoPassBackupModal.tsx:25",
+        "docs_v2/COLLAUDO-ARCHIVIO.md:62"
+      ]
+    },
+    {
+      "path": "loto_map/02-motore-camaleonte.md",
+      "id": "LM-02-MOTORE-CAMALEONTE",
+      "tipo": "analisi",
+      "ambito": "loto-map-02-motore-camaleonte-multi-tenancy",
+      "titolo": "Punto 2 — Il Motore \"Camaleonte\" (Multi-Tenancy & Geofencing)",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "context/TenantContext.tsx:214",
+        "context/TenantContext.tsx:220",
+        "context/TenantContext.tsx:163",
+        "context/TenantContext.tsx:116",
+        "context/ThemeContext.tsx:69",
+        "context/ThemeContext.tsx:77",
+        "app/(tabs)/index.tsx:286",
+        "app/(tabs)/map.tsx:133",
+        "types/database.ts:968",
+        "utils/BackgroundLocationTask.ts:38",
+        "supabase/pure_cloud_queries/62_untitled_query.sql:80"
+      ]
+    },
+    {
+      "path": "loto_map/03-zero-iot-e-offline.md",
+      "id": "ZERO-IOT-E-OFFLINE",
+      "tipo": "analisi",
+      "ambito": "punto-3-interazione-zero-iot-e-sincronizzazione-offline",
+      "titolo": "Punto 3 — Interazione \"Zero-IoT\" e sincronizzazione offline",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "supabase/migrations/20260926120000_scan_chain_canonical.sql:107",
+        "supabase/migrations/20260927090000_scan_chain_shadowban_and_ledger.sql:83",
+        "components/PoiDetailSheet.tsx:136",
+        "components/PoiDetailSheet.tsx:576",
+        "components/PoiScannerModal.tsx:62",
+        "utils/nfcManager.ts:11",
+        "utils/OfflineQueueManager.ts:69",
+        "utils/bleManager.ts:11"
+      ]
+    },
+    {
+      "path": "loto_map/04-features-ux-e-gamification.md",
+      "id": "FEATURES-UX-E-GAMIFICATION",
+      "tipo": "analisi",
+      "ambito": "punto-4-features-ux-avanzate-e-gamification",
+      "titolo": "Punto 4 — Features UX avanzate e gamification",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-29",
+      "evidenza": [
+        "components/PoiDetailSheet.tsx:795",
+        "components/PoiCard.tsx:50",
+        "components/CivicReportSheet.tsx:42",
+        "components/CivicDashboard.tsx:79",
+        "context/MobilityContext.tsx:127",
+        "supabase/archive_scattered_sql/ULTIMATE_RESTORE.sql:325"
+      ]
+    }
+  ]
+}
