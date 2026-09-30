@@ -247,7 +247,12 @@ def main():
                     h1 = next((l for l in fh if l.startswith("# ")), "")
                 if not auto.search(h1):
                     continue
-            if rel in registrati or rel.startswith("docs_v2/tooling/"):
+            if rel in registrati:
+                continue
+            # I documenti definizionali non competono per l'autorita' di un dominio: descrivono
+            # le regole che valgono invece di rivendicare un contenuto. Segnalarli sarebbe un
+            # falso positivo: R1_autorita parla di SSOT proprio per spiegare che ce n'e' una sola.
+            if re.match(r"docs_v2/(regole|template|tooling)/", rel):
                 continue
             # un file gia' dichiarato Bozza o Storico non rivendica piu' autorita'.
             # I file di docs/ (v1) non hanno frontmatter, quindi si controlla anche il banner

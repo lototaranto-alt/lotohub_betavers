@@ -1,5 +1,16 @@
 # 🌐 MASTER BRIEF: L.O.T.O. HUB (Allineamento IA Commerciale & Amministrativa)
 
+> ## ARCHIVIO. Documento storico, non e' fonte di autorita'.
+>
+> **Demotato il 30/09/2026.** Si dichiarava definitivo e si contendeva l'autorita' con altri
+> documenti. Il file canonico di questo progetto e'
+> `docs_v2/loto-hub-architettura-sistema-master-2026.md`; l'indice di chi dice il vero e'
+> `docs_v2/tooling/autorita.json`.
+>
+> Il testo originale e' integro qui sotto. **Se contraddice l'architettura attuale, vale
+> l'architettura attuale.** Non e' stato cancellato: un archivio che si cancella non e' un archivio.
+
+
 *(Copia questo testo e incollalo all'inizio di qualsiasi nuova chat Gemini dedicata alla creazione di Slide, Business Plan, Contratti o Marketing).*
 
 ---
@@ -20,7 +31,10 @@ L'architettura del software è progettata per resistere a carichi anomali e zone
 Il business si regge su uno scambio di valore "Win-Win-Win" super-protetto:
 *   **Per il Turista (Gamification Protetta):** Visita i POI e scansiona **Tag NFC Criptati (NTAG424)**. Sottolineiamo sempre che questi tag sono letteralmente *"adesivi a bassissimo costo"* da applicare in giro per la città. Questo blinda in modo assoluto la percezione del modello "Zero IoT" (nessun hardware costoso da mantenere per il Comune). La crittografia impedisce la clonazione dei tag e il "Replay Attack" da casa. Inoltre, un **trigger Anti-Cheat** sul database blocca i check-in se la velocità GPS supera i 130 km/h (blocco finti GPS).
 *   **Shadow Validation (Zero Costi API):** Per calcolare la CO2 evitata senza dissanguare le finanze aziendali con API a pagamento, usiamo un algoritmo interno basato su coefficienti statici (ISPRA/DEFRA). Solo l'1% delle transazioni viene campionato contro le API esterne per validazione, annientando i costi operativi (COGS) mantenendo l'autorevolezza scientifica contro il greenwashing.
-*   **Per la PA / Comuni (DaaS):** L.O.T.O. Hub fornisce "Heatmap" generate tramite Materialized Views che aggregano le posizioni su **griglie fisiche di 110 metri e blocchi temporali di 15 minuti**, garantendo l'impossibilità matematica di tracciare il singolo e una compliance GDPR al 100%. **Punto Vendita Cruciale:** Questo DaaS serve concretamente alla PA per *gestire e deflazionare il flusso turistico*, spalmando l'economia municipale in modo uniforme e decongestionando i punti iper-affollati. L'app usa i dati per ridirigere le persone verso partner (B2B) in aree meno note della città.
+*   **Per le Agenzie Dati e Turismo (DaaS):** L.O.T.O. Hub fornisce mappe di calpestio tramite viste SQL che aggregano le posizioni su una **griglia di circa 110 m (0,001 gradi di arrotondamento) e blocchi temporali di 15 minuti**, con una **soglia di k-anonimato (k ≥ 5 utenti distinti per cella) applicata a ogni rilascio**: le celle sotto soglia non vengono pubblicate, e l'accesso è riservato al personale autorizzato. Il visitatore singolo non è identificabile dall'output.
+    *   **Limite da dichiarare, non da nascondere:** l'aggregazione non è un sigillo di GDPR e non lo sarà mai "al 100%". Il confronto fra due rilasci consecutivi può rivelare ingressi e uscite, e chi conosce già i propri clienti o i propri orari parte da un prior così stretto che la soglia non lo protegge. Per questo i dati ai partner non scendono mai al singolo esercizio: si fermano a **griglie, aggregati e snapshot**, e per i commercianti si usano **bucket giornalieri**.
+    *   **Stato di implementazione:** la vista attuale è raggruppata anche per `poi_id`, quindi non è ancora una griglia puramente spaziale. Il passaggio a *grid-only* è pianificato e tracciato in `docs_v2/ANONIMATO-E-INTEGRITA-LEDGER.md`.
+    *   **Punto Vendita Cruciale:** questo DaaS serve alle Agenzie che trattano con le Amministrazioni Pubbliche per *gestire e deflazionare il flusso turistico*, spalmando l'economia municipale in modo uniforme e decongestionando i punti iper-affollati. L'app usa i dati per ridirigere le persone verso partner (B2B) in aree meno note della città.
 
 ## 4. SICUREZZA, INCLUSIVITÀ E UTILITÀ CIVICA
 *   **Panic Mode & Routing di Sicurezza:** Fornisce ai crocieristi e turisti percorsi di rientro "Safe & Fast" verso la Nave/Hotel in caso di ritardi.

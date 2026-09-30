@@ -1,5 +1,16 @@
 # 🧿 L.O.T.O. HUB - MASTER CONTEXT & SINGLE SOURCE OF TRUTH (SSOT)
 
+> ## ARCHIVIO. Documento storico, non e' fonte di autorita'.
+>
+> **Demotato il 30/09/2026.** Si dichiarava definitivo e si contendeva l'autorita' con altri
+> documenti. Il file canonico di questo progetto e'
+> `docs_v2/loto-hub-architettura-sistema-master-2026.md`; l'indice di chi dice il vero e'
+> `docs_v2/tooling/autorita.json`.
+>
+> Il testo originale e' integro qui sotto. **Se contraddice l'architettura attuale, vale
+> l'architettura attuale.** Non e' stato cancellato: un archivio che si cancella non e' un archivio.
+
+
 > [!CAUTION]
 > **DIRETTIVA DI SISTEMA PER L'IA:**
 > Questo documento contiene i dogmi architetturali, le formule matematiche e le logiche di business intoccabili del progetto L.O.T.O. HUB. Non riassumere, non omettere e non modificare mai le regole e le equazioni qui presenti senza esplicita direttiva dell'utente.

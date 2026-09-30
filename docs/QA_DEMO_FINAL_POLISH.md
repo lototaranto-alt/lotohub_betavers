@@ -1,5 +1,16 @@
 # LOTO HUB - Note di Sviluppo: QA Demo Finale & Fallback Offline
 
+> ## ARCHIVIO. Documento storico, non e' fonte di autorita'.
+>
+> **Demotato il 30/09/2026.** Si dichiarava definitivo e si contendeva l'autorita' con altri
+> documenti. Il file canonico di questo progetto e'
+> `docs_v2/loto-hub-architettura-sistema-master-2026.md`; l'indice di chi dice il vero e'
+> `docs_v2/tooling/autorita.json`.
+>
+> Il testo originale e' integro qui sotto. **Se contraddice l'architettura attuale, vale
+> l'architettura attuale.** Non e' stato cancellato: un archivio che si cancella non e' un archivio.
+
+
 Questo documento riassume tutte le implementazioni critiche inserite durante l'ultima fase di lucidatura della Demo (Luglio 2026). Serve come "memoria storica" per mantenere la stabilità dell'ecosistema e istruire futuri agenti sulle logiche proprietarie introdotte.
 
 ## 1. Logica di "Hybrid Sync" (Fallback Offline)

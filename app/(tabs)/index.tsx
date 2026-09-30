@@ -30,6 +30,7 @@ import VaultModal from '../../components/VaultModal';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
 import { ensureEarnedBadges } from '../../utils/badgeAssignment';
 import { fetchCommunityFeed, CommunityFeedItem } from '../../utils/communityFeed';
+import { enrichProfileWithDbMetrics, sendSessionStartTelemetry } from '../../utils/dbAggregation';
 import { useMobility } from '../../context/MobilityContext';
 import { useGamification } from '../../context/GamificationContext';
 import { useTenant } from '../../context/TenantContext';
@@ -433,12 +434,14 @@ export default function VetrinaScreen() {
 
           // Sincronizza lo Store Gamification (SSOT): niente calcoli o copie locali disconnesse
           const [[, fbXp], [, fbTok], [, fbPois]] = await AsyncStorage.multiGet(['loto_fallback_xp', 'loto_fallback_tokens', 'loto_fallback_pois']);
-          gamification.syncProfile(profile, {
+          const enriched = await enrichProfileWithDbMetrics(profile);
+          gamification.syncProfile(enriched, {
             badges: badges || [],
             fallbackXp: fbXp ? parseInt(fbXp) : 0,
             fallbackTokens: fbTok ? parseInt(fbTok) : 0,
             fallbackPois: fbPois ? parseInt(fbPois) : 0,
           });
+          sendSessionStartTelemetry(enriched.total_xp || 0);
         }
       }
 
@@ -484,6 +487,8 @@ export default function VetrinaScreen() {
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       if (!profile) return;
       setUserProfile(profile);
+      const enriched = await enrichProfileWithDbMetrics(profile);
+      setUserProfile(enriched);
       fetchCheckinsToday();
       loadTransactions(user.id);
       const { data: badges } = await supabase.from('user_badges').select('*, badges(*)').eq('user_id', user.id);
@@ -493,7 +498,7 @@ export default function VetrinaScreen() {
         const { data: refreshed } = await supabase.from('user_badges').select('*, badges(*)').eq('user_id', user.id);
         if (refreshed) setUserBadges(refreshed);
       }
-      gamification.syncProfile(profile, {
+      gamification.syncProfile(enriched, {
         badges: badges || [],
         fallbackXp: fbXp ? parseInt(fbXp) : 0,
         fallbackTokens: fbTok ? parseInt(fbTok) : 0,
@@ -588,18 +593,11 @@ export default function VetrinaScreen() {
       }
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const receiptHash = `${today}_${poi.p_iva}_15.00`;
-
-    const { data: existing } = await supabase.from('impact_transactions').select('id').eq('receipt_hash', receiptHash).single();
-    if (existing) {
-      Alert.alert("Errore", "Scontrino già registrato.");
-      return;
-    }
-
     const multiplier = userProfile?.party_size || 1;
+    // 30/09: eliminato `user_id`. La funzione prende l'identita' da auth.uid()
+    // e non accetta un id dall'esterno: accettarlo permetteva di accreditare
+    // l'impatto a un terzo. Vedi 20260930180000_process_esg_impact.sql.
     const { error } = await supabase.rpc('process_esg_impact', {
-      user_id: userProfile.id,
       p_co2: 0.5 * multiplier,
       p_liters: 5 * multiplier,
       p_tokens: 50,

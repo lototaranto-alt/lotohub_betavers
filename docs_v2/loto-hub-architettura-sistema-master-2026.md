@@ -320,10 +320,36 @@ quale firma. Una sola query. Finché quel `?` non è tolto, la promessa "nessun 
 telefono, il server garantisce i saldi" è una promessa senza corpo che la applichi — che è
 esattamente il difetto che ha fatto trovare il proximity gate.
 
-**Un secondo controllo di prossimità, di cui nessuno parla.** `index.tsx:591` non è la RPC: è un
-controllo **lato client** che cerca un check-in nelle ultime 12 ore e, se non lo trova, mostra
-"Troppo Lontano". Esistono quindi due gate, uno nel server e uno nel telefono, con criteri diversi. Va
-deciso quale dei due è la regola e cosa succede quando non concordano.
+**Il "secondo gate" non è un gate: è una scorciatoia che indebolisce il primo.** Va detto con
+precisione, perché a prima vista sembra un filtro e invece è il contrario.
+
+```ts
+// app/(tabs)/index.tsx:580
+const dist = userLocation ? getDistance(...lat, lon, poi.latitude, poi.longitude) : 999;
+if (dist > (poi.checkin_radius || 50)) {          // entra SOLO se sei lontano
+  const { data: pings } = await supabase.from('location_pings')
+    .eq('poi_id', poi.id)
+    .gte('created_at', new Date(Date.now() - 12 * 3600 * 1000).toISOString()).limit(1);
+  if (!pings || pings.length === 0) { Alert.alert("Troppo Lontano", ...); return; }
+}
+```
+
+Il blocco a 12 ore non aggiunge un criterio, **toglie** il criterio: se esiste un ping nelle ultime
+12 ore il check-in passa comunque, da qualunque distanza. Non è un cooldown anti-farming, è una
+via di fuga. Nella configurazione attuale la distanza minima per chi ha un ping recente è **zero**.
+
+E `location_pings` non ha un `CREATE TABLE` in nessuna delle migration ufficiali: è una tabella che
+il codice interroga e che il repository non riproduce.
+
+**Il gate server non gira.** `scan_poi_gps`, la funzione che la migration `20260929160000` ha
+ripristinato e che contiene il controllo `ST_Distance`, **non ha un solo chiamante vivo**. L'unico
+riferimento nel client è `utils/OfflineQueueManager.ts:140`, dentro la coda che gestisce unicamente
+`UNLOCK_MEDIA`. Quindi la migration proximity è applicata, corretta, e non eseguita.
+
+Il controllo di prossimità **attivo** oggi è quello client-side con `getDistance`. La distinzione
+conta: il gate server calcola la distanza sul server con PostGIS, dove il client non può mentire
+proprio sui numeri che invia. Quello client-side usa coordinate fornite dal telefono, ed è
+esattamente il caso in cui la logica va dal lato sbagliato.
 
 **Nota sul `party_size`.** I documenti di luglio davano il wizard Party Size per superato dal Tap.
 Non è così: `index.tsx:594` legge ancora `userProfile?.party_size` e lo usa come `multiplier` per

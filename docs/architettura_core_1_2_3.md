@@ -1,5 +1,16 @@
 # 🌳 Architettura Core: I 3 Pilastri (Allineamento Definitivo)
 
+> ## ARCHIVIO. Documento storico, non e' fonte di autorita'.
+>
+> **Demotato il 30/09/2026.** Si dichiarava definitivo e si contendeva l'autorita' con altri
+> documenti. Il file canonico di questo progetto e'
+> `docs_v2/loto-hub-architettura-sistema-master-2026.md`; l'indice di chi dice il vero e'
+> `docs_v2/tooling/autorita.json`.
+>
+> Il testo originale e' integro qui sotto. **Se contraddice l'architettura attuale, vale
+> l'architettura attuale.** Non e' stato cancellato: un archivio che si cancella non e' un archivio.
+
+
 Questo documento traccia la verità assoluta basata su `AGENTS.md` e sugli script di sistema, ripulita da speculazioni o derive commerciali inesatte.
 
 ---

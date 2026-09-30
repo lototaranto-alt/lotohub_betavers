@@ -56,11 +56,47 @@
       "livello": "L1",
       "nota": "Demotati il 30/09 e archiviati con banner: docs/LOTO_HUB_MASTERPLAN.md, docs/LOTO_HUB_MASTERPLAN_BETA.md, docs/LOTO_HUB_SSOT_DEFINITIVO.md, docs/architettura_definitiva_beta.md. Testo integro conservato per il confronto. Cinque affermazioni non implementate, elencate nella sezione 5 del file canonico. Non sono spariti: sono verificati."
     },
+    "catena-migration": {
+      "stato": "canonico",
+      "file": "docs_v2/aree/A3_dati_e_sql.md",
+      "livello": "L1",
+      "nota": "Il documento che descrive la catena delle migration ufficiali. Flaggato dal check perche' il titolo dice 'catena canonica': in questo caso e' corretto, percio' e' stato registrato invece che silenziato. Va aggiornato dopo l'applicazione della 20260930180000."
+    },
+    "processo-collaudo-archivio": {
+      "stato": "candidato",
+      "file": "docs_v2/PROMPT-COLLAUDO-ARCHIVIO.md",
+      "livello": "L1",
+      "nota": "Prompt operativo per il collaudo dell'archivio. Documento di processo, non di contenuto: e' l'autorita' sul come si collauda, non su cosa dice il sistema."
+    },
+    "modello-economico": {
+      "stato": "canonico",
+      "file": "docs_v2/FORMA-DEFINITIVA.md",
+      "livello": "L1",
+      "nota": "Dominio distinto dal modello di prodotto: percorso al primo euro e forma del progetto a quattro mesi. Registro perch' il nome promette piu' di quanto contenga. Il contenuto e' legittimo e non compete con il SSOT architetturale, quindi non e' stato rinominato: e' stato dichiarato di cosa parla."
+    },
+    "inventario-struttura": {
+      "stato": "canonico",
+      "file": "docs_v2/STRUTTURA-DEFINITIVA.md",
+      "livello": "L1",
+      "nota": "Inventario tecnico con 12 riferimenti file:linea verificabili (types/database.ts, le tre migration, PoiDetailSheet.tsx, dbAggregation.ts). Complementare al SSOT: descrive com'e' fatto, il SSOT descrive cosa deve fare."
+    },
     "process-esg-impact": {
+      "stato": "candidato",
+      "file": "supabase/migrations/20260930180000_process_esg_impact.sql",
+      "livello": "L1",
+      "nota": "Migration scritta il 30/09, NON ancora applicata. La firma d'archivio non poteva accettare la chiamata del client (mandava user_id e p_takeaway, la funzione dichiarava p_user_id e p_hash): il check-in non poteva risolversi. Corretti anche l'hole di sicurezza (p_user_id accettava l'id di un terzo, ora auth.uid()) e creato impact_transactions, che non aveva un CREATE TABLE in nessuna migration. Promosso a canonico dopo V1-V5."
+    },
+    "gate-prossimita-attivo": {
       "stato": "vuoto",
       "file": null,
       "livello": "L1",
-      "nota": "LACUNA APERTA, PRIORITA' ALTA. Il client chiama process_esg_impact a ogni check-in (index.tsx:597) ma la funzione non e' nella catena ufficiale delle migration: esiste solo in supabase/archive_scattered_sql/LOTO_RESURRECTION_FULL.sql:148. O non e' stata committata e il repo non la riproduce, o non esiste e ogni check-in mostra 'Impossibile completare la scansione' (index.tsx:606). Una sola query sul cloud lo chiude."
+      "nota": "LACUNA APERTA, PRIORITA' ALTA. scan_poi_gps non ha chiamanti vivi: l'unico e' OfflineQueueManager.ts:140, dentro una coda che gestisce solo UNLOCK_MEDIA. Il gate server e' quindi applicato e mai eseguito. Il controllo attivo e' client-side (index.tsx:580) con getDistance, e il ramo a 12 ore su location_pings indebolisce invece di rafforzare: con un ping recente la distanza minima diventa zero. Decidere quale dei due e' la regola."
+    },
+    "tabelle-non-ufficiali": {
+      "stato": "vuoto",
+      "file": null,
+      "livello": "L1",
+      "nota": "LACUNA APERTA. Due tabelle che il codice interroga non hanno un CREATE TABLE nelle migration ufficiali: location_pings (index.tsx:583) e, fino al 30/09, impact_transactions (risolta dalla 20260930180000). Il repository non riproduce il database che l'app usa."
     },
     "offline-coda": {
       "stato": "vuoto",
