@@ -5,9 +5,9 @@
   "radice": "docs_v2",
   "nota": "Indice machine-readable del contesto v2. Generato da tooling/build_manifest.py. Non modificare a mano: il validatore controlla che corrisponda ai file su disco.",
   "conteggi": {
-    "totali": 51,
+    "totali": 52,
     "per_tipo": {
-      "analisi": 27,
+      "analisi": 28,
       "area": 9,
       "costituzione": 1,
       "decisione": 1,
@@ -16,7 +16,7 @@
       "template": 2
     },
     "per_stato": {
-      "Bozza": 3,
+      "Bozza": 4,
       "Storico": 1,
       "Vivente": 47
     }
@@ -827,6 +827,23 @@
         "docs_v2/PianoOperativo-26-09.md:1",
         "app/_layout.tsx:58",
         "components/LotoPassRecoveryScanner.tsx:55"
+      ]
+    },
+    {
+      "path": "VALUTAZIONE-PROGETTO.md",
+      "id": "VALUTAZIONE-PROGETTO",
+      "tipo": "analisi",
+      "ambito": "valutazione-onesta-di-fattibilita-del-progetto-loto-hub",
+      "titolo": "Valutazione del progetto: struttura, esperienza, business",
+      "stato": "Bozza",
+      "confidenza": "Media",
+      "owner": "Agent",
+      "aggiornato": "2026-09-30",
+      "evidenza": [
+        "docs_v2/loto-hub-architettura-sistema-master-2026.md:1",
+        "docs_v2/tooling/autorita.json:1",
+        "supabase/migrations/20260930210000_fix_impact_transactions_schema.sql:1",
+        "app/(tabs)/index.tsx:583"
       ]
     },
     {
