@@ -9,6 +9,13 @@
 >
 > Il testo originale e' integro qui sotto. **Se contraddice l'architettura attuale, vale
 > l'architettura attuale.** Non e' stato cancellato: un archivio che si cancella non e' un archivio.
+>
+> **Nome ufficiale, 30/09/2026: L.O.T.O. Map (Life On The Outside) Co-Experience.**
+> Il corpo del file dice "L.O.T.O. HUB" a riga 19 e non viene corretto, perche' questo documento e'
+> in `Storico` e `R4` §2 vieta di riscriverlo. Il nome che vale e' quello qui sopra, e il
+> glossario completo e' in `docs_v2/aree/A8_lessico_e_marchio.md`.
+> Lo stesso vale per `Panic Mode` a riga 40: il nome corrente e' **Safe & Fast** e la funzione non
+> e' mai stata implementata (`A9` e `loto_map/04` §3).
 
 
 *(Copia questo testo e incollalo all'inizio di qualsiasi nuova chat Gemini dedicata alla creazione di Slide, Business Plan, Contratti o Marketing).*

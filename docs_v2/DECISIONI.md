@@ -5,7 +5,7 @@ ambito: registro-delle-decisioni-aperte-e-presa
 stato: Vivente
 confidenza: Alta
 owner: utente
-aggiornato: 2026-09-26
+aggiornato: 2026-09-30
 evidenza:
   - INVENTARIO_DOCUMENTAZIONE.md:104
   - docs_v2/aree/A1_fondazione.md:88
@@ -13,6 +13,9 @@ evidenza:
   - docs_v2/aree/A3_dati_e_sql.md:118
   - docs_v2/aree/A4_dashboard_daas.md:104
   - docs_v2/aree/A6_commerciale.md:96
+  - supabase/migrations/20260929160000_restore_proximity_gate.sql:243
+  - supabase/migrations/20260929160000_restore_proximity_gate.sql:104
+  - supabase/migrations/20260925120000_admin_dashboard_hardening.sql:110
 ---
 
 # Registro delle decisioni
@@ -30,19 +33,21 @@ un `file:linea`. Il formato e' in `docs_v2/template/DECISIONE.md`.
 
 | # | Titolo | Stato | Blocca | Area |
 |---|---|---|---|---|
-| D1 | Quale dei quattro "SSOT" sopravvive | `aperta` | la struttura della documentazione | A1 |
+| D1 | Quale dei quattro "SSOT" sopravvive | `applicata` | — | A1 |
 | D2 | Dove vanno i 7 file .md della root del repo | `aperta` | la deduplica e l'indice | A1 |
 | D3 | `knowledge_recovery_guide.md` ha 3 link rotti | `aperta` | la guida per una sessione nuova | A1 |
-| D4 | Applicare ora i 4 blocker della catena canonica, o registrarli come debito | `aperta` | il check-in end-to-end | A3 |
-| D5 | Lo scan NFC da solo deve funzionare? | `aperta` | la validazione del tag | A3 |
-| D6 | Il check-in accredita PTI? | `aperta` | l'economia del civismo | A3 |
+| D4 | Applicare ora i 4 blocker della catena canonica | **`parziale`** | il check-in end-to-end | A3 |
+| D5 | Lo scan NFC da solo deve funzionare? | `applicata` (opzione 2) | — | A3 |
+| D6 | Il check-in accredita PTI? | `applicata` | — | A3 |
 | D7 | Il cap di 3 carte anti-flood: obbligo o design? | `aperta` | la qualita' della progressione | A2 |
 | D8 | Le 3 direzioni commerciali di A6 | `aperta` | la vendita | A6 |
 | D9 | `vw_pois_frontend` esiste nel cloud o manca? | `aperta` | Home e Mappa, e la riproducibilita' dell'ambiente | A7 |
 | D10 | S1-S2: struttura di validazione a 4 tier + campo `poi.tier` | `aperta` | la scalabilita' della struttura finale | A7 |
-| D11 | S3: `rank` e tier narrativo sono due cose distinte? | `aperta` | ogni rename futuro dei rank | A7 |
-| D12 | S4: griglia 110 m e soglia k-anonimita' sono complementari? | `aperta` | la vendita del dato e il rischio legale | A7 |
-| D13 | Come il partner sblocca i feedback Echo: su WhatsApp o su dashboard? | `aperta` | il funnel di upgrade dell'unico ricavo ricorrente del merchant | DOCTRINA-ECHO |
+| D11 | S3: `rank` e tier narrativo sono due cose distinte? | `applicata` | — | **A8** |
+| D12 | S4: griglia 110 m e soglia k-anonimita' sono complementari? | `applicata` (opzione 1) | — | A4 |
+| D13 | Come il partner sblocca i feedback Echo: su WhatsApp o su dashboard? | `aperta` | il funnel di upgrade | DOCTRINA-ECHO |
+| D14 | Disambiguazione di `tier` in tre termini distinti | `applicata` | — | **A8** |
+| D15 | Nome ufficiale del progetto | `applicata` | — | **A8** |
 
 ---
 
@@ -50,10 +55,12 @@ un `file:linea`. Il formato e' in `docs_v2/template/DECISIONE.md`.
 
 | campo | valore |
 |---|---|
-| **Stato** | `aperta` |
+| **Stato** | `applicata` |
 | **Chi decide** | utente |
 | **Aperta il** | 2026-09-26 |
-| **Blocca** | qualsiasi altra riorganizzazione documentale: finche' 4 documenti si dichiarano la SSOT, ogni nuova sessione li legge in ordine diverso |
+| **Chiusa il** | 2026-09-30 |
+| **Esito** | **Tre strati distinti.** `AGENTS.md` = principi, `LOTO_ENGINEERING_MANIFESTO.md` = ingegneria, `LOTO_HUB_MASTERPLAN.md` = prodotto. Gli altri tre passati a `Storico` con banner. |
+| **Prova** | I quattro documenti di luglio hanno tutti il banner `ARCHIVIO. Documento storico` a riga 3 · il file canonico e' `docs_v2/loto-hub-architettura-sistema-master-2026.md`, registrato in `autorita.json` dominio `modello-prodotto` |
 
 ### Domanda
 Quale documento e' l'unica fonte di verita' per i principi e per l'ingegneria?
@@ -129,10 +136,31 @@ La guida rimanda a tre vicoli ciechi.
 
 | campo | valore |
 |---|---|
-| **Stato** | `aperta` |
+| **Stato** | `parziale` — B1 chiuso, B2 non applicabile, B3 **aperto**, B4 aperto |
 | **Chi decide** | utente |
 | **Aperta il** | 2026-09-26 |
-| **Blocca** | il check-in end-to-end, quindi la release 1.1.0 e la certificazione dei report |
+| **Rivista il** | 2026-09-30 |
+
+### Esito 30/09: due blocker chiusi, due aperti
+
+La domanda originale ("correggere ora o registrare come debito?") ha una risposta diversa per ciascuno,
+e **non si può chiudere come risolta**: chiuderla sarebbe riprodurre l'errore che questo registro
+serve a prevenire.
+
+| # | Sev | Difetto | Esito | Prova |
+|---|---|---|---|---|
+| B1 | Blocker | nessun `BEGIN`/`COMMIT` | **CHIUSO** | `20260927090000_scan_chain_shadowban_and_ledger.sql:78,235` · `20260929160000_restore_proximity_gate.sql:104,309` |
+| B2 | Blocker | PK composta `(profile_id, poi_id)` | **NON APPLICABILE** | la PK composta esiste su `user_pois` (`supabase/user_pois_schema.sql:12`) e `20260926120000:70-75` dichiara per iscritto di **non** crearla in quella catena. Il vincolo che impedirebbe le visite ripetute era altrove, ed è altrove che è stato messo |
+| B3 | Blocker | race condition sul cooldown, doppio XP | **ANCORA APERTO** | `20260929160000` ha la transazione (`BEGIN`/`COMMIT`) ma **zero** `pg_advisory_xact_lock` e **zero** `SELECT ... FOR UPDATE`. Verificato con ricerca su tutto il file |
+| B4 | Blocker | `profiles.tenant_id` senza backfill | **ANCORA APERTO** | `20260926120000:87-88` fa `ADD COLUMN` e `:89-90` l'indice, ma **nessun `UPDATE profiles SET tenant_id`**. I 4 `UPDATE public.profiles` presenti nelle migration toccano `admin_role`, `total_xp`, `total_tokens`, `total_co2` — mai `tenant_id`. La colonna è inoltre assente da `types/database.ts` |
+
+**B3 è il più serio dei due rimasti**, perché riapre esattamente l'exploit che la catena esiste per
+chiudere: due richieste concorrenti sulla stessa coppia utente/POI superano entrambe il controllo
+di cooldown e accreditano due volte.
+
+**Cosa serve per chiuderlo:** un `pg_advisory_xact_lock` sulla chiave `(profile_id, poi_id)` all'
+inizio del corpo di `scan_poi_gps`, prima del controllo di cooldown. Una riga. Non si applica al
+cloud senza il tuo via esplicito (`METODICA` §5).
 
 ### Domanda
 `migrations/20260926120000_scan_chain_canonical.sql` ha 4 blocker verificati. Li correggo ora?
@@ -156,10 +184,29 @@ debito" e' legittima solo se e' chiaro perche' e entro quando.
 
 | campo | valore |
 |---|---|
-| **Stato** | `aperta` |
+| **Stato** | `applicata` — **opzione 2: GPS + NFC insieme** |
 | **Chi decide** | utente |
 | **Aperta il** | 2026-09-26 |
-| **Blocca** | la validazione del tag NFC. E' una decisione di prodotto, non tecnica |
+| **Chiusa il** | 2026-09-30 |
+| **Prova** | `20260926120000_scan_chain_canonical.sql:345-357` — `scan_poi` richiede una riga in `user_pois` per (utente, POI) negli ultimi 15 minuti, altrimenti `RAISE EXCEPTION` |
+
+### Esito 30/09: l'opzione 2 era gia' scritta, e regge
+
+La scelta è già nel codice e non è mai stata registrata. Il tag NFC **non** vale da solo: è una
+finalizzazione di una visita GPS già avvenuta. `:359` fa inoltre in modo che `scan_poi` non accrediti
+nulla, perché la ricompensa è già stata contabilizzata da `scan_poi_gps`.
+
+**Opzione 3 (challenge firmato) non è stata scelta.** `validate_ntag424_sdm` non ha un
+`CREATE FUNCTION` in nessun `.sql` del repository: l'unica occorrenza è un *commento* che la nomina
+in `20260926120000:325`. E `utils/nfcManager.ts` non ha un solo import in tutto il codice, e non
+parla col chip: fa due regex `[?&]p=` / `[?&]c=` sulla stringa URI NDEF.
+
+**Conseguenza da sapere, non un difetto della decisione:** con l'opzione 2, il ramo NFC è un
+secondo pulsante che duplica il primo con un passaggio in meno. `components/PoiDetailSheet.tsx:576`
+passa `p_poi_id: poi.id`, cioè il POI già aperto nella scheda, **non** quello codificato nel tag, e
+`:565` usa il contenuto del tag solo per distinguere l'evento rifiuti. Finché la crittografia non è
+collegata, il claim "il tag è la prova" non è sostenibile: il claim sostenibile è "il tag
+conferma". Vedi `autorita.json`, dominio `nfc-zero-iot`, stato `vuoto`.
 
 ### Domanda
 Nella catena canonica `scan_poi` (NFC) e' diventata una **finalizzazione** che richiede una visita
@@ -181,10 +228,30 @@ semplicita' d'uso. **Da decidere prima del rilascio**, perche' cambia la firma d
 
 | campo | valore |
 |---|---|
-| **Stato** | `aperta` |
+| **Stato** | `applicata` — il check-in accredita PTI |
 | **Chi dice** | utente |
 | **Aperta il** | 2026-09-26 |
-| **Blocca** | l'economia del civismo e il senso del token |
+| **Chiusa il** | 2026-09-30 |
+| **Prova** | `20260929160000_restore_proximity_gate.sql:243` (10 PTI pedonale) · `:239` (1 PTI veicolare) · `:263,267` (scrittura in `impact_transactions.tokens_earned`) · `:275` (accumulo in `profiles.total_tokens`) |
+
+### Esito 30/09: l'opzione 2 era quella giusta, ed era gia' scritta
+
+La domanda era se `tokens_earned = 0` fosse voluto. **Non lo è: il codice accredita, e la versione
+che accredita è quella viva.**
+
+| modalita' | PTI | riga |
+|---|---|---|
+| pedonale (< 20 km/h) | **10** | `:243` |
+| veicolare (20-130 km/h) | **1** | `:239` |
+
+E l'economia è coerente con la separazione XP/PTI: il CO₂ resta a zero sul veicolare (`:244`
+`v_co2 := 0`), quindi chi arriva in auto non genera CO₂ risparmiata ma accredità comunque il
+contributo civico. È la distinzione giusta.
+
+**Una cosa che la chiusura non risolve.** Il "+25 PTI" che l'utente vede alla conferma di una
+segnalazione civica è una **stringa**, non una scrittura:
+`components/CivicDashboard.tsx:116` e `components/CivicReportSheet.tsx:86`. Nessun writer.
+`A2-T9` resta aperto e non è coperto da questa decisione.
 
 ### Domanda
 La catena canonica inserisce in `impact_transactions` con `tokens_earned = 0`. Il check-in **non
@@ -314,10 +381,41 @@ singolo POI: distingue il costo marginale zero dal costo per transazione. Dettag
 
 | campo | valore |
 |---|---|
-| **Stato** | `aperta` |
+| **Stato** | `applicata` — **tre livelli distinti**, decisione del 30/09 |
 | **Chi decide** | utente |
 | **Aperta il** | 2026-09-26 |
-| **Blocca** | ogni rename futuro |
+| **Chiusa il** | 2026-09-30 |
+| **Prova** | [`A8_lessico_e_marchio.md`](aree/A8_lessico_e_marchio.md) §1.1 |
+
+### Esito 30/09: la domanda era sottostimata, ed e' chiusa al livello giusto
+
+La domanda chiedeva se `rank` e tier narrativo fossero due viste dello stesso oggetto. Sono **cinque
+vocabolari distinti**, non due, e la separazione è già conforme al codice:
+
+| termine | cosa indica | dove |
+|---|---|---|
+| **rank** | progressione: 5 blocchi da 10 su 50 livelli | `utils/levelUtils.ts:80-129,148-160` |
+| **`lore_tier`** | livello narrativo: il racconto del blocco | `utils/LevelUpLore.ts:6-7` |
+| **`frame`** | layout grafico dell'avatar: bordo, aura, ombra | `utils/levelUtils.ts:242-310` |
+| **stemma** | simbolo del blocco: `explore`, `shield`, `security`, `anchor`, `public` | `utils/levelUtils.ts:80-129` |
+| **filtri Visioni Sospese** | 6, con soglie tutte diverse | `components/MemoriesCameraModal.tsx:16-23` |
+
+**Il nome riservato per la validazione del POI è `poi.tier`** e non ha niente a che fare con questi
+cinque: è la `D10`, resta aperta, e il campo non esiste ancora.
+
+### Difetto scoperto chiudendo questa decisione
+
+`utils/levelUtils.ts` si contraddice da solo. Lo stesso blocco di livelli ha due nomi **nello stesso
+file**:
+
+```
+:10    //  11 Radici Sommerse
+:288   //  Tier 2: Le Radici Antiche (Liv 11-20)
+```
+
+E il lore sceglie il primo (`utils/LevelUpLore.ts:6`). Nessun type check lo segnala: sono due
+stringhe in due commenti. Gli altri quattro blocchi concordano, quindi la divergenza è una sola —
+ma è sul blocco che ospita il rank `Esploratore`.
 
 ### Domanda
 Oggi l'intervallo 1-10 ha **due nomi diversi**: come rank "Turista Occasionale"
@@ -341,10 +439,33 @@ del Risveglio del Seme.
 
 | campo | valore |
 |---|---|
-| **Stato** | `aperta` |
+| **Stato** | `applicata` — **opzione 1: complementari, in due livelli** |
 | **Chi decide** | utente |
 | **Aperta il** | 2026-09-26 |
-| **Blocca** | la vendita del dato DaaS e l'esposizione legale |
+| **Chiusa il** | 2026-09-30 — **era gia' decisa nel codice da almeno 25 giorni** |
+| **Prova** | `20260925120000_admin_dashboard_hardening.sql:86-87` (griglia) · `:88-89` (bucket 15 min) · `:110` (`k=5`) · `:113` (`HAVING COUNT(DISTINCT profile_id) >= 5`) |
+
+### Esito 30/09: la decisione era gia' stata presa, e non registrata
+
+Questa e' la decisione che meglio dimostra perche' il registro esiste. Le due strategia non erano
+alternative: **erano gia' complementari nella stessa vista**, e la domanda restava aperta.
+
+| livello | cosa fa | riga |
+|---|---|---|
+| aggregazione commerciale | `ROUND(lat::numeric, 3)` / `ROUND(lng::numeric, 3)` | `:86-87` |
+| granularita' temporale | `DATE_TRUNC('hour', visited_at) + INTERVAL '15 min' * (minute / 15)` | `:88-89` |
+| **garanzia minima** | `HAVING COUNT(DISTINCT profile_id) >= 5` | `:113` |
+
+Quindi: **la griglia da' la granularita' commerciale, la soglia e' la garanzia legale.** Il valore di
+k è **5**, e il codice lo dichiara in tre posti senza che nessuna decisione lo coprisse.
+
+**Correzione necessaria al testo della domanda.** La griglia non è "110 m": è
+`ROUND(x, 3)` = 0,001°, che a Taranto vale circa **111 m in latitudine e 85 m in longitudine**. Il
+"110 m" compare in almeno quindici documenti ed è un'approssimazione, non una specifica. `ST_SnapToGrid`
+non compare mai in `supabase/migrations/`.
+
+Lo stesso `k = 5` è riusato in `20260929120000_mete_consigliate_soft_sorting.sql:103` per le Mete
+Consigliate. Un solo k in tutto il prodotto, come deve essere.
 
 ### Domanda
 La documentazione fissa **griglia 110 m + bucket 15 min**; il codice implementa **soglia
@@ -394,10 +515,82 @@ recensioni.
 
 ---
 
-## Decisioni prese, in attesa di applicazione al codice
+## D14 - Disambiguazione di `tier` in tre termini distinti
 
-*(Nessuna al 26/09. Le prime tre fasi servono a rendere visibile la differenza fra una decisione
-presa e una decisione eseguita: il registro non promette nulla, mostra cosa manca.)*
+| campo | valore |
+|---|---|
+| **Stato** | `applicata` |
+| **Chi decide** | utente |
+| **Aperta il** | 2026-09-30 |
+| **Esito** | `frame` per il layout grafico UI · `poi.tier` per la validazione del POI · `lore_tier` per il livello narrativo |
+| **Prova** | [`A8_lessico_e_marchio.md`](aree/A8_lessico_e_marchio.md) §1.1 e §3 |
+
+### Perche' e' una decisione e non una costruzione
+
+La separazione e' gia' conforme al codice: `getAvatarFrameStyle` non legge il lore, `LevelUpLore` non
+legge i frame. La collisione era **solo nei documenti**, dove tutti e tre si chiamavano "tier", e si
+era infiltrata in `A7` §5 e in `D10`/`D11`.
+
+La conseguenza dichiarata e' che **la compatibilita' con le note precedenti di `A7`, `D10` e `D11` e'
+ufficialmente superata**: se in un documento vecchio "tier" non e' specificato, non e' leggibile.
+
+### Cosa resta da fare nel codice
+
+`frame` e `lore_tier` non hanno un campo: sono funzioni, e il nome giusto sta nel nome della funzione.
+`poi.tier` invece **non esiste** e va creato: e' il campo senza il quale la struttura a 4 tier resta
+prosa. Resta `D10`, che questa decisione non chiude.
+
+---
+
+## D15 - Nome ufficiale del progetto
+
+| campo | valore |
+|---|---|
+| **Stato** | `applicata` |
+| **Chi decide** | utente |
+| **Aperta il** | 2026-09-30 |
+| **Esito** | **L.O.T.O. Map (Life On The Outside) Co-Experience** |
+| **Prova** | `app.json:3` · `android/app/src/main/res/values/strings.xml:2` · [`A8_lessico_e_marchio.md`](aree/A8_lessico_e_marchio.md) §1.2 |
+
+### Cosa e' stato corretto
+
+Il marchio era in due stati diversi nella stessa app: `expo.name` diceva `LOTO MAP` e le **sei
+stringhe di permesso** dicevano `L.O.T.O. HUB` — che sono esattamente le uniche stringhe che l'utente
+legge per intero, perché sono i dialoghi di permesso di iOS e Android. Una delle sei aveva anche un
+refuso, `L'O.T.O. HUB` (`app.json:27`).
+
+Corretti: `app.json:3` e le sei stringhe, `strings.xml:2`, e una riga nel banner di
+`.agents/rules/master_business_brief.md`, che è in `Storico` e non può essere riscritto nel corpo
+(`R4` §2).
+
+### Cosa NON e' stato corretto, e perche'
+
+`com.lotohub.app` resta. Il package identifier è un identificativo di installazione: cambiarlo
+significa disinstallare l'app su ogni dispositivo e perdere le chiavi di firma. Non è un nome
+mostrato, è un indirizzo. Se lo si vuole cambiare è una decisione separata e va pianificata.
+
+**Da notare:** `android/` è in `.gitignore` (`R5`, criterio C12). La modifica a `strings.xml` esiste
+solo su disco e non è versionata. Se il disco si cancella, quel nome torna indietro.
+
+---
+
+## Decisioni chiuse al 30/09, e cosa resta aperto
+
+| esito | decisioni | cosa le ha chiuse |
+|---|---|---|
+| `applicata` | D1, D5, D6, D11, D12, D14, D15 | il codice, o una tua decisione esplicita |
+| `parziale` | D4 | 2 blocker su 4; **B3 e B4 restano aperti** |
+| `aperta` | D2, D3, D7, D8, D9, D10, D13 | — |
+
+**Cinque decisioni aperte da quattro giorni che dipendono dal cloud**, e che nessuna può chiudere
+l'agente: `D9` (`vw_pois_frontend` esiste?), `D10` (campo `poi.tier`), `D13` (canale di sblocco dei
+feedback), più `Q17` (`tenants.id` UUID o testo) e `Q26` (`accessibility_mode` BOOLEAN o TEXT).
+Sono in `QUERY-CLOUD.md` e `diagnostica-gate-vault.sql`.
+
+**Il fatto che conta, per il metodo:** cinque decisioni erano rimaste aperte perché il codice le
+aveva gia' prese senza che nessuno le registrasse. Non è un difetto di chi decide: è il costo di non
+avere un registro che venga aggiornato quando il codice si muove. `METODICA.md` §4 e `autorita.json`
+esistono per quello.
 
 ---
 

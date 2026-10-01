@@ -180,7 +180,7 @@ BEGIN
      is_takeaway, party_size_reported)
   VALUES
     (v_user, p_hash, v_co2, v_liters, v_tokens, v_xp,
-     COALESCE(p_takeaway, false), p_party_size);
+     COALESCE(p_takeaway, false), COALESCE(p_party_size, 1));
 
   RETURN json_build_object(
     'success',    true,

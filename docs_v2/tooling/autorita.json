@@ -44,6 +44,18 @@
       "livello": "L2",
       "nota": "50 soglie confrontate una a una con calculate_user_level: zero differenze (A3-T9). Non esiste una seconda fonte: il frontend e il server dicono la stessa cosa per costruzione, non per promessa."
     },
+    "lessico-ufficiale": {
+      "stato": "canonico",
+      "file": "docs_v2/aree/A8_lessico_e_marchio.md",
+      "livello": "L1",
+      "nota": "Creato il 30/09 perche' la triangolazione dei documenti di luglio trovava 9 collisioni di nome su 24 concetti verificati, e 7 erano la stessa parola con due significati. Un documento che descrive il sistema non risolve una collisione di nomi, la riproduce. Registro D14 (frame / poi.tier / lore_tier) e D15 (marchio L.O.T.O. Map - Life On The Outside Co-Experience). Difetto noto e non risolto: levelUtils.ts:10 e :288 danno due nomi al blocco 11-20."
+    },
+    "forma-esperienza": {
+      "stato": "canonico",
+      "file": "docs_v2/aree/A9_forma_esperienza.md",
+      "livello": "L1",
+      "nota": "La tab bar, l'ordine di rivelazione e il rito quotidiano. Non confondere con il dominio curva-livelli (A2), che possiede la meccanica di sblocco, e non con struttura-finale-dell-app-validazione-poi-e-percorso (A7). Confine dichiarato dentro il documento perche' due aree che si contendono una parola sono un conflitto di ambito:."
+    },
     "modello-prodotto": {
       "stato": "canonico",
       "file": "docs_v2/loto-hub-architettura-sistema-master-2026.md",

@@ -295,11 +295,11 @@ scritte come specifica e poi lette come descrizione di qualcosa che esisteva gi�
 | "l'app usa Mock Dati per simulare questi flussi" | **superato**: l'iniettore è disattivato e non ha import | `utils/mockInjector.ts:4` |
 | "Opzione B: modulo classico con Email e Password" | **non implementato**: nessun percorso email/password nell'app | nessun `signUp` né `signInWithPassword` sotto `app/` e `components/` |
 
-**Una scoperta che cambia il perimetro.** `process_esg_impact`, descritta come la RPC che "elabora i
-log grezzi e aggiorna i saldi in modo sicuro", **non è nella catena ufficiale delle migration**:
-esiste solo in `supabase/archive_scattered_sql/LOTO_RESURRECTION_FULL.sql:148`, un archivio.
-
-E il client la chiama davvero, per ogni check-in:
+**Una scoperta che ha cambiato il perimetro, e poi è stata risolta in codice.**
+`process_esg_impact` era descritta come la RPC che "elabora i log grezzi e aggiorna i saldi in modo
+sicuro", ma **non era nella catena ufficiale delle migration**: esisteva solo in
+`supabase/archive_scattered_sql/LOTO_RESURRECTION_FULL.sql:148`, un archivio. E il client la chiama
+per ogni check-in:
 
 ```ts
 // app/(tabs)/index.tsx:597
@@ -308,17 +308,22 @@ const { error } = await supabase.rpc('process_esg_impact', {
   p_tokens: 50, p_xp: 50, p_takeaway: false, p_party_size: multiplier });
 ```
 
-Quindi ci sono due esiti possibili e **nessuno dei due è buono senza una verifica**. O la funzione
-esiste nel database ma non è mai stata committata in una migration, e allora il repo non la
-riproduce (`A3-T14` non è chiuso, è chiuso solo per i file che *abbiamo visto*). Oppure non esiste, e
-ogni check-in finisce in `Alert.alert("Errore", "Impossibile completare la scansione.")`
-(`index.tsx:606`). L'errore è gestito, il che è meglio di niente, ma un utente che scansiona un POI e
-si becca un errore non è un utente servito.
-
-**Da risolvere prima di qualunque altra cosa:** leggere dal cloud se `process_esg_impact` esiste e con
-quale firma. Una sola query. Finché quel `?` non è tolto, la promessa "nessun calcolo pesante sul
-telefono, il server garantisce i saldi" è una promessa senza corpo che la applichi — che è
-esattamente il difetto che ha fatto trovare il proximity gate.
+> **Correzione 30/09, ore 20:54.** Questo paragrafo è stato scritto e, nello stesso pomeriggio, la
+> migration `supabase/migrations/20260930180000_process_esg_impact.sql` ha risolto il problema che
+> descriveva. Il caso è instructive e va tenuto: la firma d'archivio dichiarava `p_user_id` mentre il
+> client mandava `user_id`, e chiedeva un `p_takeaway` inesistente. Postgres risolve gli argomenti per
+> nome, quindi **la chiamata non poteva risolversi**: all'utente arrivava "Impossibile completare la
+> scansione", senza allarme lato server.
+>
+> La nuova migration ha anche corretto un difetto più grave: `p_user_id` accettava l'id di **qualsiasi
+> utente**, quindi un utente autenticato poteva accreditare impatto a un terzo — lo stesso difetto di
+> `get_poi_vetrina`, per la stessa ragione. E ha creato `impact_transactions`, che non aveva un
+> `CREATE TABLE` in nessuna migration ufficiale: il repository non riproduceva il registro che il
+> motore di impatto usa.
+>
+> **La lezione che questo file porta con sé:** la riga sotto è rimasta scritta per qualche ora dopo
+> che il codice l'aveva resa falsa. Nessun documento dichiarava quale modifica l'avrebbe invalidata.
+> Da qui la regola in §6.
 
 **Il "secondo gate" non è un gate: è una scorciatoia che indebolisce il primo.** Va detto con
 precisione, perché a prima vista sembra un filtro e invece è il contrario.
@@ -369,3 +374,52 @@ client, indipendente dalla RPC. È rilevante per il Blocco 1 e verificabile subi
 recuperata qui: i tre report DaaS, il tetto dei 3 Custodi, la Barra Civica alimentata dai soli PTI,
 gli Eventi Temporanei, l'Handshake GPS doppio, il concierge WhatsApp, la fine delle classifiche
 pubbliche. Nessuno di questi è stato buttato via: è stato **verificato e tenuto**.
+
+---
+
+## 6. Dove sta il resto, e quando questo file scade
+
+### 6.1 Questo file non è tutto
+
+Copre il **modello**, il **sistema** e le **funzioni**. Non copre due cose, che hanno casa propria
+perché hanno una forma diversa dalla sua.
+
+| dominio | chi lo possiede | perché non qui |
+|---|---|---|
+| **il lessico** — che cosa si chiama ogni cosa | [`A8_lessico_e_marchio.md`](aree/A8_lessico_e_marchio.md) | un documento che descrive il sistema non risolve una collisione di nomi: la riproduce. 9 collisioni trovate il 30/09, 7 delle quali erano la stessa parola con due significati |
+| **la forma dell'esperienza** — tab bar, ordine di rivelazione, rito | [`A9_forma_esperienza.md`](aree/A9_forma_esperienza.md) | descrive *dove* compare una cosa sbloccata, non *che cosa* fa. Il confine con `A2` (la meccanica) e `A7` (la validazione del POI) è dichiarato dentro `A9` |
+
+Le aree restanti sono `A1` principi, `A3` dati e SQL, `A4` dashboard DaaS, `A5` app mobile, `A6`
+commerciale, `A2` gamification. L'indice completo è `MANIFEST.json`; l'indice di **chi dice il vero**
+è `tooling/autorita.json`.
+
+### 6.2 La regola che mancava, e che questo file si dà da solo
+
+Il caso `process_esg_impact` in §5 è la prova che **un documento senza condizione di scadenza
+perde due volte**: prima quando il codice lo smentisce, e poi quando il codice lo corregge e nessuno
+si ricorda che il documento lo aveva detto.
+
+Quindi, da ogni sezione di questo file si può chiedere una cosa sola, e va posta:
+
+> **Quale modifica al codice rende falso questo paragrafo?**
+
+| sezione | scade se |
+|---|---|
+| §1 i quattro principi | un principio viene rimosso da `.agents/AGENTS.md`, o smette di essere vero nel codice |
+| §2 architettura | una tabella o una funzione viene creata in `supabase/migrations/`, o un oggetto richiesto dal frontend ne perde la definizione |
+| §2.2 il proximity gate | `scan_poi_gps` cambia di corpo: **è successo tre volte** in tre giorni |
+| §3 le funzioni | una feature diventa implementata, o lascia di esserlo |
+| §5 triangolazione di luglio | una delle cinque affermazioni diventa vera: **è successo** per `process_esg_impact` |
+| §6 mappa dei domini | un dominio passa da `vuoto` a `canonico` in `autorita.json` |
+
+La regola è verificabile: se una riga di questo file è vera e nessuna delle condizioni qui sotto si è
+avverata, **non è ancora un documento scaduto**. Se una delle condizioni si è avverata e la riga
+ Resta com'era, è un bug di governance e va segnalato come tale.
+
+### 6.3 Cosa non è ancora chiuso, in una riga
+
+Cinque domande dipendono dal cloud e nessuna può essere chiusa dall'agente: `D9` (`vw_pois_frontend`
+esiste?), `Q17` (`tenants.id` UUID o testo), `Q26` (`accessibility_mode` `BOOLEAN` o `TEXT`), `D10`
+(`poi.tier`), `D13` (canale di sblocco dei feedback). Sono in `QUERY-CLOUD.md` e
+`diagnostica-gate-vault.sql`. Otto domini in `autorita.json` sono dichiarati `vuoto`: sono lacune
+aperte, non posti da riempire con un documento nuovo.

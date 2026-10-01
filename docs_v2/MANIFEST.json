@@ -1,7 +1,7 @@
 {
   "contesto": "L.O.T.O. Map",
   "versione": 2,
-  "generato": "2026-09-30",
+  "generato": "2026-10-01",
   "radice": "docs_v2",
   "nota": "Indice machine-readable del contesto v2. Generato da tooling/build_manifest.py. Non modificare a mano: il validatore controlla che corrisponda ai file su disco.",
   "conteggi": {
@@ -198,14 +198,17 @@
       "stato": "Vivente",
       "confidenza": "Alta",
       "owner": "utente",
-      "aggiornato": "2026-09-26",
+      "aggiornato": "2026-09-30",
       "evidenza": [
         "INVENTARIO_DOCUMENTAZIONE.md:104",
         "docs_v2/aree/A1_fondazione.md:88",
         "docs_v2/aree/A2_gamification.md:110",
         "docs_v2/aree/A3_dati_e_sql.md:118",
         "docs_v2/aree/A4_dashboard_daas.md:104",
-        "docs_v2/aree/A6_commerciale.md:96"
+        "docs_v2/aree/A6_commerciale.md:96",
+        "supabase/migrations/20260929160000_restore_proximity_gate.sql:243",
+        "supabase/migrations/20260929160000_restore_proximity_gate.sql:104",
+        "supabase/migrations/20260925120000_admin_dashboard_hardening.sql:110"
       ]
     },
     {

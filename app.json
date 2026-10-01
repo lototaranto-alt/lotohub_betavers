@@ -1,6 +1,6 @@
 ﻿{
   "expo": {
-    "name": "LOTO MAP",
+    "name": "L.O.T.O. Map",
     "slug": "loto-app-fresh",
     "scheme": "lotoappfresh",
     "version": "1.0.7",
@@ -22,9 +22,9 @@
       "bundleIdentifier": "com.lotohub.app",
       "buildNumber": "9",
       "infoPlist": {
-        "NFCReaderUsageDescription": "L.O.T.O. HUB usa il lettore NFC per scansionare i tag fisici (Zero-IoT) e sbloccare i check-in nelle mete convenzionate.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "L.O.T.O. HUB usa la posizione in background per attivare il geofencing delle mete e i check-in automatici anche a schermo spento.",
-        "NSMotionUsageDescription": "L'O.T.O. HUB usa il contapassi per calcolare i km percorsi in mobilità dolce e le emissioni di CO2 risparmiate nella gamification ecologica.",
+        "NFCReaderUsageDescription": "L.O.T.O. Map usa il lettore NFC per scansionare i tag fisici (Zero-IoT) e sbloccare i check-in nelle mete convenzionate.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "L.O.T.O. Map usa la posizione in background per attivare il geofencing delle mete e i check-in automatici anche a schermo spento.",
+        "NSMotionUsageDescription": "L.O.T.O. Map usa il contapassi per calcolare i km percorsi in mobilità dolce e le emissioni di CO2 risparmiate nella gamification ecologica.",
         "UIBackgroundModes": [
           "fetch",
           "location"
@@ -84,7 +84,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Consenti a L.O.T.O. HUB di usare la tua posizione per aggiornare il Geofencing anche in tasca.",
+          "locationAlwaysAndWhenInUsePermission": "Consenti a L.O.T.O. Map di usare la tua posizione per aggiornare il Geofencing anche in tasca.",
           "isAndroidBackgroundLocationEnabled": true,
           "locationWhenInUsePermission": "L'App usa il GPS per ottimizzare l'esperienza in mappa, permetterti di fare i check-in e mostrarti i POI vicini."
         }
@@ -96,13 +96,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "L.O.T.O. HUB ha bisogno della fotocamera per scansionare il tuo L.O.T.O. Pass (QR Code) e recuperare il tuo account anonimo."
+          "cameraPermission": "L.O.T.O. Map ha bisogno della fotocamera per scansionare il tuo L.O.T.O. Pass (QR Code) e recuperare il tuo account anonimo."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "L.O.T.O. HUB ha bisogno di accedere alla tua galleria per permetterti di caricare il L.O.T.O. Pass (QR Code) che avevi salvato in precedenza."
+          "photosPermission": "L.O.T.O. Map ha bisogno di accedere alla tua galleria per permetterti di caricare il L.O.T.O. Pass (QR Code) che avevi salvato in precedenza."
         }
       ],
       [
@@ -113,7 +113,7 @@
             "peripheral",
             "central"
           ],
-          "bluetoothAlwaysPermission": "L.O.T.O. HUB utilizza il Bluetooth per comunicare con i beacon interni (Musei/B&B) permettendoti check-in automatici e accessibilita indoor anche senza GPS."
+          "bluetoothAlwaysPermission": "L.O.T.O. Map utilizza il Bluetooth per comunicare con i beacon interni (Musei/B&B) permettendoti check-in automatici e accessibilita indoor anche senza GPS."
         }
       ],
       "./withNotifee.js"

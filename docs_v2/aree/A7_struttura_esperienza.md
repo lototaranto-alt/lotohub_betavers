@@ -28,6 +28,19 @@ Questa e' l'area che applica `R5`: nessun documento esistente descrive la strutt
 quattro che ci provano si contraddicono. Quindi le opzioni sono **derivate dai criteri che il
 progetto ha gia' dimostrato di seguire**, non copiate da un blueprint.
 
+> **Ripartizione del dominio, 30/09/2026.** Il perimetro di questa area si e' ridotto: la parola
+> `esperienza` non e' piu' sua ed e' passata a
+> [`A9_forma_esperienza.md`](A9_forma_esperienza.md), che possiede **la tab bar, l'ordine di
+> rivelazione e il rito quotidiano**. Qui resta **la validazione del POI e il percorso**. Il
+> `ambito:` e' stato riscritto di conseguenza, perche' due documenti che si contendono la stessa
+> parola nel titolo sono un conflitto di autorita' (`R1` §1).
+>
+> **Due decisioni di questa sezione sono superate.** `S3` (rank e tier narrativo sono la stessa
+> cosa?) e' chiusa da [`A8_lessico_e_marchio.md`](A8_lessico_e_marchio.md) §1.1: i tre oggetti
+> che condividevano la parola `tier` sono `frame`, `lore_tier` e `poi.tier`. `S5` (quante sezioni
+> visibili al LV1) resta aperta ma il dato di partenza e' sbagliato: le route sono **5, non 7**,
+> ed esiste gia' una politica di interdizione su una sola tab. Vedi `A9` §1.1.
+
 Stato `Bozza` perche' 4 decisioni su 5 restano aperte (§4). Confidenza `Media`: la struttura e'
 verificata sul codice, la sua ricostruzione documentale no.
 
