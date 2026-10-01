@@ -92,6 +92,18 @@
       "livello": "L1",
       "nota": "Inventario tecnico con 12 riferimenti file:linea verificabili (types/database.ts, le tre migration, PoiDetailSheet.tsx, dbAggregation.ts). Complementare al SSOT: descrive com'e' fatto, il SSOT descrive cosa deve fare."
     },
+    "database-schema": {
+      "stato": "vuoto",
+      "file": null,
+      "livello": "L1",
+      "nota": "LACUNA APERTA, LA PIU' GRANDE DEL PROGETTO. Misurata il 30/09: il cloud ha 25 tabelle, le migration del repo ne creano 4. Ventuno tabelle non sono riproducibili. Tre (badges, crowd_predictions, loto_squads) non sono definite in nessun file del repo: sono nate nel SQL Editor. Le altre 18 stanno solo in file dismessi migration_vNN e in archive_scattered_sql. impact_transactions ha tre definizioni diverse nel repo e quella reale non corrisponde a nessuna (manca receipt_hash). Le FUNZIONI invece sono a posto: e' vera la parte di A3-T14 che riguarda le RPC, non quella che riguarda lo schema."
+    },
+    "tabelle-non-ufficiali": {
+      "stato": "vuoto",
+      "file": null,
+      "livello": "L1",
+      "nota": "LACUNA APERTA. location_pings e' interrogata da index.tsx:583 ma NON esiste nel cloud. La query restituisce data = null senza che il codice controlli l'errore, quindi !pings e' sempre vero e chi e' oltre il raggio riceve sempre 'Troppo Lontano'. Fallisce chiuso: non e' un buco di frode, e' un blocco di check-in legittimi. Il ramo a 12 ore che doveva mitigarlo non ha mai potuto funzionare."
+    },
     "process-esg-impact": {
       "stato": "candidato",
       "file": "supabase/migrations/20260930180000_process_esg_impact.sql",

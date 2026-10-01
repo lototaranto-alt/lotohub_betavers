@@ -291,7 +291,7 @@ scritte come specifica e poi lette come descrizione di qualcosa che esisteva gi�
 |---|---|---|
 | "GPS e Haversine" | impreciso: il gate usa **`ST_Distance`** con PostGIS | `20260929160000_restore_proximity_gate.sql:106` |
 | "media device per utente" per il dato predittivo | **non esiste**, il codice conta sotto quorum | `utils/bleManager.ts:124-128` |
-| `crowd_predictions` come "seconda tabella" | **nessun `CREATE TABLE`** in alcuna migration | unico riferimento: `supabase/schema/introspection.sql:102`, come nome da ispezionare |
+| `crowd_predictions` come "seconda tabella" | **esiste nel cloud, non nel repo**: nessun `CREATE TABLE` in alcun file del repository | unico riferimento nel repo: `supabase/schema/introspection.sql:102`, come nome da ispezionare |
 | "l'app usa Mock Dati per simulare questi flussi" | **superato**: l'iniettore è disattivato e non ha import | `utils/mockInjector.ts:4` |
 | "Opzione B: modulo classico con Email e Password" | **non implementato**: nessun percorso email/password nell'app | nessun `signUp` né `signInWithPassword` sotto `app/` e `components/` |
 
@@ -366,9 +366,36 @@ con UUID anonimo e backup alternativo via email. Il codice implementa **solo** l
 documento di luglio non era dunque bugiardo sul merito: era semplicemente ahead of the code, e non
 lo dichiarava. Zero-PII è quindi corretto come *stato*, non come *compromesso*.
 
-**Una riga che nessuno dei quattro documenti riportava.** `index.tsx:591` intercetta l'esito
-"Troppo Lontano" e mostra un avviso all'utente. Esiste dunque un controllo di distanza anche lato
-client, indipendente dalla RPC. È rilevante per il Blocco 1 e verificabile subito senza cloud.
+**Il repository non riproduce il database. Questo è il fatto più importante emerso il 30/09.**
+
+Confronto fra le 25 tabelle realmente presenti nel cloud e i `CREATE TABLE` del repository:
+
+| | esito |
+|---|---|
+| tabelle nel cloud | 25 |
+| create da una migration in `supabase/migrations/` | **4** |
+| presenti nel cloud ma mai create da nessuna parte del repo | 3 (`badges`, `crowd_predictions`, `loto_squads`) |
+| definite solo in file dismessi o archivi | le altre 18 |
+
+Dove sta la verità, in ordine di dispersione: `supabase/migrations/` (4 tabelle, più funzioni e
+trigger), i file sciolti `migration_vNN` in `supabase/`, `archive_scattered_sql/`, e infine
+`pure_cloud_queries/`. Nessuno dei tre gruppi è la fonte autoritativa. E tre tabelle non sono da
+nessuna parte: sono nate nel SQL Editor e vivono solo lì.
+
+`impact_transactions` ha **tre definizioni diverse** nel repo (`migration_v2.sql`,
+`migration_v4_verity.sql`, `archive_scattered_sql/LOTO_RESURRECTION_FULL.sql:50`) e la versione
+reale nel cloud **non corrisponde a nessuna delle tre**: non ha `receipt_hash`. Quindi lo schema
+vive ha una provenienza che il repository non documenta.
+
+**Correzione a un'affermazione precedente.** Ho scritto che la catena di migration "chiude
+A3-T14". È vero per le *funzioni*, che ora sono tutte nel repo. È **falso per lo schema**: 21 tabelle
+su 25 non sono riproducibili. `A3-T14` va riaperto.
+
+**E una tabella che il codice interroga ma che non esiste.** `location_pings` non è nel cloud.
+`index.tsx:583` la interroga senza controllare l'errore, quindi riceve `data = null` e la condizione
+`!pings` è sempre vera: chi è oltre il raggio del POI riceve "Troppo Lontano" **in ogni caso**. Non
+è un buco, è il contrario: fallisce chiuso e blocca check-in legittimi. La scorciatoia a 12 ore
+non è mai stata una via di fuga, perché non è mai esistita la tabella che la doveva aprire.
 
 **Cosa resta vivo dei documenti di luglio.** La visione di prodotto è solida e quasi tutta
 recuperata qui: i tre report DaaS, il tetto dei 3 Custodi, la Barra Civica alimentata dai soli PTI,

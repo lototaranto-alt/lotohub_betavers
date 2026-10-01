@@ -344,12 +344,20 @@ chiama "l'ambiente non e' riproducibile da Git". Oggi confermato da un secondo a
   `user_id`** (`9f22d449…`, stesso `created_at`), **non creato** un account nuovo, **non
   cancellato** nulla (13 chiavi in AsyncStorage prima e dopo, 5 UUID distinti invariati). Il fix
   non è più sperato: è misurato. Resta solo da committarlo.
-- `A3-T14` `[ ]` **`docs_v2/` e `supabase/migrations/` sono entrambi fuori da git.** 47 documenti di
-  verifica e 3 migration scritte (le due della catena di scansione e quella delle Mete Consigliate)
-  esistono solo nel working tree. `docs_v2/` è materiale di consultazione e la sua esclusione è una
-  scelta; **le migration no**: sono il piano di lavoro per riportare il DB in Git, e se il branch
-   viene creato da un'altra parte, il lavoro di `A3-T12` e `A1-T16` non parte. È la versione seria di
-   `Q12`.
+    - `A3-T14` `[!]` **RIAPERTA IL 30/09. Le migration sono in Git, ma il DB non è riproducibile.**
+      La parte originale ("`docs_v2/` e `supabase/migrations/` fuori da git") è chiusa: entrambe
+      committate. Ma misurando il cloud il 30/09 è emerso che delle **25 tabelle reali, le migration
+      del repo ne creano 4**. Ventuno non sono riproducibili: 3 non sono definite in nessun file del
+      repo (`badges`, `crowd_predictions`, `loto_squads`), le altre 18 stanno solo in `migration_vNN`
+      dismessi e in `archive_scattered_sql/`. Quindi: **funzioni e trigger a posto, schema no.** Il
+      commit `6e969eb` diceva di chiudere `A3-T14` e lo chiude solo a metà. Diventa il sottotask
+      `A3-T14b`, da risolvere esportando lo schema reale e decidendo cosa diventa migration.
+    - `A3-T14b` `[ ]` **Esportare lo schema reale del cloud e ricostruire le 21 tabelle mancanti come
+      migration.** Regole: mai `CREATE TABLE IF NOT EXISTS` come unico meccanismo, perché sul cloud ha
+      appena fatto fallire `impact_transactions` (la tabella c'era, con uno schema diverso, e la
+      funzione è morta su `receipt_hash` inesistente). Per ogni tabella: `ALTER TABLE ADD COLUMN IF
+      NOT EXISTS` + `DROP/CREATE` espliciti per indici, policy e vincoli. Fonte unica, il cloud
+      misurato, non un archivio.
 - `A3-T15` `[?]` **I premi del check-in sono cablati, non letti dal POI.** Trovato il 29/09
   leggendo i due corpi di `scan_poi_gps` per ripristinare il proximity gate. La versione del
   27/09 assegna valori letterali invece di leggerli dalla tabella `pois`:
