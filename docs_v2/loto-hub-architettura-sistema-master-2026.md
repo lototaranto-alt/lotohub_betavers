@@ -317,9 +317,39 @@ const { error } = await supabase.rpc('process_esg_impact', {
 >
 > La nuova migration ha anche corretto un difetto più grave: `p_user_id` accettava l'id di **qualsiasi
 > utente**, quindi un utente autenticato poteva accreditare impatto a un terzo — lo stesso difetto di
-> `get_poi_vetrina`, per la stessa ragione. E ha creato `impact_transactions`, che non aveva un
-> `CREATE TABLE` in nessuna migration ufficiale: il repository non riproduceva il registro che il
-> motore di impatto usa.
+> `get_poi_vetrina`, per la stessa ragione.
+>
+> **Seconda correzione, stessa giornata, ore successive.** La migration ha anche **creato
+> `impact_transactions`** con `CREATE TABLE IF NOT EXISTS`. Ma nel cloud la tabella **esisteva già**,
+> creata fuori dal repository, con uno schema **diverso**. Il `IF NOT EXISTS` l'ha saltata e la
+> funzione ha cominciato a scrivere dentro uno schema che non conosceva:
+>
+> ```
+> ERROR 42703: column "receipt_hash" of relation "impact_transactions" does not exist
+> CONTEXT: PL/pgSQL function process_esg_impact(...) line 37
+> ```
+>
+> Misurato sul cloud: la colonna dell'hash si chiama **`hash`**, non `receipt_hash`. Inoltre `id` è
+> `uuid` e non `bigserial`, `co2_saved` e `liters_saved` sono `double precision`, `profile_id` è
+> **nullable e senza `REFERENCES`**, e ci sono tre colonne in più — `tenant_id`, `action_type`,
+> `poi_id` — che questa funzione non scrive e che restano `NULL`.
+>
+> Due lezioni, e la seconda è quella che conta:
+>
+> 1. **`CREATE TABLE IF NOT EXISTS` non è un meccanismo di convergenza.** Se la tabella esiste con
+>    uno schema diverso, non fa nulla e non segnala nulla. Su tabelle preesistenti serve
+>    `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. La regola è ora in `autorita.json`, dominio
+>    `tabelle-non-ufficiali`.
+> 2. **Il repository non poteva descrivere il database, perché non lo conteneva.** Dichiaravo qui
+>    "il repository non riproduceva il registro che il motore di impatto usa". La frase era vera e
+>    insufficiente: la verità è che il repository conteneva una **versione plausibile ma diversa**
+>    del registro, e io l'avevo trattata come se fosse quella. Il cloud è l'unica copia reale: quando
+>    divergono, la ragione ce l'ha il cloud. Vedi `A3-T14b`.
+>
+> Il file correttivo è `supabase/migrations/20260930210000_fix_impact_transactions_schema.sql`,
+> **separato** e non una modifica del primo: la `30180000` era già applicata e Supabase non
+> riesegue una migration registrata. La `30180000` è stata comunque corretta in parallelo, così un
+> ambiente che nasce da zero parte già con lo schema giusto.
 >
 > **La lezione che questo file porta con sé:** la riga sotto è rimasta scritta per qualche ora dopo
 > che il codice l'aveva resa falsa. Nessun documento dichiarava quale modifica l'avrebbe invalidata.

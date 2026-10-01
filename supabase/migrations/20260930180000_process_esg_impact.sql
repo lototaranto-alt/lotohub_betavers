@@ -44,10 +44,38 @@
 --   server, sia l'unico ingresso pubblico. Vedi docs_v2/tooling/autorita.json,
 --   dominio 'gate-prossimita-attivo'. Fino ad allora non e' chiuso.
 --
--- SULLA TABELLA: impact_transactions non aveva un CREATE TABLE in nessuna
--- delle migration ufficiali, solo in due file d'archivio. Il repository non
--- riproduceva la tabella che il motore di impatto usa come registro. Creata
--- qui, con lo stesso nome e le stesse colonne che gli archivi usavano.
+-- SULLA TABELLA: misurata sul cloud il 30/09. La tabella ESISTE gia', creata
+-- fuori dal repository, e il CREATE TABLE IF NOT EXISTS qui sotto non viene
+-- eseguito. Lo schema reale misurato e' questo:
+--
+--   id uuid NO | profile_id uuid SI | hash text SI | co2_saved double precision NO
+--   liters_saved double precision NO | tokens_earned integer NO | xp_earned integer NO
+--   created_at timestamptz SI | tenant_id text SI | action_type text SI
+--   is_takeaway boolean SI | poi_id uuid SI | party_size_reported integer SI
+--
+-- Cinque differenze dal CREATE TABLE qui sotto, tutte corrette nella funzione:
+--   1. la colonna dell'hash si chiama 'hash', NON 'receipt_hash'. Con il nome
+--      sbagliato l'INSERT moriva e la funzione intera con lui. E' stato il
+--      primo sintomo, e ha dimostrato che il repo non descriveva il DB.
+--   2. co2_saved e liters_saved sono DOUBLE PRECISION, non NUMERIC/INTEGER.
+--   3. profile_id e' NULLABLE e senza REFERENCES: una riga del registro puo'
+--      non avere un proprietario. Il NOT NULL con REFERENCES che il repo
+--      dichiara qui NON e' quello che c'e' in cloud, quindi non viene applicato.
+--   4. id e' UUID, non BIGSERIAL. Se manca il DEFAULT gen_random_uuid(), la
+--      riga non entra senza id esplicito: si inserisce id = gen_random_uuid().
+--   5. is_takeaway e party_size_reported sono NULLABLE. Percio' il COALESCE
+--      aggiunto il 30/09 non era un bug di NULL: era gia' difeso. Resta, e
+--      non costa niente, ma la motivazione che avevo dato era sbagliata.
+--   In piu' il cloud ha tre colonne che qui non esistono e che questa funzione
+--   NON scrive: tenant_id, action_type, poi_id. Restano NULL. action_type in
+--   particolare lascia le righe senza etichetta di azione: se un report
+--   raggruppa per action_type, questi check-in non compaiono.
+--
+-- Perche' la tabella esiste e il repo non la riproduce: nessun CREATE TABLE nei
+-- 63 export snapshot ne' nelle 25 tabelle misurate. E' il caso peggiore della
+-- famiglia documentata in autorita.json sotto 'database-schema': qui non e'
+-- solo mancante, e' DIVERGENTE. Per questo la regola di A3-T14b e' che le
+-- tabelle si allineano al cloud misurato, non il contrario.
 --
 -- SUL DOPPIO CONTEGGIO: scan_poi_gps assegna gia' total_xp, total_co2 e
 -- total_tokens (20260929160000 righe 274-276). Se in futuro il client
@@ -67,18 +95,36 @@ BEGIN;
 -- 1. Tabella registro. Append-only per scelta: nessun record di impatto
 --    viene corretto, perche' i report DaaS si vendono come audit trail.
 -- -----------------------------------------------------------------------------
+-- Lo schema qui sotto replica quello MISURATO sul cloud, non quello degli
+-- archivi. Sul cloud non viene eseguito (la tabella c'e' gia'): vale per gli
+-- ambienti freschi, che senza questo si ritroverebbero con uno schema diverso
+-- da produzione. Se una riga diverge, si corregge il repo sul cloud reale.
 CREATE TABLE IF NOT EXISTS public.impact_transactions (
-  id            BIGSERIAL PRIMARY KEY,
-  profile_id    UUID    NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  receipt_hash  TEXT,
-  co2_saved     NUMERIC NOT NULL DEFAULT 0,
-  liters_saved  INTEGER NOT NULL DEFAULT 0,
-  tokens_earned INTEGER NOT NULL DEFAULT 0,
-  xp_earned     INTEGER NOT NULL DEFAULT 0,
-  is_takeaway   BOOLEAN NOT NULL DEFAULT false,
-  party_size_reported INTEGER NOT NULL DEFAULT 1,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_id          UUID,          -- misurato NULLABLE e senza REFERENCES
+  hash                TEXT,          -- il nome reale, non 'receipt_hash'
+  co2_saved           DOUBLE PRECISION NOT NULL DEFAULT 0,
+  liters_saved        DOUBLE PRECISION NOT NULL DEFAULT 0,
+  tokens_earned       INTEGER NOT NULL DEFAULT 0,
+  xp_earned           INTEGER NOT NULL DEFAULT 0,
+  created_at          TIMESTAMPTZ DEFAULT now(),
+  tenant_id           TEXT,          -- esiste nel cloud, questa funzione non la scrive
+  action_type         TEXT,          -- esiste nel cloud, resta NULL: vedi nota sopra
+  is_takeaway         BOOLEAN,
+  poi_id              UUID,          -- esiste nel cloud, questa funzione non la scrive
+  party_size_reported INTEGER
 );
+
+-- Convergenza esplicita per gli ambienti dove la tabella esiste gia' con lo
+-- schema degli archivi. ADD COLUMN IF NOT EXISTS e' il meccanismo che va usato
+-- su tabelle preesistenti: CREATE TABLE IF NOT EXISTS non tocca le colonne.
+-- Solo add, nessun DROP: nessuna perdita di dati storici.
+ALTER TABLE public.impact_transactions ADD COLUMN IF NOT EXISTS hash TEXT;
+ALTER TABLE public.impact_transactions ADD COLUMN IF NOT EXISTS tenant_id TEXT;
+ALTER TABLE public.impact_transactions ADD COLUMN IF NOT EXISTS action_type TEXT;
+ALTER TABLE public.impact_transactions ADD COLUMN IF NOT EXISTS is_takeaway BOOLEAN;
+ALTER TABLE public.impact_transactions ADD COLUMN IF NOT EXISTS poi_id UUID;
+ALTER TABLE public.impact_transactions ADD COLUMN IF NOT EXISTS party_size_reported INTEGER;
 
 COMMENT ON TABLE  public.impact_transactions IS
   'Registro append-only degli impatti. Non e' correggibile: i report DaaS '
@@ -176,10 +222,10 @@ BEGIN
   END IF;
 
   INSERT INTO public.impact_transactions
-    (profile_id, receipt_hash, co2_saved, liters_saved, tokens_earned, xp_earned,
+    (id, profile_id, hash, co2_saved, liters_saved, tokens_earned, xp_earned,
      is_takeaway, party_size_reported)
   VALUES
-    (v_user, p_hash, v_co2, v_liters, v_tokens, v_xp,
+    (gen_random_uuid(), v_user, p_hash, v_co2, v_liters, v_tokens, v_xp,
      COALESCE(p_takeaway, false), COALESCE(p_party_size, 1));
 
   RETURN json_build_object(

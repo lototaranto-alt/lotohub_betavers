@@ -102,13 +102,13 @@
       "stato": "vuoto",
       "file": null,
       "livello": "L1",
-      "nota": "LACUNA APERTA. location_pings e' interrogata da index.tsx:583 ma NON esiste nel cloud. La query restituisce data = null senza che il codice controlli l'errore, quindi !pings e' sempre vero e chi e' oltre il raggio riceve sempre 'Troppo Lontano'. Fallisce chiuso: non e' un buco di frode, e' un blocco di check-in legittimi. Il ramo a 12 ore che doveva mitigarlo non ha mai potuto funzionare."
+      "nota": "LACUNA APERTA. DUE CASI DIVERSI, entrambi chiusi solo metà. (1) location_pings e' interrogata da index.tsx:583 ma NON esiste nel cloud: la query restituisce data = null senza che il codice controlli l'errore, quindi !pings e' sempre vero e chi e' oltre il raggio riceve sempre 'Troppo Lontano'. Fallisce chiuso, non e' un buco di frode, ma blocca check-in legittimi, e il ramo a 12 ore non ha mai potuto mitigarlo. (2) impact_transactions ESISTE gia' nel cloud con uno schema DIVERSO dal repo: hash e non receipt_hash, id uuid e non bigserial, co2_saved/liters_saved double precision, profile_id nullable senza FK, piu' tenant_id/action_type/poi_id che il codice non scrive. Corretto dalla 20260930210000. REGOLA FISSATA: CREATE TABLE IF NOT EXISTS NON e' un meccanismo di convergenza, su tabella preesistente e' un no-op silenzioso. Serve ALTER TABLE ADD COLUMN IF NOT EXISTS. E quando repo e cloud divergono, la ragione ce l'ha il cloud: il cloud e' l'unica copia reale."
     },
     "process-esg-impact": {
       "stato": "candidato",
-      "file": "supabase/migrations/20260930180000_process_esg_impact.sql",
+      "file": "docs_v2/VERIFICHE-PROCESS-ESG-IMPACT.md",
       "livello": "L1",
-      "nota": "Migration scritta il 30/09, NON ancora applicata. La firma d'archivio non poteva accettare la chiamata del client (mandava user_id e p_takeaway, la funzione dichiarava p_user_id e p_hash): il check-in non poteva risolversi. Corretti anche l'hole di sicurezza (p_user_id accettava l'id di un terzo, ora auth.uid()) e creato impact_transactions, che non aveva un CREATE TABLE in nessuna migration. Promosso a canonico dopo V1-V5."
+      "nota": "30/09 MISURATO, e due bug trovati in sequenza. Primo: la tabella impact_transactions ESISTE gia' nel cloud ma con uno schema DIVERSO dal repo, quindi CREATE TABLE IF NOT EXISTS ha fatto nothing e l'INSERT e' morto su 'receipt_hash does not exist'. La colonna reale si chiama 'hash'. Secondo: la 20260930180000 era gia' applicata, quindi correggerla non bastava, serve il delta 20260930210000 che allinea le colonne e riscrive la funzione. Schema reale: id uuid, profile_id uuid NULLABLE senza FK, hash text, co2_saved e liters_saved double precision, piu' tenant_id/action_type/poi_id che questa funzione NON scrive (restano NULL: se un report raggruppa per action_type, questi check-in non compaiono). ANCIA APERTA e non chiusa dalla neutralizzazione: p_co2/p_liters/p_tokens/p_xp arrivano dal client senza tetto, con GRANT EXECUTE a authenticated un client modificato si accredita da solo. Serve revocare authenticated e lasciare scan_poi_gps come unico ingresso pubblico."
     },
     "gate-prossimita-attivo": {
       "stato": "vuoto",
