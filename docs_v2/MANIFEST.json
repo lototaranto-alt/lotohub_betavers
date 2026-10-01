@@ -5,9 +5,9 @@
   "radice": "docs_v2",
   "nota": "Indice machine-readable del contesto v2. Generato da tooling/build_manifest.py. Non modificare a mano: il validatore controlla che corrisponda ai file su disco.",
   "conteggi": {
-    "totali": 52,
+    "totali": 54,
     "per_tipo": {
-      "analisi": 28,
+      "analisi": 30,
       "area": 9,
       "costituzione": 1,
       "decisione": 1,
@@ -18,7 +18,7 @@
     "per_stato": {
       "Bozza": 4,
       "Storico": 1,
-      "Vivente": 47
+      "Vivente": 49
     }
   },
   "documenti": [
@@ -626,6 +626,22 @@
       ]
     },
     {
+      "path": "HANDOVER-SESSIONE-2026-09-30.md",
+      "id": "HANDOVER-SESSIONE-2026-09-30",
+      "tipo": "analisi",
+      "ambito": "stato-di-uscita-e-primi-passi-per-la-prossima-sessione",
+      "titolo": "Chiusura sessione 30/09 — stato e primi passi",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-30",
+      "evidenza": [
+        "supabase/migrations/20260930210000_fix_impact_transactions_schema.sql:1",
+        "docs_v2/VALUTAZIONE-PROGETTO.md:1",
+        "docs_v2/tooling/autorita.json:1"
+      ]
+    },
+    {
       "path": "INVENTARIO_DOCUMENTAZIONE.md",
       "id": "INVENTARIO-V1",
       "tipo": "analisi",
@@ -638,6 +654,23 @@
       "evidenza": [
         "docs/README.md:1",
         ".agents/AGENTS.md:1"
+      ]
+    },
+    {
+      "path": "MAPPA-TECNICA-CODICE.md",
+      "id": "MAPPA-TECNICA-CODICE",
+      "tipo": "analisi",
+      "ambito": "inventario-autonomo-della-struttura-tecnica-per-recupero-codice",
+      "titolo": "Mappa tecnica del codice — L.O.T.O. Map",
+      "stato": "Vivente",
+      "confidenza": "Alta",
+      "owner": "Agent",
+      "aggiornato": "2026-09-30",
+      "evidenza": [
+        "app/_layout.tsx:58",
+        "utils/levelUtils.ts:79",
+        "supabase/migrations/20260930180000_process_esg_impact.sql:1",
+        ".gitignore:1"
       ]
     },
     {
