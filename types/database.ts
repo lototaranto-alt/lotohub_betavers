@@ -646,9 +646,7 @@ export type Database = {
           admin_role: string | null
           avatar_url: string | null
           created_at: string | null
-          email: string | null
           expo_push_token: string | null
-          full_name: string | null
           id: string
           is_banned: boolean | null
           is_premium: boolean | null
@@ -660,7 +658,6 @@ export type Database = {
           profile_completed: boolean | null
           total_co2: number | null
           total_distance_meters: number | null
-          total_liters: number | null
           total_tokens: number | null
           total_xp: number | null
           updated_at: string | null
@@ -669,9 +666,7 @@ export type Database = {
           admin_role?: string | null
           avatar_url?: string | null
           created_at?: string | null
-          email?: string | null
           expo_push_token?: string | null
-          full_name?: string | null
           id: string
           is_banned?: boolean | null
           is_premium?: boolean | null
@@ -683,7 +678,6 @@ export type Database = {
           profile_completed?: boolean | null
           total_co2?: number | null
           total_distance_meters?: number | null
-          total_liters?: number | null
           total_tokens?: number | null
           total_xp?: number | null
           updated_at?: string | null
@@ -692,9 +686,7 @@ export type Database = {
           admin_role?: string | null
           avatar_url?: string | null
           created_at?: string | null
-          email?: string | null
           expo_push_token?: string | null
-          full_name?: string | null
           id?: string
           is_banned?: boolean | null
           is_premium?: boolean | null
@@ -706,7 +698,6 @@ export type Database = {
           profile_completed?: boolean | null
           total_co2?: number | null
           total_distance_meters?: number | null
-          total_liters?: number | null
           total_tokens?: number | null
           total_xp?: number | null
           updated_at?: string | null

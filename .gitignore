@@ -59,3 +59,12 @@ supabase/schema/data_dump.sql
 
 # Cache/temp della Supabase CLI (tracciata per errore nell'Initial commit)
 supabase/.temp/
+
+# Materiale NON verificato, fuori dal perimetro di docs_v2/tooling/autorita.json.
+# MAPPA-TECNICA-CODICE.md dichiara confidenza "Alta" senza alcuna prova: resta in
+# locale come consultazione e non entra nella documentazione di sistema finche'
+# non e' verificata riga per riga.
+docs_v2/MAPPA-TECNICA-CODICE.md
+
+# Trascrizioni di sessione esportate dal client opencode. Non sono documentazione.
+session-ses*

@@ -9,7 +9,7 @@ import { supabase } from '../../utils/supabase';
 import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/BackgroundLocationTask';
 import { ThemeProvider as AppThemeProvider } from '../../context/ThemeContext';
 import { useCity } from '../../context/CityContext';
-import { calculateLevel, getAvatarFrameStyle, EVENTS_UNLOCK_LEVEL } from '../../utils/levelUtils';
+import { calculateLevel, getAvatarFrameStyle, buildLevelUpEvents, EVENTS_UNLOCK_LEVEL } from '../../utils/levelUtils';
 import MobilityWizard from '../../components/MobilityWizard';
 import ProfileModal from '../../components/ProfileModal';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
@@ -577,41 +577,60 @@ export default function VetrinaScreen() {
       return;
     }
 
-    const dist = userLocation ? getDistance(userLocation.coords.latitude, userLocation.coords.longitude, poi.latitude, poi.longitude) : 999;
-
-    if (dist > (poi.checkin_radius || 50)) {
-      const { data: pings } = await supabase
-        .from('location_pings')
-        .select('*')
-        .eq('poi_id', poi.id)
-        .gte('created_at', new Date(Date.now() - 12 * 3600 * 1000).toISOString())
-        .limit(1);
-
-      if (!pings || pings.length === 0) {
-        Alert.alert("Troppo Lontano", "Spostati verso il partner o attendi segnale GPS stabile.");
-        return;
-      }
+    let lat: number, lng: number;
+    try {
+      const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      lat = fresh.coords.latitude;
+      lng = fresh.coords.longitude;
+    } catch (e) {
+      Alert.alert("GPS non disponibile", "Non riesco a leggere la tua posizione. Controlla i permessi e riprova.");
+      return;
     }
 
-    const multiplier = userProfile?.party_size || 1;
-    // 30/09: eliminato `user_id`. La funzione prende l'identita' da auth.uid()
-    // e non accetta un id dall'esterno: accettarlo permetteva di accreditare
-    // l'impatto a un terzo. Vedi 20260930180000_process_esg_impact.sql.
-    const { error } = await supabase.rpc('process_esg_impact', {
-      p_co2: 0.5 * multiplier,
-      p_liters: 5 * multiplier,
-      p_tokens: 50,
-      p_xp: 50,
-      p_takeaway: false,
-      p_party_size: multiplier
+    // 02/10: questo percorso chiamava process_esg_impatt dagli importi calcolati
+    // in chiaro sul client (0.5 * multiplier, 5 * multiplier, 50, 50). Tre problemi:
+    //   - gli importi non hanno tetto server, quindi un client modificato si
+    //     accredita la cifra che vuole
+    //   - saltava cooldown 12h e anti-velocita', che scan_poi_gps fa gia' sul server
+    //   - il fallback su location_pings interrogava una tabella che il repo non
+    //     riproduce (esiste solo nei migration_vNN dismessi)
+    // Ora e' lo stesso ingresso di PoiDetailSheet.tsx:141: una sola catena di
+    // check-in, calcolata interamente sul server.
+    const { data: raw, error } = await supabase.rpc('scan_poi_gps', {
+      p_poi_id: poi.id,
+      p_lat: lat,
+      p_lng: lng
     });
 
     if (error) {
-      Alert.alert("Errore", "Impossibile completare la scansione.");
-    } else {
-      Alert.alert("Successo!", "Impatto registrato.");
-      caricaDati();
+      // I messaggi della RPC sono gia' in italiano leggibile (distanza, cooldown,
+      // coordinate mancanti). Vengono mostrati cosi' come sono invece di essere
+      // ridotti a "Impossibile completare la scansione".
+      Alert.alert("Check-in non registrato", error.message);
+      return;
     }
+
+    const res = (raw || {}) as any;
+
+    // Livello: lo stesso calcolo di PoiDetailSheet.tsx:149-156, perche' il
+    // livello e' SSOT e l'evento deve passare dalla stessa coda.
+    if (typeof userProfile?.total_xp === 'number') {
+      const oldLevel = calculateLevel(userProfile.total_xp);
+      const newLevel = calculateLevel(res.new_total_xp ?? userProfile.total_xp);
+      const events = buildLevelUpEvents(oldLevel, newLevel, 'it');
+      if (events.length > 0) {
+        gamification.queueEvents(events);
+      }
+    }
+
+    if (res.shadowbanned) {
+      Alert.alert("Check-in silenzioso", "Il tuo spostamento e' stato registrato ma non ha generato punti.");
+    } else {
+      Alert.alert("Successo!", `Impatto registrato. +${res.xp_awarded ?? 0} XP`);
+    }
+
+    refreshGamification();
+    caricaDati();
   };
 
   const handleAction = async (poi: any) => {
