@@ -68,3 +68,15 @@ docs_v2/MAPPA-TECNICA-CODICE.md
 
 # Trascrizioni di sessione esportate dal client opencode. Non sono documentazione.
 session-ses*
+
+# Cantiere di analisi non verificata: ~1,3 MB di esportazioni chat + i due file di
+# lavoro (LOG-LAVORO.md, VERDETTI-MISURATI.md). Serve a ragionare, non e'
+# documentazione di sistema. Non deve entrare con un `git add -A`: al termine
+# se ne estrae solo il necessario in una directory pulita.
+docs_v3/
+
+# Migration archiviate e NON COLLAUDATE. La 090000 ricrea process_esg_impact con
+# 6 parametri invece dei 7 della 110000: non la sostituisce, la affianca come
+# overload, e i vecchi call a 7 parametri continuano a funzionare. Non eseguire.
+# Tenuta fuori da git cosi' nessun `git add -A` la rende eseguibile per errore.
+supabase/migrations/ARCHIVIATE_NON_COLLAUDATE/
