@@ -74,7 +74,19 @@ export default function MapScreen() {
   };
 
   const [selectedPoi, setSelectedPoi] = useState<any>(null);
+  // Finestra del termine "recente" della HeatScore: 15 minuti. A livello di
+  // modulo perche' serve sia al calcolo del fondo sia al timer di decadimento.
+  const BOOST_WINDOW_MS = 15 * 60 * 1000;
+
   const [heatScores, setHeatScores] = useState<Record<string, number>>({});
+  // Ultimo check-in in tempo reale per POI: serve al decadimento del boost.
+  // Non entra nello stato React perche' non deve ridisegnare la mappa da solo,
+  // lo fa il timer che legge questo ref.
+  const heatBoostsRef = useRef<Record<string, number[]>>({});
+  // Fondo giornaliero, tenuto separato dai boost. Senza questo, al decadimento
+  // non si sarebbe quanto del punteggio e' volume della giornata e quanto e'
+  // termine recente da togliere.
+  const heatBaseRef = useRef<Record<string, number>>({});
   const [fogOfWar, setFogOfWar] = useState(false);
   const [discoveredPoiIds, setDiscoveredPoiIds] = useState<Set<string>>(new Set());
   
@@ -154,9 +166,45 @@ export default function MapScreen() {
             }
           }
           
+          // HeatScore = Fondo Cumulativo Giornaliero + (Check-in ultimi 15 min x 2)
+          //
+          // Il fondo NON e' un numero inventato: e' il conteggio reale dei
+          // check-in di oggi per POI. Prima era un 10 fisso su ogni POI, quindi
+          // al caricamento la mappa era piatta e non diceva nulla.
+          //
+          // Il fondo e' un conteggio INTERO di righe, non un valore dichiarato: il
+          // client non puo' inventare "10" per farlo rosso. Il boost recente
+          // nasce dall'evento Realtime, che scatta all'inserimento della riga,
+          // quindi anche lui e' legato a un fatto avvenuto, non a un valore
+          // inviato. Resta pero' un limite: la query gira sul dispositivo, e un
+          // utente con l'app modificata potrebbe non eseguire il fetch del
+          // fondo. Serve una vista server per renderlo inattaccabile.
+          const dayStart = new Date();
+          dayStart.setHours(0, 0, 0, 0);
+
           const initialHeat: Record<string, number> = {};
-          poisData.forEach(p => { initialHeat[p.id] = 10; });
+          poisData.forEach(p => { initialHeat[p.id] = 0; });
           setHeatScores(initialHeat);
+
+          // Il fondo conta SOLO i check-in piu' vecchi della finestra di 15 minuti.
+          // Quelli piu' recenti sono gia' coperti dal boost che Realtime aggiunge
+          // quando arrivano: cosi' nessun check-in viene contato due volte e il
+          // decadimento sa esattamente quanto togliere.
+          const boostCutoff = Date.now() - BOOST_WINDOW_MS;
+          const { data: dayCheckins } = await supabase
+            .from('user_pois')
+            .select('poi_id, visited_at')
+            .gte('visited_at', dayStart.toISOString())
+            .lt('visited_at', new Date(boostCutoff).toISOString());
+
+          if (isActive && dayCheckins) {
+            const fondo: Record<string, number> = {};
+            dayCheckins.forEach(r => {
+              if (r.poi_id) fondo[r.poi_id] = (fondo[r.poi_id] || 0) + 1;
+            });
+            heatBaseRef.current = fondo;
+            setHeatScores(prev => ({ ...prev, ...fondo }));
+          }
         }
       };
 
@@ -169,10 +217,17 @@ export default function MapScreen() {
           { event: 'INSERT', schema: 'public', table: 'user_pois' },
           (payload) => {
             const poiId = payload.new.poi_id;
+            if (!poiId) return;
+            // Boost recente x2. Era +15 fisso a ogni inserimento: il punteggio
+            // cresceva senza limite nella sessione e non decadeva mai, quindi il
+            // colore di un POI dipendeva da quante volte era stato ricaricata la
+            // mappa. Ora vale 2, ed e' l'unico termine che decade.
             setHeatScores(prev => ({
               ...prev,
-              [poiId]: (prev[poiId] || 10) + 15
+              [poiId]: (prev[poiId] || 0) + 2
             }));
+            if (!heatBoostsRef.current[poiId]) heatBoostsRef.current[poiId] = [];
+            heatBoostsRef.current[poiId].push(Date.now());
           }
         )
         .subscribe();
@@ -183,6 +238,41 @@ export default function MapScreen() {
       };
     }, [currentTenant])
   );
+
+  // Decadimento del boost recente. Finestra 15 minuti, come da specifica.
+  // Il FONDO giornaliero non decade: resta il volume della giornata, ed e'
+  // quello che tiene acceso il nodo. Solo il termine recente torna a zero,
+  // cosi' un POI visitato un'ora fa non e' piu' rosso ma non sparisce.
+  useEffect(() => {
+    const tick = setInterval(() => {
+      const now = Date.now();
+      setHeatScores(prev => {
+        let changed = false;
+        const next = { ...prev };
+        Object.keys(heatBoostsRef.current).forEach(poiId => {
+          const seen = heatBoostsRef.current[poiId] || [];
+          // Quanti boost sono ancora dentro la finestra. Si conta il vivo e si
+          // sottrae la differenza rispetto a quanto avevamo gia' applicato:
+          // sottrarre un numero fisso sbagliava quando in finestra erano
+          // arrivati piu' check-in, e il punteggio non tornava mai a zero.
+          const ancoraValidi = seen.filter(t => now - t <= BOOST_WINDOW_MS).length;
+          const boostApplicato = (next[poiId] || 0) - (heatBaseRef.current[poiId] || 0);
+          const boostScaduto = boostApplicato - ancoraValidi * 2;
+
+          if (boostScaduto > 0) {
+            next[poiId] = Math.max(0, next[poiId] - boostScaduto);
+            changed = true;
+          }
+          heatBoostsRef.current[poiId] = seen.filter(t => now - t <= BOOST_WINDOW_MS);
+          if (heatBoostsRef.current[poiId].length === 0) {
+            delete heatBoostsRef.current[poiId];
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 60 * 1000);
+    return () => clearInterval(tick);
+  }, []);
 
   const filteredPois = pois.filter(poi => {
     if (poi.category === 'fountain') return true; // Sempre visibili
@@ -198,7 +288,7 @@ export default function MapScreen() {
       properties: {
         id: poi.id,
         name: poi.name,
-        heat: heatScores[poi.id] || 10,
+        heat: heatScores[poi.id] || 0,
         discovered: discoveredPoiIds.has(poi.id) ? 1 : 0,
       },
       geometry: {
