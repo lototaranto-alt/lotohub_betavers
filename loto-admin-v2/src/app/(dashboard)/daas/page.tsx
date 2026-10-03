@@ -10,7 +10,6 @@ import {
   CircleCheck,
   Clock3,
   Database,
-  Droplets,
   Leaf,
   Map,
   MapPin,
@@ -269,7 +268,6 @@ function EsgTable({ rows }: { rows: EsgMonthlyRow[] }) {
             <th className="px-5 py-3">Check-in turisti</th>
             <th className="px-5 py-3">Utenti attivi</th>
             <th className="px-5 py-3">CO₂</th>
-            <th className="px-5 py-3">Litri</th>
             <th className="px-5 py-3">PTI civici</th>
             <th className="px-5 py-3">XP turisti</th>
             <th className="px-5 py-3">Azioni civiche</th>
@@ -285,7 +283,6 @@ function EsgTable({ rows }: { rows: EsgMonthlyRow[] }) {
               <td className="px-5 py-4 text-xs font-semibold text-slate-600">{formatInteger(row.checkins)}</td>
               <td className="px-5 py-4 text-xs font-semibold text-slate-600">{formatInteger(row.active_users)}</td>
               <td className="px-5 py-4 text-xs font-semibold text-emerald-700">{formatDecimal(row.co2_saved)} kg</td>
-              <td className="px-5 py-4 text-xs font-semibold text-blue-700">{formatDecimal(row.liters_saved)} L</td>
               <td className="px-5 py-4 text-xs font-semibold text-violet-700">{formatInteger(row.civic_pti_generated)}</td>
               <td className="px-5 py-4 text-xs font-semibold text-indigo-700">{formatInteger(row.tourist_xp_earned)}</td>
               <td className="px-5 py-4 text-xs font-semibold text-slate-600">{formatInteger(row.civic_actions)}</td>
@@ -508,7 +505,7 @@ export default async function DaasReportsPage() {
         <DataMessage error={snapshot.errors.esg} empty={snapshot.esgMonthly.length === 0}>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard label="Utenti attivi" value={formatInteger(latestEsg?.active_users)} detail="Ultimo mese disponibile" icon={Users} tone="blue" />
-            <MetricCard label="Litri risparmiati" value={`${formatDecimal(latestEsg?.liters_saved)} L`} detail="Ledger aggregato" icon={Droplets} tone="blue" />
+            <MetricCard label="Check-in registrati" value={formatInteger(latestEsg?.checkins)} detail="Ledger aggregato" icon={MapPin} tone="blue" />
             <MetricCard label="PTI generati" value={formatInteger(latestEsg?.pti_generated)} detail="Impatto civico" icon={ShieldCheck} tone="violet" />
             <MetricCard label="XP generati" value={formatInteger(latestEsg?.xp_earned)} detail="Progressione utenti" icon={BarChart3} tone="amber" />
           </div>

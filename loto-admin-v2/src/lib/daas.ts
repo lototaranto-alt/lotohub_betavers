@@ -8,7 +8,6 @@ export type EsgMonthlyRow = {
   co2_saved: number | null
   tourist_co2_saved: number | null
   civic_co2_saved: number | null
-  liters_saved: number | null
   pti_generated: number | null
   xp_earned: number | null
   tourist_xp_earned: number | null
