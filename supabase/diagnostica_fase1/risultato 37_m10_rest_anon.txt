@@ -1,0 +1,27 @@
+-- ============================================================================
+-- ESITO 37 (M10) - certificazione REST anon - eseguito 09/10
+-- ============================================================================
+-- Probe HTTP anon (chiave pubblica da .env, mai esposta) contro
+-- https://fsuolbwsvpgiglwcaffh.supabase.co
+--
+--  badges?select=id,name,req_xp&order=req_xp.asc
+--    -> 200  [3 righe]: Eco Warrior (req_xp 500), Pioniere (1000),
+--           Custode LOTO (1500)   [catalogo leggibile pubblicamente]
+--  rpc/claim_badges (POST {})
+--    -> 401  code 42501 "permission denied for function claim_badges"
+--           [EXECUTE solo authenticated: anon bloccato dal livello accessi]
+--  user_badges?select=id,badge_id
+--    -> 200  []   [RLS own-policy: anon non vede righe altrui]
+--  user_badges?select=id,badges(id,name,req_xp)&limit=5
+--    -> 200  []   [embedding badges(*) ora valido: FK su badges presente,
+--           nessun 400/PGRST; vuoto perche' 0 righe]
+--  badge_templates?select=id
+--    -> 401  code 42501 "permission denied for table badge_templates"
+--           [tabella abbandonata BLoccata anche a livello grant]
+--
+-- LETTURA
+-- -------
+-- Catena M10 certificata anche fuori dal pannello: dichiarazione pubblica del
+-- catalogo, assegnazione server-side protetta, residenza righe invisibile ad
+-- anon, vincolo FK attivo, tabella morta inaccessibile.
+-- ============================================================================

@@ -13,7 +13,6 @@ import { useFocusEffect } from 'expo-router';
 import { useRouteBuilder } from '../../context/RouteContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLevelProgress } from '../../utils/levelUtils';
-import { ensureEarnedBadges } from '../../utils/badgeAssignment';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -82,30 +81,14 @@ export default function ProfileScreen() {
             setUserTotalCo2(profile.total_co2 || 0);
           }
 
-          // Fetch Badges
+          // Fetch Badges (assegnazione server-side: claim_badges legge total_xp
+          // dal DB; il client NON scrive piu' in user_badges)
+          await supabase.rpc('claim_badges');
           const { data: badgesData } = await supabase
             .from('user_badges')
             .select('*, badges(*)')
             .eq('user_id', user.id);
           if (badgesData) setUserBadges(badgesData);
-
-          // Sistema badge VIVO: assegna i badge i cui requisiti reali sono già raggiunti
-          const newlyAssigned = await ensureEarnedBadges(supabase, profile, badgesData);
-          if (newlyAssigned.length > 0) {
-            const { data: refreshed } = await supabase
-              .from('user_badges')
-              .select('*, badges(*)')
-              .eq('user_id', user.id);
-            if (refreshed) setUserBadges(refreshed);
-          }
-
-          // Fetch Itineraries (solo dati REALI dal DB)
-          const { data: itinData } = await supabase.rpc('get_user_itineraries');
-          if (itinData) {
-            setUserItineraries(itinData);
-          } else {
-            setUserItineraries([]);
-          }
         }
       };
       fetchProfileData();
@@ -144,9 +127,6 @@ export default function ProfileScreen() {
             try {
               const { data: { session } } = await supabase.auth.getSession();
               await AsyncStorage.removeItem('loto_onboarding_seen');
-              await AsyncStorage.removeItem('loto_fallback_xp');
-              await AsyncStorage.removeItem('loto_fallback_tokens');
-              await AsyncStorage.removeItem('loto_fallback_pois');
               
               if (session) {
                 await supabase.from('profiles').update({ total_xp: 0, pois_discovered: 0, total_tokens: 0 }).eq('id', session.user.id);

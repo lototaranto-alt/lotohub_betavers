@@ -1,0 +1,23 @@
+-- ============================================================================
+-- ESITO 41 (M17 scan ORPHAN catena reward) - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/41_m17_orphan_scan.sql
+-- Rowcounts base (40): user_pois 5 | badges 3 | badge_templates 0 |
+-- user_badges 0 | impact_transactions 0 | pois 69 | profiles 50
+--
+-- ORPHAN (righe figlio senza genitore):
+--   impact_transactions.poi_id -> pois.id              | 0
+--   impact_transactions.profile_id -> profiles.id      | 0
+--   user_badges.badge_id -> badges.id                  | 0
+--   user_badges.user_id -> profiles.id                 | 0
+--   user_pois.poi_id -> pois.id                        | 0
+--   user_pois.profile_id -> profiles.id                | 0
+-- NULLFK (righe con FK NULL):
+--   impact_transactions.poi_id | impact_transactions.profile_id
+--   user_badges.badge_id | user_badges.user_id
+--   user_pois.poi_id | user_pois.profile_id            | tutti 0
+--
+-- ESITO: 12/12 righe = 0 -> INTEGRITA' FK CATENA REWARD PULITA al 09/10.
+-- Nota: le tabelle ancora vuote (user_badges, impact_transactions,
+-- badge_templates) vanno riscansionate DOPO le scritture di Fase 2/adozione.
+-- ============================================================================

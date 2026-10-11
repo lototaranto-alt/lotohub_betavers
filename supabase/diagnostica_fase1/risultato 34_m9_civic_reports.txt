@@ -1,0 +1,33 @@
+-- ============================================================================
+-- ESITO PRECHECK 34 (M9) - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/34_m9_civic_reports_columns.sql
+--
+-- CIVIC_REPORTS - colonne reali (una riga per colonna):
+--   pos 1  id                uuid                      NOT NULL  gen_random_uuid()
+--   pos 2  user_id           uuid                      NULL
+--   pos 3  tenant_id         text                      NULL      (nessun default)
+--   pos 4  category          text                      NULL
+--   pos 5  description       text                      NULL
+--   pos 6  latitude          numeric                   NULL
+--   pos 7  longitude         numeric                   NULL
+--   pos 8  grid_cell         text                      NULL
+--   pos 9  status            text                      NULL      'pending_match'
+--   pos 10 matched_report_id uuid                      NULL
+--   pos 11 created_at        timestamptz               NULL      now()
+--
+-- LETTURA (M9)
+-- ------------
+-- - `user_id` e' UUID -> `userId=''` (community.tsx) NON puo' fare cast: conferma
+--   CB-17b. Il fix usa l'id di sessione (supabase.auth.getUser()).
+-- - `tenant_id` e' TEXT NULLABLE senza default -> omettere tenant_id non rompe
+--   l'INSERT; per uniformita' entrambi i client lo inviano
+--   (currentTenant?.id || 'taranto'; 'taranto' verificato come id reale,
+--   tenants.id = {lecce, taranto}).
+-- - `status` default = 'pending_match', nessun CHECK. Il client non lo forza piu'
+--   -> normalizzazione sul default DB (prima CivicReportSheet forzava 'pending').
+-- - `grid_cell` esiste, `grid_cell_50m` no (già precheck 16): CivicDashboard corretto.
+--
+-- NOTA: 34b (trigger su civic_reports) atteso 0 righe; M2/§7j ha già misurato
+-- "0 trigger utente in public", `civic_confirmed` inesistente -> gate moot.
+-- ============================================================================

@@ -26,9 +26,7 @@ export default async function DashboardPage() {
   const { supabase } = await requireAdmin()
   const totalDownloads = await getGithubDownloads()
 
-  const { count: ghostUsers } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
+  const { data: ghostUsers } = await supabase.rpc('count_profiles')
 
   // Recuperiamo i check-in per le metriche (Anti-Frode, ESG, Leaderboard)
   const { data: userPois } = await supabase
@@ -115,7 +113,7 @@ export default async function DashboardPage() {
            </div>
            <div className="flex justify-between items-center pt-3">
               <span className="text-sm font-bold text-slate-500 flex items-center gap-2"><Users className="w-4 h-4 text-purple-500"/> Utenti Fantasma</span>
-              <span className="text-lg font-black text-slate-800">{ghostUsers ?? 0}</span>
+              <span className="text-lg font-black text-slate-800">{Number(ghostUsers ?? 0)}</span>
            </div>
         </div>
       </div>

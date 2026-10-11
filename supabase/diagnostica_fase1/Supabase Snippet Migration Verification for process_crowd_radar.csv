@@ -1,0 +1,17 @@
+prosecdef,proconfig,proacl,argomenti,ritorno,proprietario,anon_exec,auth_exec,definizione
+true,"[""search_path=public""]","{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",,boolean,postgres,false,true,"CREATE OR REPLACE FUNCTION public.is_loto_admin()
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT
+    auth.role() = 'service_role'
+    OR EXISTS (
+      SELECT 1
+      FROM public.profiles p
+      WHERE p.id = auth.uid()
+        AND p.admin_role IN ('admin', 'analyst')
+    );
+$function$
+"

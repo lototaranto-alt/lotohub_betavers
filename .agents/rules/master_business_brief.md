@@ -23,9 +23,9 @@
 ---
 
 ## 1. IDENTITÀ DEL PROGETTO
-**Nome:** L.O.T.O. HUB
+**Nome:** L.O.T.O. MAP
 **Definizione:** Piattaforma SaaS B2B2G "White-Label" per le Smart Cities. 
-**Modello Operativo:** L.O.T.O. HUB è un ecosistema che gamifica il turismo sostenibile. Trasforma ogni spostamento "green" del turista in un'esperienza di gioco (per l'utente) e in un dato statistico prezioso per la governance urbana (per il Comune).
+**Modello Operativo:** L.O.T.O. MAP è un ecosistema che gamifica il turismo sostenibile. Trasforma ogni spostamento "green" del turista in un'esperienza di gioco (per l'utente) e in un dato statistico prezioso per la governance urbana (per il Comune).
 **L'Oceano Blu (TSaaSI):** Abbiamo coniato il paradigma "Tourism Sustainable as a Service Institutional". A differenza dei competitor che offrono hardware costoso (sensori IoT) o si focalizzano sul pendolarismo casa-lavoro (es. MUV), noi offriamo un servizio turistico-culturale senza costi di infrastruttura.
 
 ## 2. L'INFRASTRUTTURA TECNOLOGICA (CONSOLIDATA E RESILIENTE)

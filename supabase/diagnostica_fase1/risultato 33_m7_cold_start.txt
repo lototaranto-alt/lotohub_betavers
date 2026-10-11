@@ -1,0 +1,31 @@
+-- ============================================================================
+-- ESITO POST-CHECK 33 (M7) - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/33_m7_cold_start_post_apply.sql
+-- Migration applicata: supabase/migrations/20261009140000_m7_cold_start_no_9999.sql
+--
+-- STATO MISURATO (una riga) - COMBACIA con l'atteso:
+--   lunghezza                = 7322            (era 7289: corpo cambiato)
+--   init_velocita_zero       = false           (difetto 1 corretto)
+--   ha_sentinella_9999       = false           (difetto 4: sentinella rimossa)
+--   ha_speed_measurable      = true            (P-D5: flag presente)
+--   storico_filtra_shadowban = false           (difetto 5: storico senza filtro)
+--   n_filtri_shadow          = 1               (resta solo il filtro del cooldown)
+--   argomenti                = p_poi_id uuid, p_lat double precision,
+--                              p_lng double precision  (FIRMA INVARIATA)
+--   prosecdef                = true
+--   proconfig                = ["search_path=public, pg_temp"]
+--
+-- CONCLUSIONE
+-- -----------
+-- M7 e' APPLICATO e coerente. I difetti 1-5 sono rimossi dal corpo deployato:
+-- cold-start -> P-D1 (20 XP / speed NULL); sentinella 9999 assente; flag di
+-- misurabilita' presente; storico anti-spoofing senza filtro shadowban.
+-- La firma invariata garantisce che i client M6 (deep link + PoiDetailSheet)
+-- continuino a funzionare senza modifiche.
+--
+-- RESTA APERTO (accettazione comportamentale, umano in-app):
+--   - nuovo utente -> 1o check-in: xp_awarded=20, speed_kmh=NULL, riga presente;
+--   - 2o check-in -> velocita' valutata (pedone/veicolo);
+--   - tripper >130 km/h -> shadowban, con storico che NON riparte da zero.
+-- ============================================================================

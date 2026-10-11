@@ -1,0 +1,22 @@
+-- ============================================================================
+-- ESITO PRECHECK 30 (G-06) - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/30_drop_scan_poi_precheck.sql
+--
+-- STATO MISURATO (una riga):
+--   argomenti            = p_poi_id uuid
+--   prosecdef            = true
+--   proconfig            = null
+--   proacl               = {=X/postgres, postgres=X/postgres, anon=X/postgres,
+--                           authenticated=X/postgres}
+--   oggetti_che_la_usano = 0
+--
+-- CONCLUSIONE
+-- -----------
+-- Nessun oggetto DB dipende da public.scan_poi(uuid) -> il DROP senza CASCADE
+-- e' sicuro e non propaga. Firma invariata rispetto al 28 (p_poi_id uuid).
+-- Procedere con l'apply di:
+--   supabase/migrations/20261009130000_drop_scan_poi_g06.sql
+-- poi con il post-check:
+--   supabase/diagnostica_fase1/31_drop_scan_poi_post_apply.sql
+-- ============================================================================

@@ -1,0 +1,23 @@
+-- ============================================================================
+-- ESITO 40 (M17 FK-anagrafe) - eseguito 09/10
+-- ============================================================================
+-- 40 v2: rimossa xp_ledger (NON ESISTE -> 42P01 al primo run).
+-- Catena reward reale: user_pois, badges, badge_templates, user_badges,
+-- impact_transactions.
+--
+-- FK (6, tutte supper public):
+--   impact_transactions.poi_id       -> pois.id     | nullable=true  | SET NULL
+--   impact_transactions.profile_id   -> profiles.id | nullable=true  | CASCADE
+--   user_badges.badge_id             -> badges.id   | nullable=true  | CASCADE
+--   user_badges.user_id              -> profiles.id | nullable=true  | CASCADE
+--   user_pois.poi_id                 -> pois.id     | nullable=false | CASCADE
+--   user_pois.profile_id             -> profiles.id | nullable=false | CASCADE
+--
+-- ROWCOUNT (reali):
+--   badge_templates 0 | badges 3 | impact_transactions 0 | pois 69 |
+--   profiles 50 | user_badges 0 | user_pois 5
+--
+-- Rabbit dati al 09/10: solo user_pois (5) e badges (3) popolati;
+-- user_badges / impact_transactions / badge_templates vuote (fase di
+-- adozione). Scan orfani reali -> 41.
+-- ============================================================================

@@ -1,0 +1,740 @@
+funzione,argomenti,tocca_profiles,security_definer
+create_profile_for_new_user_fn,,true,true
+get_poi_vetrina,"p_poi_id uuid, p_user_id uuid",true,true
+handle_new_user,,true,true
+is_loto_admin,,true,true
+process_esg_impact,"p_co2 numeric, p_liters integer, p_tokens integer, p_xp integer, p_takeaway boolean, p_party_size integer, p_hash text",true,true
+recover_loto_pass,recovery_code text,true,true
+rpc_sync_adventure,"user_id uuid, steps_count integer, is_wheelchair boolean",true,true
+rpc_sync_adventure_distance,"user_id uuid, meters_count integer",true,true
+sblocca_media,p_media_id uuid,true,true
+scan_poi,p_poi_id uuid,true,true
+scan_poi_gps,"p_poi_id uuid, p_lat double precision, p_lng double precision",true,true
+_postgis_deprecate,"oldname text, newname text, version text",false,false
+_postgis_index_extent,"tbl regclass, col text",false,false
+_postgis_join_selectivity,"regclass, text, regclass, text, text",false,false
+_postgis_pgsql_version,,false,false
+_postgis_scripts_pgsql_version,,false,false
+_postgis_selectivity,"tbl regclass, att_name text, geom geometry, mode text",false,false
+_postgis_stats,"tbl regclass, att_name text, text",false,false
+_st_3ddfullywithin,"geom1 geometry, geom2 geometry, double precision",false,false
+_st_3ddwithin,"geom1 geometry, geom2 geometry, double precision",false,false
+_st_3dintersects,"geom1 geometry, geom2 geometry",false,false
+_st_asgml,"integer, geometry, integer, integer, text, text",false,false
+_st_asx3d,"integer, geometry, integer, integer, text",false,false
+_st_bestsrid,geography,false,false
+_st_bestsrid,"geography, geography",false,false
+_st_contains,"geom1 geometry, geom2 geometry",false,false
+_st_containsproperly,"geom1 geometry, geom2 geometry",false,false
+_st_coveredby,"geom1 geometry, geom2 geometry",false,false
+_st_coveredby,"geog1 geography, geog2 geography",false,false
+_st_covers,"geog1 geography, geog2 geography",false,false
+_st_covers,"geom1 geometry, geom2 geometry",false,false
+_st_crosses,"geom1 geometry, geom2 geometry",false,false
+_st_dfullywithin,"geom1 geometry, geom2 geometry, double precision",false,false
+_st_distancetree,"geography, geography, double precision, boolean",false,false
+_st_distancetree,"geography, geography",false,false
+_st_distanceuncached,"geography, geography, boolean",false,false
+_st_distanceuncached,"geography, geography",false,false
+_st_distanceuncached,"geography, geography, double precision, boolean",false,false
+_st_dwithin,"geom1 geometry, geom2 geometry, double precision",false,false
+_st_dwithin,"geog1 geography, geog2 geography, tolerance double precision, use_spheroid boolean",false,false
+_st_dwithinuncached,"geography, geography, double precision",false,false
+_st_dwithinuncached,"geography, geography, double precision, boolean",false,false
+_st_equals,"geom1 geometry, geom2 geometry",false,false
+_st_expand,"geography, double precision",false,false
+_st_geomfromgml,"text, integer",false,false
+_st_intersects,"geom1 geometry, geom2 geometry",false,false
+_st_linecrossingdirection,"line1 geometry, line2 geometry",false,false
+_st_longestline,"geom1 geometry, geom2 geometry",false,false
+_st_maxdistance,"geom1 geometry, geom2 geometry",false,false
+_st_orderingequals,"geom1 geometry, geom2 geometry",false,false
+_st_overlaps,"geom1 geometry, geom2 geometry",false,false
+_st_pointoutside,geography,false,false
+_st_sortablehash,geom geometry,false,false
+_st_touches,"geom1 geometry, geom2 geometry",false,false
+_st_voronoi,"g1 geometry, clip geometry, tolerance double precision, return_polygons boolean",false,false
+_st_within,"geom1 geometry, geom2 geometry",false,false
+addauth,text,false,false
+addgeometrycolumn,"schema_name character varying, table_name character varying, column_name character varying, new_srid integer, new_type character varying, new_dim integer, use_typmod boolean",false,false
+addgeometrycolumn,"table_name character varying, column_name character varying, new_srid integer, new_type character varying, new_dim integer, use_typmod boolean",false,false
+addgeometrycolumn,"catalog_name character varying, schema_name character varying, table_name character varying, column_name character varying, new_srid_in integer, new_type character varying, new_dim integer, use_typmod boolean",false,false
+box,box3d,false,false
+box,geometry,false,false
+box2d,geometry,false,false
+box2d,box3d,false,false
+box2d_in,cstring,false,false
+box2d_out,box2d,false,false
+box2df_in,cstring,false,false
+box2df_out,box2df,false,false
+box3d,box2d,false,false
+box3d,geometry,false,false
+box3d_in,cstring,false,false
+box3d_out,box3d,false,false
+box3dtobox,box3d,false,false
+bytea,geometry,false,false
+bytea,geography,false,false
+calculate_level_from_xp,total_xp integer,false,false
+checkauth,"text, text",false,false
+checkauth,"text, text, text",false,false
+checkauthtrigger,,false,false
+contains_2d,"box2df, geometry",false,false
+contains_2d,"geometry, box2df",false,false
+contains_2d,"box2df, box2df",false,false
+disablelongtransactions,,false,false
+dropgeometrycolumn,"schema_name character varying, table_name character varying, column_name character varying",false,false
+dropgeometrycolumn,"catalog_name character varying, schema_name character varying, table_name character varying, column_name character varying",false,false
+dropgeometrycolumn,"table_name character varying, column_name character varying",false,false
+dropgeometrytable,"schema_name character varying, table_name character varying",false,false
+dropgeometrytable,"catalog_name character varying, schema_name character varying, table_name character varying",false,false
+dropgeometrytable,table_name character varying,false,false
+enablelongtransactions,,false,false
+equals,"geom1 geometry, geom2 geometry",false,false
+find_srid,"character varying, character varying, character varying",false,false
+geog_brin_inclusion_add_value,"internal, internal, internal, internal",false,false
+geography,bytea,false,false
+geography,"geography, integer, boolean",false,false
+geography,geometry,false,false
+geography_analyze,internal,false,false
+geography_cmp,"geography, geography",false,false
+geography_distance_knn,"geography, geography",false,false
+geography_eq,"geography, geography",false,false
+geography_ge,"geography, geography",false,false
+geography_gist_compress,internal,false,false
+geography_gist_consistent,"internal, geography, integer",false,false
+geography_gist_decompress,internal,false,false
+geography_gist_distance,"internal, geography, integer",false,false
+geography_gist_penalty,"internal, internal, internal",false,false
+geography_gist_picksplit,"internal, internal",false,false
+geography_gist_same,"box2d, box2d, internal",false,false
+geography_gist_union,"bytea, internal",false,false
+geography_gt,"geography, geography",false,false
+geography_in,"cstring, oid, integer",false,false
+geography_le,"geography, geography",false,false
+geography_lt,"geography, geography",false,false
+geography_out,geography,false,false
+geography_overlaps,"geography, geography",false,false
+geography_recv,"internal, oid, integer",false,false
+geography_send,geography,false,false
+geography_spgist_choose_nd,"internal, internal",false,false
+geography_spgist_compress_nd,internal,false,false
+geography_spgist_config_nd,"internal, internal",false,false
+geography_spgist_inner_consistent_nd,"internal, internal",false,false
+geography_spgist_leaf_consistent_nd,"internal, internal",false,false
+geography_spgist_picksplit_nd,"internal, internal",false,false
+geography_typmod_in,cstring[],false,false
+geography_typmod_out,integer,false,false
+geom2d_brin_inclusion_add_value,"internal, internal, internal, internal",false,false
+geom3d_brin_inclusion_add_value,"internal, internal, internal, internal",false,false
+geom4d_brin_inclusion_add_value,"internal, internal, internal, internal",false,false
+geometry,box3d,false,false
+geometry,point,false,false
+geometry,box2d,false,false
+geometry,"geometry, integer, boolean",false,false
+geometry,text,false,false
+geometry,bytea,false,false
+geometry,path,false,false
+geometry,polygon,false,false
+geometry,geography,false,false
+geometry_above,"geom1 geometry, geom2 geometry",false,false
+geometry_analyze,internal,false,false
+geometry_below,"geom1 geometry, geom2 geometry",false,false
+geometry_cmp,"geom1 geometry, geom2 geometry",false,false
+geometry_contained_3d,"geom1 geometry, geom2 geometry",false,false
+geometry_contains,"geom1 geometry, geom2 geometry",false,false
+geometry_contains_3d,"geom1 geometry, geom2 geometry",false,false
+geometry_contains_nd,"geometry, geometry",false,false
+geometry_distance_box,"geom1 geometry, geom2 geometry",false,false
+geometry_distance_centroid,"geom1 geometry, geom2 geometry",false,false
+geometry_distance_centroid_nd,"geometry, geometry",false,false
+geometry_distance_cpa,"geometry, geometry",false,false
+geometry_eq,"geom1 geometry, geom2 geometry",false,false
+geometry_ge,"geom1 geometry, geom2 geometry",false,false
+geometry_gist_compress_2d,internal,false,false
+geometry_gist_compress_nd,internal,false,false
+geometry_gist_consistent_2d,"internal, geometry, integer",false,false
+geometry_gist_consistent_nd,"internal, geometry, integer",false,false
+geometry_gist_decompress_2d,internal,false,false
+geometry_gist_decompress_nd,internal,false,false
+geometry_gist_distance_2d,"internal, geometry, integer",false,false
+geometry_gist_distance_nd,"internal, geometry, integer",false,false
+geometry_gist_penalty_2d,"internal, internal, internal",false,false
+geometry_gist_penalty_nd,"internal, internal, internal",false,false
+geometry_gist_picksplit_2d,"internal, internal",false,false
+geometry_gist_picksplit_nd,"internal, internal",false,false
+geometry_gist_same_2d,"geom1 geometry, geom2 geometry, internal",false,false
+geometry_gist_same_nd,"geometry, geometry, internal",false,false
+geometry_gist_sortsupport_2d,internal,false,false
+geometry_gist_union_2d,"bytea, internal",false,false
+geometry_gist_union_nd,"bytea, internal",false,false
+geometry_gt,"geom1 geometry, geom2 geometry",false,false
+geometry_hash,geometry,false,false
+geometry_in,cstring,false,false
+geometry_le,"geom1 geometry, geom2 geometry",false,false
+geometry_left,"geom1 geometry, geom2 geometry",false,false
+geometry_lt,"geom1 geometry, geom2 geometry",false,false
+geometry_out,geometry,false,false
+geometry_overabove,"geom1 geometry, geom2 geometry",false,false
+geometry_overbelow,"geom1 geometry, geom2 geometry",false,false
+geometry_overlaps,"geom1 geometry, geom2 geometry",false,false
+geometry_overlaps_3d,"geom1 geometry, geom2 geometry",false,false
+geometry_overlaps_nd,"geometry, geometry",false,false
+geometry_overleft,"geom1 geometry, geom2 geometry",false,false
+geometry_overright,"geom1 geometry, geom2 geometry",false,false
+geometry_recv,internal,false,false
+geometry_right,"geom1 geometry, geom2 geometry",false,false
+geometry_same,"geom1 geometry, geom2 geometry",false,false
+geometry_same_3d,"geom1 geometry, geom2 geometry",false,false
+geometry_same_nd,"geometry, geometry",false,false
+geometry_send,geometry,false,false
+geometry_sortsupport,internal,false,false
+geometry_spgist_choose_2d,"internal, internal",false,false
+geometry_spgist_choose_3d,"internal, internal",false,false
+geometry_spgist_choose_nd,"internal, internal",false,false
+geometry_spgist_compress_2d,internal,false,false
+geometry_spgist_compress_3d,internal,false,false
+geometry_spgist_compress_nd,internal,false,false
+geometry_spgist_config_2d,"internal, internal",false,false
+geometry_spgist_config_3d,"internal, internal",false,false
+geometry_spgist_config_nd,"internal, internal",false,false
+geometry_spgist_inner_consistent_2d,"internal, internal",false,false
+geometry_spgist_inner_consistent_3d,"internal, internal",false,false
+geometry_spgist_inner_consistent_nd,"internal, internal",false,false
+geometry_spgist_leaf_consistent_2d,"internal, internal",false,false
+geometry_spgist_leaf_consistent_3d,"internal, internal",false,false
+geometry_spgist_leaf_consistent_nd,"internal, internal",false,false
+geometry_spgist_picksplit_2d,"internal, internal",false,false
+geometry_spgist_picksplit_3d,"internal, internal",false,false
+geometry_spgist_picksplit_nd,"internal, internal",false,false
+geometry_typmod_in,cstring[],false,false
+geometry_typmod_out,integer,false,false
+geometry_within,"geom1 geometry, geom2 geometry",false,false
+geometry_within_nd,"geometry, geometry",false,false
+geometrytype,geometry,false,false
+geometrytype,geography,false,false
+geomfromewkb,bytea,false,false
+geomfromewkt,text,false,false
+get_pois,,false,false
+get_proj4_from_srid,integer,false,false
+gettransactionid,,false,false
+gidx_in,cstring,false,false
+gidx_out,gidx,false,false
+gserialized_gist_joinsel_2d,"internal, oid, internal, smallint",false,false
+gserialized_gist_joinsel_nd,"internal, oid, internal, smallint",false,false
+gserialized_gist_sel_2d,"internal, oid, internal, integer",false,false
+gserialized_gist_sel_nd,"internal, oid, internal, integer",false,false
+is_contained_2d,"box2df, box2df",false,false
+is_contained_2d,"geometry, box2df",false,false
+is_contained_2d,"box2df, geometry",false,false
+json,geometry,false,false
+jsonb,geometry,false,false
+lockrow,"text, text, text",false,false
+lockrow,"text, text, text, text, timestamp without time zone",false,false
+lockrow,"text, text, text, timestamp without time zone",false,false
+lockrow,"text, text, text, text",false,false
+longtransactionsenabled,,false,false
+overlaps_2d,"geometry, box2df",false,false
+overlaps_2d,"box2df, box2df",false,false
+overlaps_2d,"box2df, geometry",false,false
+overlaps_geog,"gidx, gidx",false,false
+overlaps_geog,"gidx, geography",false,false
+overlaps_geog,"geography, gidx",false,false
+overlaps_nd,"gidx, gidx",false,false
+overlaps_nd,"gidx, geometry",false,false
+overlaps_nd,"geometry, gidx",false,false
+path,geometry,false,false
+pgis_asflatgeobuf_finalfn,internal,false,false
+pgis_asflatgeobuf_transfn,"internal, anyelement, boolean, text",false,false
+pgis_asflatgeobuf_transfn,"internal, anyelement",false,false
+pgis_asflatgeobuf_transfn,"internal, anyelement, boolean",false,false
+pgis_asgeobuf_finalfn,internal,false,false
+pgis_asgeobuf_transfn,"internal, anyelement, text",false,false
+pgis_asgeobuf_transfn,"internal, anyelement",false,false
+pgis_asmvt_combinefn,"internal, internal",false,false
+pgis_asmvt_deserialfn,"bytea, internal",false,false
+pgis_asmvt_finalfn,internal,false,false
+pgis_asmvt_serialfn,internal,false,false
+pgis_asmvt_transfn,"internal, anyelement, text, integer, text",false,false
+pgis_asmvt_transfn,"internal, anyelement, text, integer, text, text",false,false
+pgis_asmvt_transfn,"internal, anyelement, text, integer",false,false
+pgis_asmvt_transfn,"internal, anyelement, text",false,false
+pgis_asmvt_transfn,"internal, anyelement",false,false
+pgis_geometry_accum_transfn,"internal, geometry, double precision",false,false
+pgis_geometry_accum_transfn,"internal, geometry",false,false
+pgis_geometry_accum_transfn,"internal, geometry, double precision, integer",false,false
+pgis_geometry_clusterintersecting_finalfn,internal,false,false
+pgis_geometry_clusterwithin_finalfn,internal,false,false
+pgis_geometry_collect_finalfn,internal,false,false
+pgis_geometry_makeline_finalfn,internal,false,false
+pgis_geometry_polygonize_finalfn,internal,false,false
+pgis_geometry_union_parallel_combinefn,"internal, internal",false,false
+pgis_geometry_union_parallel_deserialfn,"bytea, internal",false,false
+pgis_geometry_union_parallel_finalfn,internal,false,false
+pgis_geometry_union_parallel_serialfn,internal,false,false
+pgis_geometry_union_parallel_transfn,"internal, geometry, double precision",false,false
+pgis_geometry_union_parallel_transfn,"internal, geometry",false,false
+point,geometry,false,false
+polygon,geometry,false,false
+populate_geometry_columns,use_typmod boolean,false,false
+populate_geometry_columns,"tbl_oid oid, use_typmod boolean",false,false
+postgis_addbbox,geometry,false,false
+postgis_cache_bbox,,false,false
+postgis_constraint_dims,"geomschema text, geomtable text, geomcolumn text",false,false
+postgis_constraint_srid,"geomschema text, geomtable text, geomcolumn text",false,false
+postgis_constraint_type,"geomschema text, geomtable text, geomcolumn text",false,false
+postgis_dropbbox,geometry,false,false
+postgis_extensions_upgrade,,false,false
+postgis_full_version,,false,false
+postgis_geos_noop,geometry,false,false
+postgis_geos_version,,false,false
+postgis_getbbox,geometry,false,false
+postgis_hasbbox,geometry,false,false
+postgis_index_supportfn,internal,false,false
+postgis_lib_build_date,,false,false
+postgis_lib_revision,,false,false
+postgis_lib_version,,false,false
+postgis_libjson_version,,false,false
+postgis_liblwgeom_version,,false,false
+postgis_libprotobuf_version,,false,false
+postgis_libxml_version,,false,false
+postgis_noop,geometry,false,false
+postgis_proj_version,,false,false
+postgis_scripts_build_date,,false,false
+postgis_scripts_installed,,false,false
+postgis_scripts_released,,false,false
+postgis_svn_version,,false,false
+postgis_transform_geometry,"geom geometry, text, text, integer",false,false
+postgis_type_name,"geomname character varying, coord_dimension integer, use_new_name boolean",false,false
+postgis_typmod_dims,integer,false,false
+postgis_typmod_srid,integer,false,false
+postgis_typmod_type,integer,false,false
+postgis_version,,false,false
+postgis_wagyu_version,,false,false
+spheroid_in,cstring,false,false
+spheroid_out,spheroid,false,false
+st_3dclosestpoint,"geom1 geometry, geom2 geometry",false,false
+st_3ddfullywithin,"geom1 geometry, geom2 geometry, double precision",false,false
+st_3ddistance,"geom1 geometry, geom2 geometry",false,false
+st_3ddwithin,"geom1 geometry, geom2 geometry, double precision",false,false
+st_3dintersects,"geom1 geometry, geom2 geometry",false,false
+st_3dlength,geometry,false,false
+st_3dlineinterpolatepoint,"geometry, double precision",false,false
+st_3dlongestline,"geom1 geometry, geom2 geometry",false,false
+st_3dmakebox,"geom1 geometry, geom2 geometry",false,false
+st_3dmaxdistance,"geom1 geometry, geom2 geometry",false,false
+st_3dperimeter,geometry,false,false
+st_3dshortestline,"geom1 geometry, geom2 geometry",false,false
+st_addmeasure,"geometry, double precision, double precision",false,false
+st_addpoint,"geom1 geometry, geom2 geometry",false,false
+st_addpoint,"geom1 geometry, geom2 geometry, integer",false,false
+st_affine,"geometry, double precision, double precision, double precision, double precision, double precision, double precision",false,false
+st_affine,"geometry, double precision, double precision, double precision, double precision, double precision, double precision, double precision, double precision, double precision, double precision, double precision, double precision",false,false
+st_angle,"line1 geometry, line2 geometry",false,false
+st_angle,"pt1 geometry, pt2 geometry, pt3 geometry, pt4 geometry",false,false
+st_area,geometry,false,false
+st_area,text,false,false
+st_area,"geog geography, use_spheroid boolean",false,false
+st_area2d,geometry,false,false
+st_asbinary,"geography, text",false,false
+st_asbinary,geometry,false,false
+st_asbinary,geography,false,false
+st_asbinary,"geometry, text",false,false
+st_asencodedpolyline,"geom geometry, nprecision integer",false,false
+st_asewkb,geometry,false,false
+st_asewkb,"geometry, text",false,false
+st_asewkt,geography,false,false
+st_asewkt,"geometry, integer",false,false
+st_asewkt,geometry,false,false
+st_asewkt,text,false,false
+st_asewkt,"geography, integer",false,false
+st_asgeojson,text,false,false
+st_asgeojson,"geom geometry, maxdecimaldigits integer, options integer",false,false
+st_asgeojson,"r record, geom_column text, maxdecimaldigits integer, pretty_bool boolean",false,false
+st_asgeojson,"geog geography, maxdecimaldigits integer, options integer",false,false
+st_asgml,"version integer, geog geography, maxdecimaldigits integer, options integer, nprefix text, id text",false,false
+st_asgml,"geom geometry, maxdecimaldigits integer, options integer",false,false
+st_asgml,"version integer, geom geometry, maxdecimaldigits integer, options integer, nprefix text, id text",false,false
+st_asgml,"geog geography, maxdecimaldigits integer, options integer, nprefix text, id text",false,false
+st_asgml,text,false,false
+st_ashexewkb,geometry,false,false
+st_ashexewkb,"geometry, text",false,false
+st_askml,"geog geography, maxdecimaldigits integer, nprefix text",false,false
+st_askml,"geom geometry, maxdecimaldigits integer, nprefix text",false,false
+st_askml,text,false,false
+st_aslatlontext,"geom geometry, tmpl text",false,false
+st_asmarc21,"geom geometry, format text",false,false
+st_asmvtgeom,"geom geometry, bounds box2d, extent integer, buffer integer, clip_geom boolean",false,false
+st_assvg,"geom geometry, rel integer, maxdecimaldigits integer",false,false
+st_assvg,"geog geography, rel integer, maxdecimaldigits integer",false,false
+st_assvg,text,false,false
+st_astext,geography,false,false
+st_astext,geometry,false,false
+st_astext,"geometry, integer",false,false
+st_astext,"geography, integer",false,false
+st_astext,text,false,false
+st_astwkb,"geom geometry[], ids bigint[], prec integer, prec_z integer, prec_m integer, with_sizes boolean, with_boxes boolean",false,false
+st_astwkb,"geom geometry, prec integer, prec_z integer, prec_m integer, with_sizes boolean, with_boxes boolean",false,false
+st_asx3d,"geom geometry, maxdecimaldigits integer, options integer",false,false
+st_azimuth,"geom1 geometry, geom2 geometry",false,false
+st_azimuth,"geog1 geography, geog2 geography",false,false
+st_bdmpolyfromtext,"text, integer",false,false
+st_bdpolyfromtext,"text, integer",false,false
+st_boundary,geometry,false,false
+st_boundingdiagonal,"geom geometry, fits boolean",false,false
+st_box2dfromgeohash,"text, integer",false,false
+st_buffer,"text, double precision",false,false
+st_buffer,"geography, double precision, text",false,false
+st_buffer,"text, double precision, integer",false,false
+st_buffer,"geography, double precision, integer",false,false
+st_buffer,"text, double precision, text",false,false
+st_buffer,"geom geometry, radius double precision, options text",false,false
+st_buffer,"geom geometry, radius double precision, quadsegs integer",false,false
+st_buffer,"geography, double precision",false,false
+st_buildarea,geometry,false,false
+st_centroid,"geography, use_spheroid boolean",false,false
+st_centroid,geometry,false,false
+st_centroid,text,false,false
+st_chaikinsmoothing,"geometry, integer, boolean",false,false
+st_cleangeometry,geometry,false,false
+st_clipbybox2d,"geom geometry, box box2d",false,false
+st_closestpoint,"geom1 geometry, geom2 geometry",false,false
+st_closestpointofapproach,"geometry, geometry",false,false
+st_clusterintersecting,geometry[],false,false
+st_clusterwithin,"geometry[], double precision",false,false
+st_collect,geometry[],false,false
+st_collect,"geom1 geometry, geom2 geometry",false,false
+st_collectionextract,geometry,false,false
+st_collectionextract,"geometry, integer",false,false
+st_collectionhomogenize,geometry,false,false
+st_combinebbox,"box3d, geometry",false,false
+st_combinebbox,"box3d, box3d",false,false
+st_combinebbox,"box2d, geometry",false,false
+st_concavehull,"param_geom geometry, param_pctconvex double precision, param_allow_holes boolean",false,false
+st_contains,"geom1 geometry, geom2 geometry",false,false
+st_containsproperly,"geom1 geometry, geom2 geometry",false,false
+st_convexhull,geometry,false,false
+st_coorddim,geometry geometry,false,false
+st_coveredby,"geom1 geometry, geom2 geometry",false,false
+st_coveredby,"geog1 geography, geog2 geography",false,false
+st_coveredby,"text, text",false,false
+st_covers,"geog1 geography, geog2 geography",false,false
+st_covers,"text, text",false,false
+st_covers,"geom1 geometry, geom2 geometry",false,false
+st_cpawithin,"geometry, geometry, double precision",false,false
+st_crosses,"geom1 geometry, geom2 geometry",false,false
+st_curvetoline,"geom geometry, tol double precision, toltype integer, flags integer",false,false
+st_delaunaytriangles,"g1 geometry, tolerance double precision, flags integer",false,false
+st_dfullywithin,"geom1 geometry, geom2 geometry, double precision",false,false
+st_difference,"geom1 geometry, geom2 geometry, gridsize double precision",false,false
+st_dimension,geometry,false,false
+st_disjoint,"geom1 geometry, geom2 geometry",false,false
+st_distance,"geog1 geography, geog2 geography, use_spheroid boolean",false,false
+st_distance,"text, text",false,false
+st_distance,"geom1 geometry, geom2 geometry",false,false
+st_distancecpa,"geometry, geometry",false,false
+st_distancesphere,"geom1 geometry, geom2 geometry",false,false
+st_distancesphere,"geom1 geometry, geom2 geometry, radius double precision",false,false
+st_distancespheroid,"geom1 geometry, geom2 geometry",false,false
+st_distancespheroid,"geom1 geometry, geom2 geometry, spheroid",false,false
+st_dump,geometry,false,false
+st_dumppoints,geometry,false,false
+st_dumprings,geometry,false,false
+st_dumpsegments,geometry,false,false
+st_dwithin,"geom1 geometry, geom2 geometry, double precision",false,false
+st_dwithin,"geog1 geography, geog2 geography, tolerance double precision, use_spheroid boolean",false,false
+st_dwithin,"text, text, double precision",false,false
+st_endpoint,geometry,false,false
+st_envelope,geometry,false,false
+st_equals,"geom1 geometry, geom2 geometry",false,false
+st_expand,"geometry, double precision",false,false
+st_expand,"box box3d, dx double precision, dy double precision, dz double precision",false,false
+st_expand,"box3d, double precision",false,false
+st_expand,"geom geometry, dx double precision, dy double precision, dz double precision, dm double precision",false,false
+st_expand,"box2d, double precision",false,false
+st_expand,"box box2d, dx double precision, dy double precision",false,false
+st_exteriorring,geometry,false,false
+st_filterbym,"geometry, double precision, double precision, boolean",false,false
+st_findextent,"text, text",false,false
+st_findextent,"text, text, text",false,false
+st_flipcoordinates,geometry,false,false
+st_force2d,geometry,false,false
+st_force3d,"geom geometry, zvalue double precision",false,false
+st_force3dm,"geom geometry, mvalue double precision",false,false
+st_force3dz,"geom geometry, zvalue double precision",false,false
+st_force4d,"geom geometry, zvalue double precision, mvalue double precision",false,false
+st_forcecollection,geometry,false,false
+st_forcecurve,geometry,false,false
+st_forcepolygonccw,geometry,false,false
+st_forcepolygoncw,geometry,false,false
+st_forcerhr,geometry,false,false
+st_forcesfs,"geometry, version text",false,false
+st_forcesfs,geometry,false,false
+st_frechetdistance,"geom1 geometry, geom2 geometry, double precision",false,false
+st_fromflatgeobuf,"anyelement, bytea",false,false
+st_fromflatgeobuftotable,"text, text, bytea",false,false
+st_generatepoints,"area geometry, npoints integer, seed integer",false,false
+st_generatepoints,"area geometry, npoints integer",false,false
+st_geogfromtext,text,false,false
+st_geogfromwkb,bytea,false,false
+st_geographyfromtext,text,false,false
+st_geohash,"geog geography, maxchars integer",false,false
+st_geohash,"geom geometry, maxchars integer",false,false
+st_geomcollfromtext,"text, integer",false,false
+st_geomcollfromtext,text,false,false
+st_geomcollfromwkb,"bytea, integer",false,false
+st_geomcollfromwkb,bytea,false,false
+st_geometricmedian,"g geometry, tolerance double precision, max_iter integer, fail_if_not_converged boolean",false,false
+st_geometryfromtext,"text, integer",false,false
+st_geometryfromtext,text,false,false
+st_geometryn,"geometry, integer",false,false
+st_geometrytype,geometry,false,false
+st_geomfromewkb,bytea,false,false
+st_geomfromewkt,text,false,false
+st_geomfromgeohash,"text, integer",false,false
+st_geomfromgeojson,jsonb,false,false
+st_geomfromgeojson,json,false,false
+st_geomfromgeojson,text,false,false
+st_geomfromgml,text,false,false
+st_geomfromgml,"text, integer",false,false
+st_geomfromkml,text,false,false
+st_geomfrommarc21,marc21xml text,false,false
+st_geomfromtext,text,false,false
+st_geomfromtext,"text, integer",false,false
+st_geomfromtwkb,bytea,false,false
+st_geomfromwkb,bytea,false,false
+st_geomfromwkb,"bytea, integer",false,false
+st_gmltosql,text,false,false
+st_gmltosql,"text, integer",false,false
+st_hasarc,geometry geometry,false,false
+st_hausdorffdistance,"geom1 geometry, geom2 geometry",false,false
+st_hausdorffdistance,"geom1 geometry, geom2 geometry, double precision",false,false
+st_hexagon,"size double precision, cell_i integer, cell_j integer, origin geometry",false,false
+st_hexagongrid,"size double precision, bounds geometry, OUT geom geometry, OUT i integer, OUT j integer",false,false
+st_interiorringn,"geometry, integer",false,false
+st_interpolatepoint,"line geometry, point geometry",false,false
+st_intersection,"geography, geography",false,false
+st_intersection,"text, text",false,false
+st_intersection,"geom1 geometry, geom2 geometry, gridsize double precision",false,false
+st_intersects,"geog1 geography, geog2 geography",false,false
+st_intersects,"geom1 geometry, geom2 geometry",false,false
+st_intersects,"text, text",false,false
+st_isclosed,geometry,false,false
+st_iscollection,geometry,false,false
+st_isempty,geometry,false,false
+st_ispolygonccw,geometry,false,false
+st_ispolygoncw,geometry,false,false
+st_isring,geometry,false,false
+st_issimple,geometry,false,false
+st_isvalid,geometry,false,false
+st_isvalid,"geometry, integer",false,false
+st_isvaliddetail,"geom geometry, flags integer",false,false
+st_isvalidreason,geometry,false,false
+st_isvalidreason,"geometry, integer",false,false
+st_isvalidtrajectory,geometry,false,false
+st_length,geometry,false,false
+st_length,"geog geography, use_spheroid boolean",false,false
+st_length,text,false,false
+st_length2d,geometry,false,false
+st_length2dspheroid,"geometry, spheroid",false,false
+st_lengthspheroid,"geometry, spheroid",false,false
+st_letters,"letters text, font json",false,false
+st_linecrossingdirection,"line1 geometry, line2 geometry",false,false
+st_linefromencodedpolyline,"txtin text, nprecision integer",false,false
+st_linefrommultipoint,geometry,false,false
+st_linefromtext,"text, integer",false,false
+st_linefromtext,text,false,false
+st_linefromwkb,"bytea, integer",false,false
+st_linefromwkb,bytea,false,false
+st_lineinterpolatepoint,"geometry, double precision",false,false
+st_lineinterpolatepoints,"geometry, double precision, repeat boolean",false,false
+st_linelocatepoint,"geom1 geometry, geom2 geometry",false,false
+st_linemerge,"geometry, boolean",false,false
+st_linemerge,geometry,false,false
+st_linestringfromwkb,"bytea, integer",false,false
+st_linestringfromwkb,bytea,false,false
+st_linesubstring,"geometry, double precision, double precision",false,false
+st_linetocurve,geometry geometry,false,false
+st_locatealong,"geometry geometry, measure double precision, leftrightoffset double precision",false,false
+st_locatebetween,"geometry geometry, frommeasure double precision, tomeasure double precision, leftrightoffset double precision",false,false
+st_locatebetweenelevations,"geometry geometry, fromelevation double precision, toelevation double precision",false,false
+st_longestline,"geom1 geometry, geom2 geometry",false,false
+st_m,geometry,false,false
+st_makebox2d,"geom1 geometry, geom2 geometry",false,false
+st_makeenvelope,"double precision, double precision, double precision, double precision, integer",false,false
+st_makeline,"geom1 geometry, geom2 geometry",false,false
+st_makeline,geometry[],false,false
+st_makepoint,"double precision, double precision, double precision, double precision",false,false
+st_makepoint,"double precision, double precision, double precision",false,false
+st_makepoint,"double precision, double precision",false,false
+st_makepointm,"double precision, double precision, double precision",false,false
+st_makepolygon,geometry,false,false
+st_makepolygon,"geometry, geometry[]",false,false
+st_makevalid,geometry,false,false
+st_makevalid,"geom geometry, params text",false,false
+st_maxdistance,"geom1 geometry, geom2 geometry",false,false
+st_maximuminscribedcircle,"geometry, OUT center geometry, OUT nearest geometry, OUT radius double precision",false,false
+st_memsize,geometry,false,false
+st_minimumboundingcircle,"inputgeom geometry, segs_per_quarter integer",false,false
+st_minimumboundingradius,"geometry, OUT center geometry, OUT radius double precision",false,false
+st_minimumclearance,geometry,false,false
+st_minimumclearanceline,geometry,false,false
+st_mlinefromtext,"text, integer",false,false
+st_mlinefromtext,text,false,false
+st_mlinefromwkb,"bytea, integer",false,false
+st_mlinefromwkb,bytea,false,false
+st_mpointfromtext,"text, integer",false,false
+st_mpointfromtext,text,false,false
+st_mpointfromwkb,"bytea, integer",false,false
+st_mpointfromwkb,bytea,false,false
+st_mpolyfromtext,"text, integer",false,false
+st_mpolyfromtext,text,false,false
+st_mpolyfromwkb,bytea,false,false
+st_mpolyfromwkb,"bytea, integer",false,false
+st_multi,geometry,false,false
+st_multilinefromwkb,bytea,false,false
+st_multilinestringfromtext,text,false,false
+st_multilinestringfromtext,"text, integer",false,false
+st_multipointfromtext,text,false,false
+st_multipointfromwkb,"bytea, integer",false,false
+st_multipointfromwkb,bytea,false,false
+st_multipolyfromwkb,"bytea, integer",false,false
+st_multipolyfromwkb,bytea,false,false
+st_multipolygonfromtext,"text, integer",false,false
+st_multipolygonfromtext,text,false,false
+st_ndims,geometry,false,false
+st_node,g geometry,false,false
+st_normalize,geom geometry,false,false
+st_npoints,geometry,false,false
+st_nrings,geometry,false,false
+st_numgeometries,geometry,false,false
+st_numinteriorring,geometry,false,false
+st_numinteriorrings,geometry,false,false
+st_numpatches,geometry,false,false
+st_numpoints,geometry,false,false
+st_offsetcurve,"line geometry, distance double precision, params text",false,false
+st_orderingequals,"geom1 geometry, geom2 geometry",false,false
+st_orientedenvelope,geometry,false,false
+st_overlaps,"geom1 geometry, geom2 geometry",false,false
+st_patchn,"geometry, integer",false,false
+st_perimeter,"geog geography, use_spheroid boolean",false,false
+st_perimeter,geometry,false,false
+st_perimeter2d,geometry,false,false
+st_point,"double precision, double precision",false,false
+st_point,"double precision, double precision, srid integer",false,false
+st_pointfromgeohash,"text, integer",false,false
+st_pointfromtext,text,false,false
+st_pointfromtext,"text, integer",false,false
+st_pointfromwkb,bytea,false,false
+st_pointfromwkb,"bytea, integer",false,false
+st_pointinsidecircle,"geometry, double precision, double precision, double precision",false,false
+st_pointm,"xcoordinate double precision, ycoordinate double precision, mcoordinate double precision, srid integer",false,false
+st_pointn,"geometry, integer",false,false
+st_pointonsurface,geometry,false,false
+st_points,geometry,false,false
+st_pointz,"xcoordinate double precision, ycoordinate double precision, zcoordinate double precision, srid integer",false,false
+st_pointzm,"xcoordinate double precision, ycoordinate double precision, zcoordinate double precision, mcoordinate double precision, srid integer",false,false
+st_polyfromtext,text,false,false
+st_polyfromtext,"text, integer",false,false
+st_polyfromwkb,bytea,false,false
+st_polyfromwkb,"bytea, integer",false,false
+st_polygon,"geometry, integer",false,false
+st_polygonfromtext,text,false,false
+st_polygonfromtext,"text, integer",false,false
+st_polygonfromwkb,bytea,false,false
+st_polygonfromwkb,"bytea, integer",false,false
+st_polygonize,geometry[],false,false
+st_project,"geog geography, distance double precision, azimuth double precision",false,false
+st_quantizecoordinates,"g geometry, prec_x integer, prec_y integer, prec_z integer, prec_m integer",false,false
+st_reduceprecision,"geom geometry, gridsize double precision",false,false
+st_relate,"geom1 geometry, geom2 geometry, text",false,false
+st_relate,"geom1 geometry, geom2 geometry",false,false
+st_relate,"geom1 geometry, geom2 geometry, integer",false,false
+st_relatematch,"text, text",false,false
+st_removepoint,"geometry, integer",false,false
+st_removerepeatedpoints,"geom geometry, tolerance double precision",false,false
+st_reverse,geometry,false,false
+st_rotate,"geometry, double precision, geometry",false,false
+st_rotate,"geometry, double precision, double precision, double precision",false,false
+st_rotate,"geometry, double precision",false,false
+st_rotatex,"geometry, double precision",false,false
+st_rotatey,"geometry, double precision",false,false
+st_rotatez,"geometry, double precision",false,false
+st_scale,"geometry, double precision, double precision, double precision",false,false
+st_scale,"geometry, geometry",false,false
+st_scale,"geometry, geometry, origin geometry",false,false
+st_scale,"geometry, double precision, double precision",false,false
+st_scroll,"geometry, geometry",false,false
+st_segmentize,"geometry, double precision",false,false
+st_segmentize,"geog geography, max_segment_length double precision",false,false
+st_seteffectivearea,"geometry, double precision, integer",false,false
+st_setpoint,"geometry, integer, geometry",false,false
+st_setsrid,"geog geography, srid integer",false,false
+st_setsrid,"geom geometry, srid integer",false,false
+st_sharedpaths,"geom1 geometry, geom2 geometry",false,false
+st_shiftlongitude,geometry,false,false
+st_shortestline,"geom1 geometry, geom2 geometry",false,false
+st_simplify,"geometry, double precision",false,false
+st_simplify,"geometry, double precision, boolean",false,false
+st_simplifypolygonhull,"geom geometry, vertex_fraction double precision, is_outer boolean",false,false
+st_simplifypreservetopology,"geometry, double precision",false,false
+st_simplifyvw,"geometry, double precision",false,false
+st_snap,"geom1 geometry, geom2 geometry, double precision",false,false
+st_snaptogrid,"geometry, double precision",false,false
+st_snaptogrid,"geometry, double precision, double precision",false,false
+st_snaptogrid,"geom1 geometry, geom2 geometry, double precision, double precision, double precision, double precision",false,false
+st_snaptogrid,"geometry, double precision, double precision, double precision, double precision",false,false
+st_split,"geom1 geometry, geom2 geometry",false,false
+st_square,"size double precision, cell_i integer, cell_j integer, origin geometry",false,false
+st_squaregrid,"size double precision, bounds geometry, OUT geom geometry, OUT i integer, OUT j integer",false,false
+st_srid,geom geometry,false,false
+st_srid,geog geography,false,false
+st_startpoint,geometry,false,false
+st_subdivide,"geom geometry, maxvertices integer, gridsize double precision",false,false
+st_summary,geometry,false,false
+st_summary,geography,false,false
+st_swapordinates,"geom geometry, ords cstring",false,false
+st_symdifference,"geom1 geometry, geom2 geometry, gridsize double precision",false,false
+st_symmetricdifference,"geom1 geometry, geom2 geometry",false,false
+st_tileenvelope,"zoom integer, x integer, y integer, bounds geometry, margin double precision",false,false
+st_touches,"geom1 geometry, geom2 geometry",false,false
+st_transform,"geom geometry, from_proj text, to_proj text",false,false
+st_transform,"geometry, integer",false,false
+st_transform,"geom geometry, to_proj text",false,false
+st_transform,"geom geometry, from_proj text, to_srid integer",false,false
+st_translate,"geometry, double precision, double precision",false,false
+st_translate,"geometry, double precision, double precision, double precision",false,false
+st_transscale,"geometry, double precision, double precision, double precision, double precision",false,false
+st_triangulatepolygon,g1 geometry,false,false
+st_unaryunion,"geometry, gridsize double precision",false,false
+st_union,geometry[],false,false
+st_union,"geom1 geometry, geom2 geometry, gridsize double precision",false,false
+st_union,"geom1 geometry, geom2 geometry",false,false
+st_voronoilines,"g1 geometry, tolerance double precision, extend_to geometry",false,false
+st_voronoipolygons,"g1 geometry, tolerance double precision, extend_to geometry",false,false
+st_within,"geom1 geometry, geom2 geometry",false,false
+st_wkbtosql,wkb bytea,false,false
+st_wkttosql,text,false,false
+st_wrapx,"geom geometry, wrap double precision, move double precision",false,false
+st_x,geometry,false,false
+st_xmax,box3d,false,false
+st_xmin,box3d,false,false
+st_y,geometry,false,false
+st_ymax,box3d,false,false
+st_ymin,box3d,false,false
+st_z,geometry,false,false
+st_zmax,box3d,false,false
+st_zmflag,geometry,false,false
+st_zmin,box3d,false,false
+text,geometry,false,false
+unlockrows,text,false,false
+updategeometrysrid,"catalogn_name character varying, schema_name character varying, table_name character varying, column_name character varying, new_srid_in integer",false,false
+updategeometrysrid,"character varying, character varying, character varying, integer",false,false
+updategeometrysrid,"character varying, character varying, integer",false,false
+calculate_user_level,xp integer,false,true
+get_pois_with_status,p_profile_id uuid,false,true
+join_squad,p_leader_id uuid,false,true
+process_crowd_radar,"p_poi_id uuid, p_reporter_id uuid, p_raw_count integer",false,true
+rpc_validate_checkin,"p_profile_id uuid, p_poi_id uuid, p_current_lat double precision, p_current_lng double precision",false,true
+st_estimatedextent,"text, text",false,true
+st_estimatedextent,"text, text, text",false,true
+st_estimatedextent,"text, text, text, boolean",false,true

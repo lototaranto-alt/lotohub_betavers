@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, ActivityIndicator, Modal, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import * as Location from 'expo-location';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
+import { useGamification } from '../../context/GamificationContext';
 import XpToast from '../../components/XpToast';
 import { supabase } from '../../utils/supabase';
 import { startCrowdRadarScan } from '../../utils/bleManager';
+import { buildLevelUpEvents, calculateLevel } from '../../utils/levelUtils';
 
 const { height } = Dimensions.get('window');
 
@@ -16,6 +18,7 @@ export default function DeepLinkPoiScreen() {
   const idStr = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
   const { theme } = useTheme();
+  const gamification = useGamification();
 
   const [poiData, setPoiData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -56,58 +59,52 @@ export default function DeepLinkPoiScreen() {
   const handleToastHide = () => setToastVisible(false);
 
   const handleClaim = async () => {
+    if (!poiData) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsScanning(true);
 
-    let crowdCount = 1;
     try {
-      const result = await startCrowdRadarScan(poiData.id);
-      crowdCount = result?.crowdCount ?? 1;
-    } catch (e) {
-      console.warn('Radar BLE fallito o non supportato:', e);
-    }
+      // Radar BLE in background: mappa la folla senza bloccare il check-in.
+      startCrowdRadarScan(poiData.id).catch(err => console.warn('Radar BLE fallito o non supportato:', err));
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setIsScanning(false);
-    
-    if (!poiData) return;
+      const loc = await Location.getCurrentPositionAsync({});
 
-    const xpToAward = poiData.xp_reward || 50;
-
-    // Aggiorna AsyncStorage (Offline-first / Caching fallback)
-    const currentXpStr = await AsyncStorage.getItem('loto_fallback_xp');
-    const currentXp = currentXpStr ? parseInt(currentXpStr) : 0;
-    const newXp = currentXp + xpToAward;
-    await AsyncStorage.setItem('loto_fallback_xp', newXp.toString());
-    
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (session && session.user) {
-      // Inserimento storico check-in e popolamento Heatmap
-      try {
-        await supabase.rpc('process_crowd_radar', {
-          p_poi_id: poiData.id,
-          p_reporter_id: session.user.id,
-          p_raw_count: crowdCount
-        });
-
-        await supabase.from('user_pois').upsert({
-          profile_id: session.user.id,
-          poi_id: poiData.id,
-          visited_at: new Date().toISOString()
-        }, { onConflict: 'profile_id, poi_id' });
-      } catch(err) {
-        console.error('Errore inserimento storico check-in', err);
+      const { data: { user } } = await supabase.auth.getUser();
+      let oldXp = 0;
+      if (user) {
+        const { data: prof } = await supabase.from('profiles').select('total_xp').eq('id', user.id).single();
+        oldXp = prof?.total_xp || 0;
       }
+
+      // Percorso di check-in UFFICIALE: proximity gate + cooldown + anti-speed
+      // applicati lato server (stessa funzione di index.tsx e PoiDetailSheet).
+      const { data, error } = await supabase.rpc('scan_poi_gps', {
+        p_poi_id: poiData.id,
+        p_lat: loc.coords.latitude,
+        p_lng: loc.coords.longitude,
+      });
+      if (error) throw error;
+
+      const newXp = data.new_total_xp;
+      const events = buildLevelUpEvents(calculateLevel(oldXp), calculateLevel(newXp), 'it');
+      if (events.length > 0) {
+        gamification.queueEvents(events);
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setToastXp(data.xp_awarded ?? 0);
+      setToastMessage(`Check-in validato presso ${poiData.name}`);
+      setToastVisible(true);
+
+      setTimeout(() => {
+        router.replace('/' as any);
+      }, 2500);
+    } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      Alert.alert('Errore GPS', e.message);
+    } finally {
+      setIsScanning(false);
     }
-
-    setToastXp(xpToAward);
-    setToastMessage(`Check-in validato presso ${poiData.name}`);
-    setToastVisible(true);
-
-    setTimeout(() => {
-      router.replace('/' as any);
-    }, 2500);
   };
 
   if (loading) {

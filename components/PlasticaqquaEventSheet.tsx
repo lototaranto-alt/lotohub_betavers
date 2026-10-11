@@ -21,9 +21,9 @@ export default function PlasticaqquaEventSheet({ visible, onClose, onCheckInEven
     if (visible) {
       const fetchRealStats = async () => {
         try {
-          const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+          const { data: userCount } = await supabase.rpc('count_profiles');
           const { count: badgeCount } = await supabase.from('user_badges').select('*', { count: 'exact', head: true });
-          if (userCount) setParticipants(userCount);
+          if (userCount) setParticipants(Number(userCount));
           if (badgeCount) setActions(badgeCount);
         } catch(e) {}
       };

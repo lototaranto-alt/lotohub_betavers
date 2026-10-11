@@ -14,7 +14,6 @@ import { useGamification } from '../../context/GamificationContext';
 import { EVENTS_UNLOCK_LEVEL, ITINERARIES_UNLOCK_LEVEL } from '../../utils/levelUtils';
 import PoiDetailSheet from '../../components/PoiDetailSheet';
 import RouteSummarySheet from '../../components/RouteSummarySheet';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useFocusEffect } from 'expo-router';
 import Constants from 'expo-constants';
@@ -87,8 +86,6 @@ export default function MapScreen() {
   // non si sarebbe quanto del punteggio e' volume della giornata e quanto e'
   // termine recente da togliere.
   const heatBaseRef = useRef<Record<string, number>>({});
-  const [fogOfWar, setFogOfWar] = useState(false);
-  const [discoveredPoiIds, setDiscoveredPoiIds] = useState<Set<string>>(new Set());
   
   // UI States
   
@@ -151,20 +148,8 @@ export default function MapScreen() {
         if (isActive && poisData) {
           setPois(poisData);
 
-          const fogVal = await AsyncStorage.getItem('@loto_fog_of_war');
-          if (isActive) setFogOfWar(fogVal === '1');
-
-          // F6 Fog of War: set dei POI già scoperti dall'utente
-          const { data: { user } } = await supabase.auth.getUser();
-          if (isActive && user) {
-            const { data: discovered } = await supabase
-              .from('user_pois')
-              .select('poi_id')
-              .eq('profile_id', user.id);
-            if (isActive && discovered) {
-              setDiscoveredPoiIds(new Set(discovered.map(d => d.poi_id)));
-            }
-          }
+          // CB-08 (09/10): nessuna nebbia sulla mappa. user_pois resta SSOT
+          // solo per lo stato di visita/XP; il toggle locale e' stato rimosso.
           
           // HeatScore = Fondo Cumulativo Giornaliero + (Check-in ultimi 15 min x 2)
           //
@@ -186,24 +171,42 @@ export default function MapScreen() {
           poisData.forEach(p => { initialHeat[p.id] = 0; });
           setHeatScores(initialHeat);
 
-          // Il fondo conta SOLO i check-in piu' vecchi della finestra di 15 minuti.
-          // Quelli piu' recenti sono gia' coperti dal boost che Realtime aggiunge
-          // quando arrivano: cosi' nessun check-in viene contato due volte e il
-          // decadimento sa esattamente quanto togliere.
+          // Il fondo conta i check-in piu' vecchi della finestra di 15 minuti.
+          // M12/R1 (09/10): prima la query si fermava a boostCutoff, quindi un
+          // check-in avvenuto NEI 15 minuti precedenti il caricamento non entrava
+          // nel fondo e (essendo preesistente alla sottoscrizione) non generava
+          // nemmeno l'evento Realtime: non contava affatto. Ora la query parte
+          // da dayStart senza limite superiore e lo split fa il lavoro: le righe
+          // recenti diventano boost con il loro visited_at REALE nel ref, cosi'
+          // il decadimento le gestisce esattamente come quelle in tempo reale.
           const boostCutoff = Date.now() - BOOST_WINDOW_MS;
           const { data: dayCheckins } = await supabase
             .from('user_pois')
             .select('poi_id, visited_at')
-            .gte('visited_at', dayStart.toISOString())
-            .lt('visited_at', new Date(boostCutoff).toISOString());
+            .gte('visited_at', dayStart.toISOString());
 
           if (isActive && dayCheckins) {
             const fondo: Record<string, number> = {};
+            const boostRecenti: Record<string, number> = {};
             dayCheckins.forEach(r => {
-              if (r.poi_id) fondo[r.poi_id] = (fondo[r.poi_id] || 0) + 1;
+              if (!r.poi_id) return;
+              const ts = new Date(r.visited_at).getTime();
+              if (ts >= boostCutoff) {
+                boostRecenti[r.poi_id] = (boostRecenti[r.poi_id] || 0) + 2;
+                if (!heatBoostsRef.current[r.poi_id]) heatBoostsRef.current[r.poi_id] = [];
+                heatBoostsRef.current[r.poi_id].push(ts);
+              } else {
+                fondo[r.poi_id] = (fondo[r.poi_id] || 0) + 1;
+              }
             });
             heatBaseRef.current = fondo;
-            setHeatScores(prev => ({ ...prev, ...fondo }));
+            setHeatScores(prev => {
+              const next = { ...prev, ...fondo };
+              Object.keys(boostRecenti).forEach(id => {
+                next[id] = (next[id] || 0) + boostRecenti[id];
+              });
+              return next;
+            });
           }
         }
       };
@@ -289,7 +292,6 @@ export default function MapScreen() {
         id: poi.id,
         name: poi.name,
         heat: heatScores[poi.id] || 0,
-        discovered: discoveredPoiIds.has(poi.id) ? 1 : 0,
       },
       geometry: {
         type: 'Point',
@@ -373,17 +375,9 @@ export default function MapScreen() {
                 'monument', 'monument-15',
                 'marker-15'
               ],
-              iconSize: fogOfWar ? [
-                'case',
-                ['get', 'discovered'], 1.5,
-                1.1
-              ] : 1.5,
+              iconSize: 1.5,
               iconAllowOverlap: true,
-              iconOpacity: fogOfWar ? [
-                'case',
-                ['get', 'discovered'], 1,
-                0.35
-              ] : 1,
+              iconOpacity: 1,
               textField: ['get', 'name'],
               textSize: 10,
               textOffset: [0, 1.2],
@@ -391,11 +385,7 @@ export default function MapScreen() {
               textColor: theme.text,
               textHaloColor: theme.surface,
               textHaloWidth: 2,
-              textOpacity: fogOfWar ? [
-                'case',
-                ['get', 'discovered'], 1,
-                0.25
-              ] : 1
+              textOpacity: 1
             }}
           />
                   {eventsOn ? (

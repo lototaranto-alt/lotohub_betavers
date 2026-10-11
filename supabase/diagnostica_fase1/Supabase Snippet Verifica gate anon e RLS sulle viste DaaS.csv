@@ -1,0 +1,6 @@
+vista,rls_attivo,proprietario,anon_select,auth_select,svc_select,guard
+vw_daas_esg_monthly,false,postgres,false,true,true,true
+vw_daas_event_attendance,false,postgres,false,true,true,true
+vw_daas_heatmap_15min,false,postgres,false,true,true,true
+vw_dev_telemetry_daily,false,postgres,false,true,true,true
+vw_user_dashboard_metrics,false,postgres,false,true,true,true

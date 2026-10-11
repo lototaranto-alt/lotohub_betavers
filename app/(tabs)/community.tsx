@@ -70,11 +70,11 @@ export default function CommunityScreen() {
 
   const fetchCommunityData = async () => {
     try {
-      // Fetch Eventi Nodo Community
+      // Fetch Eventi Nodo Community (CB-23 09/10: nessun filtro event_type ->
+      // i valori reali sono 'eco'/'social', non 'nodo_community')
       const { data: evData, error: evErr } = await supabase
         .from('events')
         .select('*, pois(name)')
-        .eq('event_type', 'nodo_community')
         .order('start_time', { ascending: true });
 
       if (!evErr && evData) {
@@ -288,7 +288,6 @@ export default function CommunityScreen() {
         <CivicReportSheet 
           visible={isReportSheetVisible}
           onClose={() => setIsReportSheetVisible(false)}
-          userId={''}
           initialLocation={{ lat: 40.47, lng: 17.24 }}
         />
 

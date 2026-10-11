@@ -1,0 +1,5 @@
+policyname,cmd,roles,qual,with_check
+Users can insert their own profile,INSERT,{public},null,(auth.uid() = id)
+Users can insert their own profile.,INSERT,{public},null,(auth.uid() = id)
+profiles_select_own,SELECT,{authenticated},(auth.uid() = id),null
+profiles_update_own,UPDATE,{authenticated},(auth.uid() = id),(auth.uid() = id)

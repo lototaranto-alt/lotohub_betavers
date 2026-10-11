@@ -71,13 +71,24 @@ proprio sul blocco che ospita il rank `Esploratore`** (`levelUtils.ts:90-99`).
 | `app.json:3` | `"name": "LOTO MAP"` |
 | `app.json:4` | `"slug": "loto-app-fresh"` |
 | `app.json:22,35` | `com.lotohub.app` |
-| `app.json:25,26,87,99,105,116` | **`"L.O.T.O. HUB"`** in tutte le stringhe di permesso |
+| `app.json:25,26,87,99,105,116` | **`"L.O.T.O. MAP (Life On The Outside) Co-Experience Engine Engine"`** in tutte le stringhe di permesso |
 | `app.json:27` | **`"L'O.T.O. HUB"`** — refuso, in `NSMotionUsageDescription` |
 | `.agents/AGENTS.md:1` | `Loto Map` |
-| `.agents/rules/master_business_brief.md:19` | `**Nome:** L.O.T.O. HUB` |
+| `.agents/rules/master_business_brief.md:19` | `**Nome:** L.O.T.O. MAP (Life On The Outside) Co-Experience Engine Engine` |
 
 Le stringhe di `app.json:25-116` sono **le uniche che l'utente dell'app legge per intero**: sono i
 dialoghi di permesso di iOS e Android. Il nome ufficiale non era mai arrivato lì.
+
+> **Correzione registrata il 08/10/2026 (non riscrittura — METODO 7.1).**
+> Rilettura misurata di `app.json` oggi: `:3` riporta `"name": "L.O.T.O. Map"`;
+> le stringhe `:25,26,27,87,99,105,116` contengono **`L.O.T.O. Map`**, senza
+> `Co-Experience` e senza il refuso `Engine Engine`; `:27` non contiene piu'
+> `L'O.T.O. HUB`. La tabella sopra resta com'e': e' l'evidenza dello stato del
+> 30/09. Il refuso **non e' piu' riproducibile nei file sorgente** — esiste solo
+> in questa tabella storica e (riga 77) in `master_business_brief.md`, che e'
+> **archivio demotuto il 30/09**. Il nome ufficiale resta quello di §3:2
+> (`L.O.T.O. MAP (Life On The Outside) Co-Experience Engine`, una sola `Engine`).
+> Divergenza correlata: `VISIONE-ESECUZIONE-CORE-BUSINESS.md` CB-10.
 
 ### 1.3 Quattro parole per l'oggetto fisico sul territorio
 
@@ -183,7 +194,7 @@ ribattezzamenti. Sono tutti confermati dal codice, tranne il primo che è applic
 
 **Stato delle collisioni dopo questa area:** `tier` separato (decisione del 30/09, applicata alla
 documentazione, da applicare al codice quando i campi verranno creati); marchio unificato a
-**L.O.T.O. Map (Life On The Outside) Co-Experience**; `Indizi` registrato come nome ufficiale
+**L.O.T.O. MAP (Life On The Outside) Co-Experience Engine**; `Indizi` registrato come nome ufficiale
 dell'oggetto fisico; le altre cinque collisioni sono **aperte** e elencate in §4.
 
 ---

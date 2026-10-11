@@ -1,0 +1,34 @@
+-- ============================================================================
+-- ESITO POST-APPLY 36 (M10) - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/36_m10_badges_post_apply.sql
+-- Dopo : supabase/migrations/20261009160000_badges_m10.sql (APPLICATA, 09/10)
+--
+-- RISULTATO (tabella sezione | oggetto | valore):
+--   1_FK      user_badges_badge_id_fkey  FOREIGN KEY (badge_id)
+--             REFERENCES badges(id) ON DELETE CASCADE
+--   2_RLS     badge_templates            rls=true  forced=false
+--             badges                     rls=true  forced=false
+--             user_badges                rls=true  forced=false
+--   3_POLICY  badges.badges_read_catalog         cmd=SELECT roles={public}
+--             using=true check=-
+--             user_badges.user_badges_insert_own cmd=INSERT roles={authenticated}
+--             using=- check=(auth.uid() = user_id)
+--             user_badges.user_badges_select_own cmd=SELECT roles={authenticated}
+--             using=(auth.uid() = user_id) check=-
+--   4_GRANT   badge_templates | anon          | SELECT = false  (revocato)
+--             badge_templates | authenticated | SELECT = false  (revocato)
+--   5_FUNZIONE claim_badges secdef=true conflict=true (ON CONFLICT)
+--             exec_anon=false exec_auth=true
+--
+-- LETTURA
+-- -------
+-- Tutti i gate attesi sono VERDI:
+--   * FK spostata su badges(id) (R1) - embed *.badges(*) ora funzionante.
+--   * RLS idempotente (era gia' on; 35b) con FORZATURA OFF.
+--   * 3 policy: catalogo badge leggibile da tutti; user_badges in sola
+--     lettura/scrittura derivata per l'autenticato stesso (auth.uid()=user_id).
+--   * badge_templates BLOCCATA anche a livello grant (defesa in profondita').
+--   * claim_badges() SECURITY DEFINER, upsert con ON CONFLICT, EXECUTE solo per
+--     authenticated (anon -> auth.uid() NULL -> RAISE 'Utente non autenticato').
+-- ============================================================================

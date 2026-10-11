@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Alert } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
 import { useCity } from '../context/CityContext';
@@ -8,7 +8,6 @@ import { useTenant } from '../context/TenantContext';
 interface Props {
   visible: boolean;
   onClose: () => void;
-  userId: string;
   initialLocation?: { lat: number; lng: number };
 }
 
@@ -20,7 +19,7 @@ const CATEGORIES = [
   { id: 'other', label: 'Altro', icon: 'chat-bubble-outline' },
 ];
 
-export const CivicReportSheet: React.FC<Props> = ({ visible, onClose, userId, initialLocation }) => {
+export const CivicReportSheet: React.FC<Props> = ({ visible, onClose, initialLocation }) => {
   const { tenant: currentTenant } = useTenant();
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
@@ -31,31 +30,36 @@ export const CivicReportSheet: React.FC<Props> = ({ visible, onClose, userId, in
     if (!category || !description) return;
     setLoading(true);
 
-    const lat = initialLocation?.lat || 0;
-    const lng = initialLocation?.lng || 0;
-    const gridCell = `${lat.toFixed(3)}_${lng.toFixed(3)}`;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Devi essere autenticato per inviare una segnalazione.');
 
-    // [NOTA DI SVILUPPO - FASE 4: Whitelabel]
-    // Inseriamo la segnalazione assegnandola automaticamente al tenant corrente
-    // (currentTenant?.id). In questo modo, il database sa a quale Comune appartiene
-    // e il Pannello Admin filtrerà i dati usando le Row Level Security (RLS) di Supabase.
-    const { data, error } = await supabase
-      .from('civic_reports')
-      .insert({
-        tenant_id: currentTenant?.id || 'taranto',
-        user_id: userId,
-        grid_cell: gridCell, // Adattato per coerenza col DB
-        category,
-        description,
-        status: 'pending',
-        latitude: lat,
-        longitude: lng,
-      })
-      .select()
-      .single();
+      const lat = initialLocation?.lat || 0;
+      const lng = initialLocation?.lng || 0;
+      const gridCell = `${lat.toFixed(3)}_${lng.toFixed(3)}`;
 
-    setLoading(false);
-    if (!error && data) {
+      // [NOTA DI SVILUPPO - FASE 4: Whitelabel]
+      // Inseriamo la segnalazione assegnandola automaticamente al tenant corrente
+      // (currentTenant?.id). In questo modo, il database sa a quale Comune appartiene
+      // e il Pannello Admin filtrerà i dati usando le Row Level Security (RLS) di Supabase.
+      // M9: la colonna reale e' grid_cell; status NON viene forzato -> il DB applica
+      // il suo default 'pending_match' (normalizzato con CivicDashboard).
+      const { data, error } = await supabase
+        .from('civic_reports')
+        .insert({
+          tenant_id: currentTenant?.id || 'taranto',
+          user_id: user.id,
+          grid_cell: gridCell,
+          category,
+          description,
+          latitude: lat,
+          longitude: lng,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
       setResult(data.status === 'confirmed' ? 'confirmed' : 'pending');
       setTimeout(() => {
         setResult('idle');
@@ -63,8 +67,11 @@ export const CivicReportSheet: React.FC<Props> = ({ visible, onClose, userId, in
         setDescription('');
         onClose();
       }, 4000);
-    } else {
-      console.error(error);
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert('Errore', err?.message || 'Invio della segnalazione non riuscito. Riprova.');
+    } finally {
+      setLoading(false);
     }
   };
 

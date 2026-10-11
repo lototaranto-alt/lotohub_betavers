@@ -29,7 +29,7 @@ export async function fetchCommunityFeed(limit = 10): Promise<CommunityFeedItem[
         .order('visited_at', { ascending: false })
         .limit(limit),
       supabase.from('user_badges')
-        .select('id, badge_id, awarded_at, badge_templates(name), profiles(nickname)')
+        .select('id, badge_id, awarded_at, badges(name), profiles(nickname)')
         .order('awarded_at', { ascending: false })
         .limit(limit),
       supabase.from('impact_transactions')
@@ -58,7 +58,7 @@ export async function fetchCommunityFeed(limit = 10): Promise<CommunityFeedItem[
       items.push({
         id: `badge_${b.id}`,
         user: b.profiles?.nickname || 'Un Viaggiatore',
-        action: `ha sbloccato il badge ${b.badge_templates?.name || 'esclusivo'}`,
+        action: `ha sbloccato il badge ${b.badges?.name || 'esclusivo'}`,
         time: relativeTime(b.awarded_at),
         timestamp: new Date(b.awarded_at).getTime(),
         icon: 'emoji-events',

@@ -1,0 +1,16 @@
+-- ============================================================================
+-- ESITO PRECHECK 34b (M9) - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/34b_m9_civic_reports_triggers.sql
+--
+-- Output: "success" / nessuna tabella = 0 righe restituite.
+--
+-- LETTURA
+-- -------
+-- Nessun trigger (utente) sulla tabella public.civic_reports.
+-- Conferma indipendente della misura M2 (STATO-FASE-0.md:145-146:
+-- "0 trigger utente in public", `civic_confirmed` inesistente).
+-- Conseguenza per M9: il gate del piano ("il trigger cerca grid_cell = NEW.grid_cell")
+-- non ha oggetto sul DB deployato -> l'allineamento client non ha vincoli laterali.
+-- Le due policy di UPDATE/RLS (M4) restano l'unico maestro dello stato.
+-- ============================================================================

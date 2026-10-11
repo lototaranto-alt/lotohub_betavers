@@ -28,7 +28,6 @@ import FioreIconaRituale from '../../components/FioreIconaRituale';
 import ImpactStatsModal from '../../components/ImpactStatsModal';
 import VaultModal from '../../components/VaultModal';
 import { calculateDistance, calculateDistanceRaw } from '../../utils/haversine';
-import { ensureEarnedBadges } from '../../utils/badgeAssignment';
 import { fetchCommunityFeed, CommunityFeedItem } from '../../utils/communityFeed';
 import { enrichProfileWithDbMetrics, sendSessionStartTelemetry } from '../../utils/dbAggregation';
 import { useMobility } from '../../context/MobilityContext';
@@ -380,12 +379,12 @@ export default function VetrinaScreen() {
         setPois(fetchedPois.map(p => ({ ...p, latitude: p.latitude || p.lat, longitude: p.longitude || p.lng })));
       }
 
-      // Fetch Eventi Pubblici
+      // Fetch Eventi Pubblici (CB-23 09/10: nessun filtro event_type ->
+      // i valori reali sono 'eco'/'social', non 'web_public')
       const todayISO = new Date().toISOString();
       const { data: evData } = await supabase
         .from('events')
         .select('*')
-        .eq('event_type', 'web_public')
         .gte('start_time', todayISO)
         .order('start_time', { ascending: true })
         .limit(10);
@@ -407,38 +406,20 @@ export default function VetrinaScreen() {
           setUserProfile(profile);
           fetchCheckinsToday();
           loadTransactions(user.id);
-          
-          // Fetch itinerari
-          const { data: itinData } = await supabase.rpc('get_user_itineraries');
-          if(itinData) {
-            combinedItineraries = [...combinedItineraries, ...itinData];
-          }
 
-          // Fetch user badges
+          // Fetch user badges (assegnazione server-side: claim_badges legge
+          // total_xp dal DB; il client NON scrive piu' in user_badges)
+          await supabase.rpc('claim_badges');
           const { data: badges } = await supabase
             .from('user_badges')
             .select('*, badges(*)')
             .eq('user_id', user.id);
           if (badges) setUserBadges(badges);
 
-          // Sistema badge VIVO: assegna i badge con requisiti reali già soddisfatti
-          const newlyAssigned = await ensureEarnedBadges(supabase, profile, badges);
-          if (newlyAssigned.length > 0) {
-            const { data: refreshed } = await supabase
-              .from('user_badges')
-              .select('*, badges(*)')
-              .eq('user_id', user.id);
-            if (refreshed) setUserBadges(refreshed);
-          }
-
           // Sincronizza lo Store Gamification (SSOT): niente calcoli o copie locali disconnesse
-          const [[, fbXp], [, fbTok], [, fbPois]] = await AsyncStorage.multiGet(['loto_fallback_xp', 'loto_fallback_tokens', 'loto_fallback_pois']);
           const enriched = await enrichProfileWithDbMetrics(profile);
           gamification.syncProfile(enriched, {
             badges: badges || [],
-            fallbackXp: fbXp ? parseInt(fbXp) : 0,
-            fallbackTokens: fbTok ? parseInt(fbTok) : 0,
-            fallbackPois: fbPois ? parseInt(fbPois) : 0,
           });
           sendSessionStartTelemetry(enriched.total_xp || 0);
         }
@@ -482,7 +463,6 @@ export default function VetrinaScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [[, fbXp], [, fbTok], [, fbPois]] = await AsyncStorage.multiGet(['loto_fallback_xp', 'loto_fallback_tokens', 'loto_fallback_pois']);
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       if (!profile) return;
       setUserProfile(profile);
@@ -492,16 +472,12 @@ export default function VetrinaScreen() {
       loadTransactions(user.id);
       const { data: badges } = await supabase.from('user_badges').select('*, badges(*)').eq('user_id', user.id);
       if (badges) setUserBadges(badges);
-      const newlyAssigned = await ensureEarnedBadges(supabase, profile, badges);
-      if (newlyAssigned.length > 0) {
-        const { data: refreshed } = await supabase.from('user_badges').select('*, badges(*)').eq('user_id', user.id);
-        if (refreshed) setUserBadges(refreshed);
-      }
+      // Assegnazione server-side: nuovo badge da total_xp gia' raggiunto
+      await supabase.rpc('claim_badges');
+      const { data: badgesAfter } = await supabase.from('user_badges').select('*, badges(*)').eq('user_id', user.id);
+      if (badgesAfter) setUserBadges(badgesAfter);
       gamification.syncProfile(enriched, {
         badges: badges || [],
-        fallbackXp: fbXp ? parseInt(fbXp) : 0,
-        fallbackTokens: fbTok ? parseInt(fbTok) : 0,
-        fallbackPois: fbPois ? parseInt(fbPois) : 0,
       });
     } catch (e) {
       console.log("Errore refreshGamification:", e);

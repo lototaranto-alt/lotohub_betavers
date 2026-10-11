@@ -1,0 +1,79 @@
+-- ============================================================================
+-- ESITO PRECHECK 28 (G-06) + PROBE REST - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/28_scan_poi_hardening_precheck.sql
+--
+-- STATO MISURATO (una riga):
+--   prosecdef    = true
+--   proconfig    = null                       (search_path NON pinnato)
+--   proacl       = {=X/postgres, postgres=X/postgres, anon=X/postgres,
+--                   authenticated=X/postgres}  (EXECUTE a PUBLIC + anon)
+--   argomenti    = p_poi_id uuid
+--   proprietario = postgres
+--
+-- CORPO DEPLOYATO (pg_get_functiondef, backup M3):
+--   CREATE OR REPLACE FUNCTION public.scan_poi(p_poi_id uuid)
+--    RETURNS json
+--    LANGUAGE plpgsql
+--    SECURITY DEFINER
+--   AS $function$
+--   DECLARE
+--       v_profile_id UUID;
+--       v_xp_reward INT;
+--       v_new_xp INT;
+--   BEGIN
+--       v_profile_id := auth.uid();
+--       IF v_profile_id IS NULL THEN
+--           RAISE EXCEPTION 'Utente non autenticato';
+--       END IF;
+--
+--       SELECT xp_reward INTO v_xp_reward FROM public.pois WHERE id = p_poi_id;
+--       IF v_xp_reward IS NULL THEN
+--           RAISE EXCEPTION 'POI non trovato';
+--       END IF;
+--
+--       -- Inserisce in user_pois (usa discovered_at, NON created_at!)
+--       INSERT INTO public.user_pois (profile_id, poi_id, discovered_at)
+--       VALUES (v_profile_id, p_poi_id, now())
+--       ON CONFLICT (profile_id, poi_id) DO NOTHING;
+--
+--       -- Aggiorna XP utente
+--       UPDATE public.profiles
+--       SET total_xp = total_xp + COALESCE(v_xp_reward, 15)
+--       WHERE id = v_profile_id
+--       RETURNING total_xp INTO v_new_xp;
+--
+--       RETURN json_build_object('success', true, 'new_total_xp', v_new_xp);
+--   END;
+--   $function$
+--
+-- PROBE REST (anon, 09/10) sulle colonne di public.user_pois:
+--   profil e_id/poi_id/visited_at/lat/lng/co2_saved/xp_awarded/
+--   is_shadowbanned/calculated_speed_kmh -> 401 (colonna ESISTE; anon senza
+--     grant/RLS su user_pois, come atteso)
+--   discovered_at -> 400/42703 "column user_pois.discovered_at does not exist"
+--   created_at    -> 400 (assente)
+--
+-- CONCLUSIONI
+-- -----------
+-- 1. `scan_poi` e' DEPLOYED MA ROTTO: l'INSERT usa `user_pois.discovered_at`,
+--    colonna che NON esiste (la reale e' `visited_at`). Ogni chiamata di un
+--    utente autenticato solleva "column discovered_at does not exist" e il
+--    client la cattura (PoiDetailSheet.tsx:592) -> Alert 'Errore'. Per anon
+--    solleva prima 'Utente non autenticato'.
+--    => IL PERCORSO NFC/QR PARTNER NON HA MAI POTUTO RIUSCIRE. La premessa
+--    "mantenere l'NFC funzionante" (decisione hardening non distruttivo) e'
+--    di fatto priva di oggetto: non c'e' un comportamento funzionante da
+--    preservare.
+-- 2. Il rischio "XP infinita" e' REALE nel codice ma ATTUALE solo se la
+--    funzione riuscisse: l'UPDATE total_xp gira a OGNI chiamata (l'ON CONFLICT
+--    DO NOTHING non lo ferma). Oggi non e' sfruttabile perche' l'INSERT
+--    fallisce prima. Se qualcuno "riparasse" la colonna senza aggiungere gate,
+--    diventerebbe farmabile immediatamente. -> da non separare i due fix.
+-- 3. L'hardening server previsto (REVOKE anon/PUBLIC + pin search_path) resta
+--    corretto e utile (chiude l'esposizione anon), ma NON ripara il percorso.
+--    La convergenza G-06 va quindi riformulata come RIPARAZIONE:
+--    instradare il pulsante NFC/QR partner su `scan_poi_gps` (coordinate +
+--    cooldown + anti-speed) come gli altri ingressi, e poi decidere il destino
+--    di `scan_poi` (funzione morta).
+-- ============================================================================

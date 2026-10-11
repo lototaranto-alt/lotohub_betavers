@@ -1,0 +1,52 @@
+sezione,oggetto,dettaglio
+1_COLONNA,badge_templates.condition_type,text | null=YES | def=-
+1_COLONNA,badge_templates.condition_value,integer | null=YES | def=-
+1_COLONNA,badge_templates.description,text | null=YES | def=-
+1_COLONNA,badge_templates.icon_url,text | null=YES | def=-
+1_COLONNA,badge_templates.id,text | null=NO | def=-
+1_COLONNA,badge_templates.name,text | null=NO | def=-
+1_COLONNA,badge_templates.xp_bonus,integer | null=YES | def=0
+1_COLONNA,badges.created_at,timestamp with time zone | null=YES | def=now()
+1_COLONNA,badges.description,text | null=YES | def=-
+1_COLONNA,badges.icon,text | null=YES | def=-
+1_COLONNA,badges.id,text | null=NO | def=-
+1_COLONNA,badges.name,text | null=NO | def=-
+1_COLONNA,badges.req_poi_category,text | null=YES | def=-
+1_COLONNA,badges.req_xp,integer | null=YES | def=0
+1_COLONNA,user_badges.awarded_at,timestamp with time zone | null=YES | def=now()
+1_COLONNA,user_badges.badge_id,text | null=YES | def=-
+1_COLONNA,user_badges.id,uuid | null=NO | def=gen_random_uuid()
+1_COLONNA,user_badges.user_id,uuid | null=YES | def=-
+3_CONSTRAINT,badge_templates.badge_templates_pkey,type=p | PRIMARY KEY (id)
+3_CONSTRAINT,badges.badges_pkey,type=p | PRIMARY KEY (id)
+3_CONSTRAINT,user_badges.user_badges_badge_id_fkey,type=f | FOREIGN KEY (badge_id) REFERENCES badge_templates(id) ON DELETE CASCADE
+3_CONSTRAINT,user_badges.user_badges_pkey,type=p | PRIMARY KEY (id)
+3_CONSTRAINT,user_badges.user_badges_user_id_badge_id_key,"type=u | UNIQUE (user_id, badge_id)"
+3_CONSTRAINT,user_badges.user_badges_user_id_fkey,type=f | FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+4_ROWCOUNT,public.badge_templates,0
+4_ROWCOUNT,public.badges,3
+4_ROWCOUNT,public.user_badges,0
+5_GRANT,badge_templates | anon | DELETE,concesso
+5_GRANT,badge_templates | anon | INSERT,concesso
+5_GRANT,badge_templates | anon | SELECT,concesso
+5_GRANT,badge_templates | anon | UPDATE,concesso
+5_GRANT,badge_templates | authenticated | DELETE,concesso
+5_GRANT,badge_templates | authenticated | INSERT,concesso
+5_GRANT,badge_templates | authenticated | SELECT,concesso
+5_GRANT,badge_templates | authenticated | UPDATE,concesso
+5_GRANT,badges | anon | DELETE,concesso
+5_GRANT,badges | anon | INSERT,concesso
+5_GRANT,badges | anon | SELECT,concesso
+5_GRANT,badges | anon | UPDATE,concesso
+5_GRANT,badges | authenticated | DELETE,concesso
+5_GRANT,badges | authenticated | INSERT,concesso
+5_GRANT,badges | authenticated | SELECT,concesso
+5_GRANT,badges | authenticated | UPDATE,concesso
+5_GRANT,user_badges | anon | DELETE,concesso
+5_GRANT,user_badges | anon | INSERT,concesso
+5_GRANT,user_badges | anon | SELECT,concesso
+5_GRANT,user_badges | anon | UPDATE,concesso
+5_GRANT,user_badges | authenticated | DELETE,concesso
+5_GRANT,user_badges | authenticated | INSERT,concesso
+5_GRANT,user_badges | authenticated | SELECT,concesso
+5_GRANT,user_badges | authenticated | UPDATE,concesso

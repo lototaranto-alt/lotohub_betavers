@@ -1,0 +1,27 @@
+-- ============================================================================
+-- ESITO PRECHECK 32 (M7) - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/32_m7_cold_start_precheck.sql
+--
+-- STATO MISURATO (una riga) - COMBACIA con l'atteso:
+--   lunghezza                = 7289
+--   init_velocita_zero       = true    (difetto 1: `v_speed_kmh := 0`)
+--   ha_sentinella_9999       = true    (difetto 4: codice morto)
+--   ha_speed_measurable      = false   (flag assente prima di M7)
+--   storico_filtra_shadowban = true    (difetto 5: `up.is_shadowbanned`)
+--   n_filtri_shadow          = 2       (cooldown + storico globale)
+--   argomenti                = p_poi_id uuid, p_lat double precision,
+--                              p_lng double precision
+--   prosecdef                = true
+--   proconfig                = ["search_path=public, pg_temp"]
+--
+-- CONCLUSIONE
+-- -----------
+-- Il corpo deployato di scan_poi_gps e' IDENTICO per fingerprint a quello
+-- canonico del 29/09 (20260929160000_restore_proximity_gate.sql): 7289 char,
+-- 9999 presente, speed_measurable assente, 2 filtri shadow. I difetti 1-5 di M7
+-- sono confermati sul cloud. Procedere con l'apply di:
+--   supabase/migrations/20261009140000_m7_cold_start_no_9999.sql
+-- poi con il post-check:
+--   supabase/diagnostica_fase1/33_m7_cold_start_post_apply.sql
+-- ============================================================================

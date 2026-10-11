@@ -1,0 +1,34 @@
+-- ============================================================================
+-- ESITO PRECHECK 38 (M16) - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/38_m16_events_precheck.sql
+--
+-- RISULTATO (sezione | oggetto | valore):
+--   EVENTS_COLUMNS    id, tenant_id, poi_id, title, description, event_date,
+--                     event_type, <bool>, <text>, <timestamptz x3> (12 colonne;
+--                     lista troncata dal pannello dopo 'event_ty')
+--                     tipi: text, text, uuid, text, text, timestamptz, text,
+--                     boolean, text, timestamptz, timestamptz, timestamptz
+--   EVENTS_EVENT_TYPES distinct event_type   = eco, social          (2 valori)
+--   EVENTS_FK         events_poi_id_fkey    FOREIGN KEY (poi_id)
+--                     REFERENCES pois(id) ON DELETE SET NULL        (embed ok)
+--   EVENTS_GRANT      anon / authenticated  SELECT INSERT UPDATE DELETE
+--                     REFERENCES TRIGGER TRUNCATE = NO  (nessun grant!)
+--   EVENTS_INDEX      events_pkey on id     (unico indice)
+--   EVENTS_PK         events_pkey           PRIMARY KEY (id)   (id = text)
+--   EVENTS_RLS        rls=true  forced=false
+--   EVENTS_ROWCOUNT   count(*) = 2
+--
+-- LETTURA
+-- -------
+-- 1. Premessa M16 CONFERMATA: RLS attiva + 0 policy. In piu': i grant a
+--    anon/authenticated sono tutti NO -> anche chi avesse una policy non
+--    leggerebbe. La migration M16 deve aggiungere GRANT SELECT + policy.
+-- 2. Embedding poi.name possibile (FK events.poi_id -> pois.id presente,
+--    SET NULL, quindi poi_id nullable).
+-- 3. NUOVO FINDING (da registrare): i client filtrano evento_type =
+--    'web_public' (index.tsx:387) e 'nodo_community' (community.tsx:77), ma i
+--    valori reali sono 'eco' e 'social' -> anche con la policy quei filtri
+--    restituirebbero 0 righe. Serve allineamento (filtri client o semantica).
+-- 4. Nessun indice su start_time/event_type: 2 righe, irrilevante oggi.
+-- ============================================================================

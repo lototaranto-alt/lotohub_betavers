@@ -4,10 +4,12 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
+import { useTenant } from '../context/TenantContext';
 import { supabase } from '../utils/supabase';
 
 export default function CivicDashboard() {
   const { theme } = useTheme();
+  const { currentTenant } = useTenant();
   const [activeTab, setActiveTab] = useState<'form' | 'impact'>('form');
   
   // Form State
@@ -75,12 +77,14 @@ export default function CivicDashboard() {
       // 1. Calcola la cella della griglia di ~100m (3 decimali)
       const gridCell = `${location.latitude.toFixed(3)}_${location.longitude.toFixed(3)}`;
 
-      // 2. Inserisci la segnalazione
+      // 2. Inserisci la segnalazione (M9: colonna reale grid_cell + tenant_id;
+      //    status non forzato -> default DB 'pending_match', come CivicReportSheet)
       const { data, error } = await supabase
         .from('civic_reports')
         .insert({
+          tenant_id: currentTenant?.id || 'taranto',
           user_id: user.id,
-          grid_cell_50m: gridCell,
+          grid_cell: gridCell,
           category,
           description,
           latitude: location.latitude,

@@ -18,7 +18,6 @@ import { useTenant } from '../context/TenantContext';
 import { useTheme as _skip } from '../context/ThemeContext';
 import PoiScannerModal from './PoiScannerModal';
 import PlasticaqquaEventSheet from './PlasticaqquaEventSheet';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 // import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import { useRouteBuilder } from '../context/RouteContext';
 import { calculateLevel } from '../utils/levelUtils';
@@ -60,8 +59,6 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
   const [premiumPreviewVisible, setPremiumMockVisible] = useState(false);
   
   const [gpsDistance, setGpsDistance] = useState<number | null>(null);
-  const [checkinStartTime, setCheckinStartTime] = useState<number | null>(null);
-  const [timerLeft, setTimerLeft] = useState<number>(0);
   const [isGpsValidating, setIsGpsValidating] = useState(false);
 
   const [poiWhispers, setPoiWhispers] = useState<any[]>([]);
@@ -77,12 +74,6 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
       (async () => {
         let { status } = await Location.getForegroundPermissionsAsync();
         if (status !== 'granted') return;
-        
-        // Controlla se c'è un timer in corso in AsyncStorage
-        const savedTime = await AsyncStorage.getItem(`@checkin_start_${poi.id}`);
-        if (savedTime) {
-           setCheckinStartTime(parseInt(savedTime));
-        }
 
         sub = await Location.watchPositionAsync({ distanceInterval: 10 }, (loc) => {
            if ((poi.lat || poi.latitude) && (poi.lng || poi.longitude)) {
@@ -94,31 +85,6 @@ export default function PoiDetailSheet({ visible, poi, onClose, onCheckIn }: Poi
     }
     return () => { if (sub) sub.remove(); };
   }, [visible, poi]);
-
-  // Timer Tick
-  useEffect(() => {
-    let interval: any;
-    if (checkinStartTime) {
-      interval = setInterval(() => {
-        const elapsed = Date.now() - checkinStartTime;
-        const remaining = (10 * 60 * 1000) - elapsed;
-        if (remaining <= 0) {
-          setTimerLeft(0);
-          clearInterval(interval);
-        } else {
-          setTimerLeft(Math.floor(remaining / 1000));
-        }
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [checkinStartTime]);
-
-  const handleStartVisitaGPS = async () => {
-     const now = Date.now();
-     await AsyncStorage.setItem(`@checkin_start_${poi.id}`, now.toString());
-     setCheckinStartTime(now);
-     setTimerLeft(10 * 60);
-  };
 
 const handleRiscattaVisitaGPS = async () => {
      setIsGpsValidating(true);
@@ -155,11 +121,9 @@ const handleRiscattaVisitaGPS = async () => {
          queueEvents(events);
        }
 
-       await AsyncStorage.removeItem(`@checkin_start_${poi.id}`);
-       setCheckinStartTime(null);
        onCheckIn(poi);
-     } catch (e: any) {
-       Alert.alert('Errore GPS', e.message);
+      } catch (e: any) {
+        Alert.alert('Errore GPS', e.message);
      } finally {
        setIsGpsValidating(false);
      }
@@ -573,7 +537,16 @@ const handleRiscattaVisitaGPS = async () => {
         oldXp = prof?.total_xp || 0;
       }
       
-      const { data, error } = await supabase.rpc('scan_poi', { p_poi_id: poi.id });
+      import('../utils/bleManager').then(module => {
+        module.startCrowdRadarScan(poi.id).catch(err => console.log('BLE Error', err));
+      });
+
+      const loc = await Location.getCurrentPositionAsync({});
+      const { data, error } = await supabase.rpc('scan_poi_gps', {
+        p_poi_id: poi.id,
+        p_lat: loc.coords.latitude,
+        p_lng: loc.coords.longitude,
+      });
       if (error) throw error;
       
       const newXp = data.new_total_xp;
@@ -587,7 +560,7 @@ const handleRiscattaVisitaGPS = async () => {
         Alert.alert('Ottimo!', `Hai ottenuto i punti di questo POI. I tuoi XP sono ora ${newXp}.`);
       }
 
-                    onCheckIn(poi);
+        onCheckIn(poi);
                   }
                 } catch(e: any) {
                   Alert.alert('Errore', 'Non è stato possibile validare la scansione sul server: ' + e.message);

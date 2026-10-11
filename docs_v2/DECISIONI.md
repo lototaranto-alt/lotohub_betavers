@@ -5,7 +5,7 @@ ambito: registro-delle-decisioni-aperte-e-presa
 stato: Vivente
 confidenza: Alta
 owner: utente
-aggiornato: 2026-09-30
+aggiornato: 2026-10-09
 evidenza:
   - INVENTARIO_DOCUMENTAZIONE.md:104
   - docs_v2/aree/A1_fondazione.md:88
@@ -591,6 +591,18 @@ Sono in `QUERY-CLOUD.md` e `diagnostica-gate-vault.sql`.
 aveva gia' prese senza che nessuno le registrasse. Non è un difetto di chi decide: è il costo di non
 avere un registro che venga aggiornato quando il codice si muove. `METODICA.md` §4 e `autorita.json`
 esistono per quello.
+
+---
+
+## Rischi accettati — Fase 1 (P-D*, 09/10)
+
+Registro dei rischi accettati consapevolmente in Fase 1. Non sono decisioni aperte:
+sono scelte prese. Dettaglio nelle tabelle P-D* di `PIANO-LAVORO-MODULARE.md` e
+`VISIONE-ESECUZIONE-CORE-BUSINESS.md` §C.
+
+| id | rischio | risposta | stato |
+|---|---|---|---|
+| **P-D1** | Farming dei **20 XP** del primo check-in via `signInAnonymously` ripetuto + replay: ogni nuova identità anonima è un cold-start che incassa 20 XP | Accettato (non bloccante). Il check-in resta registrato per gli utenti reali. Riduzione del farming anonimo (rate-limit / device binding) rimandata a un lavoro successivo | **ACCETTATO (09/10)** |
 
 ---
 

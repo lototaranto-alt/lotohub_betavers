@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { supabase } from '../utils/supabase';
 import { useTheme } from '../context/ThemeContext';
+import { validaNickname } from '../utils/nicknameValidation';
 
 interface TouristBaptismModalProps {
   visible: boolean;
@@ -23,14 +24,11 @@ export default function TouristBaptismModal({ visible, onClose, userProfile, onN
       return;
     }
 
-    if (trimmed.length < 3) {
-      setError('Il nome deve avere almeno 3 caratteri.');
-      return;
-    }
-
-    const badWords = ['admin', 'loto', 'root'];
-    if (badWords.some(w => trimmed.toLowerCase().includes(w))) {
-      setError('Nome non consentito.');
+    // Convalida definitiva (P-D7): charset, lunghezza, blocklist.
+    // L'univoco lo garantisce il DB (23505 gestito nel catch).
+    const esito = validaNickname(trimmed);
+    if (!esito.ok) {
+      setError(esito.errore);
       return;
     }
 
@@ -41,7 +39,7 @@ export default function TouristBaptismModal({ visible, onClose, userProfile, onN
       const { data: existing, error: checkError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('nickname', trimmed)
+        .eq('nickname', esito.valido)
         .neq('id', userProfile?.id)
         .maybeSingle();
 
@@ -55,15 +53,19 @@ export default function TouristBaptismModal({ visible, onClose, userProfile, onN
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ nickname: trimmed })
+        .update({ nickname: esito.valido })
         .eq('id', userProfile?.id);
 
       if (updateError) throw updateError;
 
-      onNicknameSaved(trimmed);
+      onNicknameSaved(esito.valido);
       onClose();
     } catch (err: any) {
-      setError('Errore di connessione. Riprova.');
+      if (err?.code === '23505') {
+        setError('Nome già in uso, scegline un altro!');
+      } else {
+        setError('Errore di connessione. Riprova.');
+      }
       console.error(err);
     } finally {
       setLoading(false);

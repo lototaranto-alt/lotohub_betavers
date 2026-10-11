@@ -1,0 +1,45 @@
+-- ============================================================================
+-- ESITO PRECHECK 27 (M6) - eseguito dall'utente il 09/10
+-- ============================================================================
+-- Misura: supabase/diagnostica_fase1/27_m6_scan_functions_precheck.sql
+-- Output incollato in sessione (una riga per funzione).
+--
+-- funzione     | scan_poi                                                    | scan_poi_gps
+-- -------------|-------------------------------------------------------------|-------------
+-- esiste       | true                                                        | true
+-- n_overload   | 1                                                           | 1
+-- prosecdef    | true                                                        | true
+-- proconfig    | null  (SEARCH_PATH NON PINNATO)                             | ["search_path=public, pg_temp"] (PINNATO)
+-- proacl       | {=X,postgres,anon,authenticated} -> EXECUTE a PUBLIC+anon    | null -> EXECUTE di default a PUBLIC
+-- argomenti    | p_poi_id uuid                                               | p_poi_id uuid, p_lat double, p_lng double
+-- proprietario | postgres                                                    | postgres
+-- caratteri    | 881                                                         | 7289
+-- gate_prossim | false                                                       | TRUE
+-- raggio_def   | false                                                       | true
+-- init_vel_zero| false                                                       | true
+-- ramo_9999    | false                                                       | true
+-- n_filtri_sh  | 0                                                           | 2
+-- usa_auth_uid | true                                                        | true
+-- usa_prof_id  | true                                                        | true
+-- usa_user_id  | false                                                       | false
+-- user_pois    | true                                                        | true
+-- profiles     | true                                                        | true
+-- impact_tx    | false                                                       | true
+--
+-- CONCLUSIONI
+-- -----------
+-- 1. scan_poi_gps = corpo canonico di 20260929160000_restore_proximity_gate.sql:
+--    proximity gate VIVO, cooldown 12h (n_filtri_shadow=2), anti-speed (ramo 9999),
+--    ledger impact_transactions. schema corretto (profile_id / visited_at).
+--    => l'instradamento del deep link su scan_poi_gps (fix M6) e' la protezione reale.
+--    NB: proacl=null => EXECUTE di default a PUBLIC; anon ottiene l'eccezione
+--    'Utente non autenticato' (auth.uid() IS NULL). Nessuna scrittura per anon.
+--    Stessa classe di CB-19 (process_crowd_radar, chiusa in M5 con REVOKE PUBLIC).
+--
+-- 2. scan_poi = via UNGATED confermata (G-06):
+--    nessun gate di prossimita', nessun cooldown, nessun anti-speed, nessun ledger;
+--    SECURITY DEFINER senza search_path; EXECUTE a PUBLIC + anon + authenticated.
+--    Scrive user_pois + profiles (XP) -> farming via replay con JWT anonimo.
+--    Unico chiamante vivo: components/PoiDetailSheet.tsx:576 (percorso NFC/QR).
+--    => G-06 resta aperto: convergenza su scan_poi_gps (a valle, non con M6).
+-- ============================================================================

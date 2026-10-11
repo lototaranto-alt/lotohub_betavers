@@ -1,0 +1,29 @@
+-- ============================================================================
+-- ESITO POST-CHECK 31 (G-06) + VERIFICA REST - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/31_drop_scan_poi_post_apply.sql
+--
+-- RISULTATO (una riga):
+--   scan_poi_residue      = 0   (public.scan_poi rimossa)
+--   scan_poi_gps_presente = 1   (percorso di check-in riparato intatto)
+--
+-- VERIFICA INDIPENDENTE (agente, REST anon, 09/10):
+--   POST /rest/v1/rpc/scan_poi {p_poi_id}
+--     -> 404 {"code":"PGRST202",
+--             "message":"Could not find the function public.scan_poi(p_poi_id)
+--                        in the schema cache",
+--             "hint":"Perhaps you meant to call the function public.scan_poi_gps"}
+--   POST /rest/v1/rpc/scan_poi_gps {p_poi_id,p_lat,p_lng}
+--     -> 400 (esiste; respinge l'anon, nessuna scrittura)
+--
+-- CONCLUSIONE
+-- -----------
+-- G-06 risolto sul campo: un solo percorso di check-in (`scan_poi_gps`, gated),
+-- funzione morta `scan_poi` rimossa, pulsante NFC/QR Partner instradato su
+-- `scan_poi_gps` (convalida server-side).
+-- Residui (fuori dal difetto, registrati a parte):
+--   - decisione prodotto "partner indoor" (convalida ora richiede GPS);
+--   - osservazione `scan_poi_gps` proacl=null (EXECUTE PUBLIC);
+--   - file sorgente non tracciati che potrebbero ricreare scan_poi se ri-eseguiti
+--     (`20260926120000_scan_chain_canonical.sql:329`).
+-- ============================================================================

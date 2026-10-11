@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, StyleSheet, Switch, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, StyleSheet, Alert } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { supabase } from '../utils/supabase';
+import { validaNickname } from '../utils/nicknameValidation';
 import { getAvatarFrameStyle, CO_EXPERIENCE_UNLOCK_LEVEL, DIARY_CURATION_UNLOCK_LEVEL } from '../utils/levelUtils';
 import QRCode from 'react-native-qrcode-svg';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import FeatureLockSheet from './FeatureLockSheet';
 import MemoriesCameraModal from './MemoriesCameraModal';
 import FioreDeiTrePetali from './FioreDeiTrePetali';
-
-const FOG_KEY = '@loto_fog_of_war';
 
 type ProfileTab = 'identity' | 'squad' | 'diario';
 
@@ -33,10 +30,11 @@ interface ProfileModalProps {
 export default function ProfileModal({ visible, onClose, userProfile, userXp, levelInfo, userTokens, theme, setUserProfile, initialTab = 'identity', distanceToday = 0, co2Kg = 0, checkinsToday = 0 }: ProfileModalProps) {
 const [editingNickname, setEditingNickname] = useState(false);
   const [tempNickname, setTempNickname] = useState(userProfile?.nickname || 'VIAGGIATORE');
+  // P-D7: il nome si imposta una volta sola e poi e' bloccato.
+  const nickSettato = Boolean(userProfile?.nickname);
   const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
   const [isScanning, setIsScanning] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
-  const [fogOfWar, setFogOfWar] = useState(false);
   const [isMemoriesVisible, setIsMemoriesVisible] = useState(false);
   const [isCoLockSheetVisible, setIsCoLockSheetVisible] = useState(false);
   const [isMemoriesLockSheetVisible, setIsMemoriesLockSheetVisible] = useState(false);
@@ -46,21 +44,31 @@ const [editingNickname, setEditingNickname] = useState(false);
       setEditingNickname(false);
       setTempNickname(userProfile.nickname || 'VIAGGIATORE');
       setActiveTab(initialTab);
-      AsyncStorage.getItem(FOG_KEY).then(val => setFogOfWar(val === '1'));
     }
   }, [visible, userProfile?.id, userProfile?.nickname, initialTab]);
 
-  const toggleFogOfWar = async (value: boolean) => {
-    setFogOfWar(value);
-    await AsyncStorage.setItem(FOG_KEY, value ? '1' : '0');
-  };
-
   const salvaNickname = async () => {
-    if (!tempNickname.trim()) return;
+    // Convalida definitiva (P-D7): qui si imposta il nome la PRIMA volta,
+    // poi resta bloccato (l'input di modifica non viene piu' mostrato).
+    const esito = validaNickname(tempNickname);
+    if (!esito.ok) {
+      Alert.alert('Nome non valido', esito.errore);
+      return;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from('profiles').update({ nickname: tempNickname }).eq('id', user.id);
-      setUserProfile((prev: any) => ({ ...prev, nickname: tempNickname }));
+      const { error } = await supabase.from('profiles').update({ nickname: esito.valido }).eq('id', user.id);
+      if (error) {
+        if (error.code === '23505') {
+          Alert.alert('Nome già in uso', 'Scegline un altro.');
+        } else {
+          Alert.alert('Errore', 'Impossibile salvare il nome. Riprova.');
+        }
+        console.error(error);
+        return;
+      }
+      setUserProfile((prev: any) => ({ ...prev, nickname: esito.valido }));
+      setTempNickname(esito.valido);
     }
     setEditingNickname(false);
   };
@@ -125,7 +133,7 @@ const [editingNickname, setEditingNickname] = useState(false);
                 </View>
                 
                 <View style={styles.nameRow}>
-                  {editingNickname ? (
+                  {editingNickname && !nickSettato ? (
                     <TextInput 
                       style={[styles.nameInput, { color: theme.text, borderBottomColor: theme.accent }]} 
                       value={tempNickname} 
@@ -136,10 +144,21 @@ const [editingNickname, setEditingNickname] = useState(false);
                   ) : (
                     <Text style={[styles.nickname, { color: theme.text }]}>{userProfile?.nickname || 'VIAGGIATORE'}</Text>
                   )}
-                  <TouchableOpacity onPress={() => editingNickname ? salvaNickname() : setEditingNickname(true)} style={{ marginLeft: 10 }}>
-                    <MaterialIcons name={editingNickname ? "check" : "edit"} size={20} color={theme.accent} />
-                  </TouchableOpacity>
+                  {nickSettato ? (
+                    <View style={{ marginLeft: 10, opacity: 0.5 }}>
+                      <MaterialIcons name="lock-outline" size={20} color={theme.text} />
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => editingNickname ? salvaNickname() : setEditingNickname(true)} style={{ marginLeft: 10 }}>
+                      <MaterialIcons name={editingNickname ? "check" : "edit"} size={20} color={theme.accent} />
+                    </TouchableOpacity>
+                  )}
                 </View>
+                {nickSettato && (
+                  <Text style={{ fontSize: 11, color: theme.text, opacity: 0.6, marginTop: 2 }}>
+                    Nome definitivo, non modificabile
+                  </Text>
+                )}
                 
                 <Text style={[styles.rankTitle, { color: avatarStyle.borderColor || '#D4AF37' }]}>
                   RANK {currentRank}   {levelInfo.title || 'Turista Occasionale'}
@@ -248,25 +267,6 @@ const [editingNickname, setEditingNickname] = useState(false);
                 <Text style={[styles.diarioDesc, { color: theme.textMuted }]}>
                   Tre esperienze si intrecciano nel tuo passaggio in città. Ogni zona si svela con il tuo avanzamento.
                 </Text>
-
-                {/* Toggle Nebbia della Memoria (Fog of War) */}
-                <View style={[styles.fogRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                  <View style={[styles.zoneIcon, { backgroundColor: '#3B5F31' }]}>
-                    <MaterialIcons name="blur-on" size={22} color="#FFF" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.fogTitle, { color: theme.text }]}>Nebbia della Memoria</Text>
-                    <Text style={[styles.fogDesc, { color: theme.textMuted }]}>
-                      Sulla mappa, i luoghi non ancora esplorati restano velati, come ricordi sfumati.
-                    </Text>
-                  </View>
-                  <Switch
-                    value={fogOfWar}
-                    onValueChange={toggleFogOfWar}
-                    trackColor={{ false: theme.border, true: theme.primary }}
-                    thumbColor="#FFF"
-                  />
-                </View>
 
                 {/* ② MEMORIE + Camera filtri (cadenza pari: Visioni Sospese LV6) */}
                 <TouchableOpacity
@@ -396,15 +396,4 @@ privacyNote: { flexDirection: 'row', alignItems: 'center', marginTop: 25, opacit
   zoneTitle: { fontSize: 16, fontWeight: '900', marginBottom: 3 },
   zoneDesc: { fontSize: 12, lineHeight: 16, opacity: 0.85 },
   zoneTag: { fontSize: 10, fontWeight: '900', letterSpacing: 0.8, marginLeft: 8 },
-  fogRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 14,
-    marginBottom: 12,
-    elevation: 2,
-  },
-  fogTitle: { fontSize: 14, fontWeight: '900', marginBottom: 2 },
-  fogDesc: { fontSize: 11, lineHeight: 15, opacity: 0.85 },
 });

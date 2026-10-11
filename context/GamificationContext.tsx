@@ -6,9 +6,6 @@ export type { GamificationEvent };
 
 export interface GamificationSyncOptions {
   badges?: any[];
-  fallbackXp?: number;
-  fallbackTokens?: number;
-  fallbackPois?: number;
   distanceToday?: number;
 }
 
@@ -71,9 +68,9 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const syncProfile = useCallback((profile: any, options: GamificationSyncOptions = {}) => {
     setMetrics(prev => ({
-      xp: Math.max(profile?.total_xp || 0, options.fallbackXp || 0),
-      tokens: Math.max(profile?.total_tokens || 0, options.fallbackTokens || 0),
-      poisDiscovered: Math.max(profile?.pois_discovered || 0, options.fallbackPois || 0),
+      xp: profile?.total_xp || 0,
+      tokens: profile?.total_tokens || 0,
+      poisDiscovered: profile?.pois_discovered || 0,
       co2: profile?.total_co2 || 0,
       distanceToday: options.distanceToday !== undefined ? options.distanceToday : prev.distanceToday,
       badges: options.badges || prev.badges || [],

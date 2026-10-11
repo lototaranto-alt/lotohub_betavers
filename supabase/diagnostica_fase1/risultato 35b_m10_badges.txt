@@ -1,0 +1,20 @@
+-- ============================================================================
+-- ESITO PRECHECK 35b (M10) - eseguito 09/10
+-- ============================================================================
+-- Script: supabase/diagnostica_fase1/35b_m10_badges_rls.sql
+--
+-- STATO MISURATO (una riga per tabella):
+--   badge_templates  rls_on=true  rls_forced=false
+--   badges           rls_on=true  rls_forced=false
+--   user_badges      rls_on=true  rls_forced=false
+--
+-- LETTURA
+-- -------
+-- RLS gia' ATTIVA (forzatura off) su tutte e 3 le tabelle, con **0 policy**
+-- (precheck 35, sezione 2 vuota). Conseguenza dello stato attuale: ogni accesso
+-- dei client (anon/authenticated) a badges/badge_templates/user_badges e'
+-- NEGATO - e' esattamente il "falliscono in silenzio" di G-04.
+-- La migration M10 e' idempotente rispetto a questo (ENABLE RLS = no-op) e
+-- aggiunge le policy che riaprono il percorso: SELECT pubblica su `badges`,
+-- SELECT/INSERT proprie su `user_badges`, `badge_templates` resta bloccata.
+-- ============================================================================
