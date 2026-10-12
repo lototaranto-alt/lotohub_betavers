@@ -60,6 +60,7 @@ export const startCrowdRadarScan = async (poiId: string): Promise<BleScanResult>
 
     const ble = getBleManager();
     const btState = await ble.state();
+    console.log('[BLE Radar] btState=', btState);
     
     // Fallback UI silenziosa/persuasiva
     if (btState !== State.PoweredOn) {
@@ -71,6 +72,7 @@ export const startCrowdRadarScan = async (poiId: string): Promise<BleScanResult>
     }
 
     const hasPermission = await requestBluetoothPermissions();
+    console.log('[BLE Radar] permesso BT=', hasPermission);
     if (!hasPermission) return resolve({ crowdCount: 0, isIndoorValidated: false, ambientHash: '' });
 
     // 1. Avvio Scansione
@@ -128,6 +130,8 @@ export const startCrowdRadarScan = async (poiId: string): Promise<BleScanResult>
         }
       }
 
+      console.log('[BLE Radar] device visti=', seenMacs.size, 'crowdCount=', crowdCount, 'indoor=', isIndoorValidated);
+
       // C. Fingerprint Ambientale (Anti-Spoofing per Outdoor)
       // Generiamo un hash semplice basato sui MAC visti, ordinati alfanumericamente
       const sortedMacs = Array.from(seenMacs).sort().join('|');
@@ -146,17 +150,24 @@ export const startCrowdRadarScan = async (poiId: string): Promise<BleScanResult>
         try {
           const session = await supabase.auth.getSession();
           const userId = session.data.session?.user?.id;
+          console.log('[BLE Radar] userId=', userId ? 'ok' : 'assente');
           if (userId) {
-            await supabase.from('crowd_predictions').insert({
-              poi_id: poiId,
-              reporter_id: userId,
-              raw_count: crowdCount,
-              confidence_score: 100
+            const { data: certified, error: rpcErr } = await supabase.rpc('process_crowd_radar', {
+              p_poi_id: poiId,
+              p_reporter_id: userId,
+              p_raw_count: crowdCount,
             });
+            if (rpcErr) {
+              console.log('[BLE Radar] rpc KO:', rpcErr.code, rpcErr.message, rpcErr.details);
+            } else {
+              console.log('[BLE Radar] rpc OK, certified=', certified);
+            }
           }
         } catch (e) {
-          console.log('[BLE Radar] Errore DB:', e);
+          console.log('[BLE Radar] Eccezione RPC:', e);
         }
+      } else {
+        console.log('[BLE Radar] nessun device folla (crowdCount=0)');
       }
 
       resolve({ crowdCount, isIndoorValidated, ambientHash: finalHash });

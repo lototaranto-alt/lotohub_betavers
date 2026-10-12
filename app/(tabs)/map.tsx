@@ -78,6 +78,9 @@ export default function MapScreen() {
   const BOOST_WINDOW_MS = 15 * 60 * 1000;
 
   const [heatScores, setHeatScores] = useState<Record<string, number>>({});
+  // Fusione pesata: contributo crowd/BLE (aggregato k-anon vw_poi_crowd_now).
+  // Tenuto SEPARATO dallo stato heat per non interferire col decadimento del boost.
+  const [crowdHeat, setCrowdHeat] = useState<Record<string, number>>({});
   // Ultimo check-in in tempo reale per POI: serve al decadimento del boost.
   // Non entra nello stato React perche' non deve ridisegnare la mappa da solo,
   // lo fa il timer che legge questo ref.
@@ -208,10 +211,41 @@ export default function MapScreen() {
               return next;
             });
           }
+
+          // Fusione pesata: contributo crowd/BLE dal DB (finestra 60 min, k-anon).
+          // Peso = device visti (cap 8); si somma all'heat dei check-in al render.
+          const { data: crowdRows } = await supabase
+            .from('vw_poi_crowd_now')
+            .select('poi_id, devices, reporters');
+          if (isActive && crowdRows) {
+            const map: Record<string, number> = {};
+            crowdRows.forEach((r: any) => {
+              const d = r.devices || r.reporters || 0;
+              if (d > 0) map[r.poi_id] = Math.min(8, d);
+            });
+            setCrowdHeat(map);
+          }
         }
       };
 
       fetchPois();
+
+      // Refresh periodico della componente crowd (BLE) finche' la mappa e' a fuoco.
+      // 45s: percepibile "in tempo reale" senza sprechi di batteria fuori tab.
+      const refreshCrowd = async () => {
+        if (!isActive) return;
+        const { data: crowdRows } = await supabase
+          .from('vw_poi_crowd_now')
+          .select('poi_id, devices, reporters');
+        if (!isActive || !crowdRows) return;
+        const map: Record<string, number> = {};
+        crowdRows.forEach((r: any) => {
+          const d = r.devices || r.reporters || 0;
+          if (d > 0) map[r.poi_id] = Math.min(8, d);
+        });
+        setCrowdHeat(map);
+      };
+      const crowdTimer = setInterval(refreshCrowd, 45000);
 
       const realtimeSubscription = supabase
         .channel('public:user_pois')
@@ -237,6 +271,7 @@ export default function MapScreen() {
       
       return () => {
         isActive = false;
+        clearInterval(crowdTimer);
         supabase.removeChannel(realtimeSubscription);
       };
     }, [currentTenant])
@@ -291,7 +326,7 @@ export default function MapScreen() {
       properties: {
         id: poi.id,
         name: poi.name,
-        heat: heatScores[poi.id] || 0,
+        heat: (heatScores[poi.id] || 0) + (crowdHeat[poi.id] || 0),
       },
       geometry: {
         type: 'Point',
@@ -340,16 +375,29 @@ export default function MapScreen() {
             <Mapbox.CircleLayer
               id="pois-heat-halo"
               style={{
+                // Scala di calore non allarmante: grigio per il vuoto, ambra
+                // per l'alto. Gli stop partono da 0 cosi' un boost (+2) o un
+                // fondo basso producono subito un cambiamento visibile.
                 circleRadius: [
                   'interpolate', ['linear'], ['get', 'heat'],
-                  10, 15,
-                  100, 45 
+                  0, 16,
+                  6, 26,
+                  14, 36,
+                  30, 52
                 ],
-                circleColor: theme.primary,
+                circleColor: [
+                  'interpolate', ['linear'], ['get', 'heat'],
+                  0, '#9CA3AF',
+                  6, '#FCD34D',
+                  14, '#F59E0B',
+                  30, '#D97706'
+                ],
                 circleOpacity: [
                   'interpolate', ['linear'], ['get', 'heat'],
-                  10, 0.2,
-                  100, 0.6
+                  0, 0.18,
+                  6, 0.35,
+                  14, 0.55,
+                  30, 0.72
                 ],
                 circlePitchAlignment: 'map',
               }}

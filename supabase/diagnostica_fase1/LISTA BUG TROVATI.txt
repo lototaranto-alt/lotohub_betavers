@@ -1,0 +1,9 @@
+LISTA BUG TROVATI: 
+-il banner feed community in home deve contare tutte le azioni degli utenti nella sua modale e nei tempi che avevamo già elaborato.
+-la desincronizzazione lvup ecc che avevi già annotato nei tuoi doc.
+- la funzione Eco-passi su device 2 sembra avviarsi correttamente dopo consenso iniziale del carosello, ma la notifica sembra rimanere in caricamento e non sincronizza,tenendo conto che sono in casa non ho camminato molto con device 2.
+-in map al lv 4 mi sembra si sblocca una nuova sezione crea itinerario che era stata abbozata ma al tap non apre nulla.
+- nell'elaborazione del codice ci dovrebbe essere qualcosa che aveva a che fare con un sorta di avviso per i p.o.i in vicinanza con una funzione per non far accavallare avvisi p.o.i  in raggio della cella. segnaliamolo per non avere sorprese e per decidere se si può utilizzare per migliorare le nostre elaborazioni in dati sezioni. ( se presente, parti come queste dovrebbero essere ancora presenti nel codice).
+-al momento analizeremo anche le modali contatori delle varie sezioni dell'app che contano i propri parametri c'è anche qui qualche leggero disalineamento tra alcuni contatori.
+- i dati per le non emissioni di co2 mi sembrano molto generose potrebbero falsare questo ecosistema ancora cosi fragile su alcuni punti.
+- nel diario inatanto correggere il titolo che porta hub ancora, il fiore di oggi non sembra contare bene le azioni.

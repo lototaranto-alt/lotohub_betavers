@@ -21,6 +21,10 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 metro_dev.log
+metro.log
+
+# Config e piani locali OpenCode (include node_modules interni): non sono documentazione di sistema.
+.opencode/
 
 # debug
 npm-debug.*

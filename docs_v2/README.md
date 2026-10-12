@@ -69,6 +69,7 @@ l'inferenza.
 | il quadro di una sola area | `aree/A*.md` |
 | cosa e' ancora da decidere | `DECISIONI.md` |
 | capire della v1 e del suo disordine | `INVENTARIO_DOCUMENTAZIONE.md` |
+| **allegare alla consegna finale** | **`../docs_finali/` — i documenti definitivi di prodotto (v2 resta contesto operativo)** |
 
 ---
 
@@ -137,6 +138,18 @@ frontmatter di v2 e' YAML e non commenti HTML: deve essere leggibile da una macc
   corretto. Il dubbio si registra in `DECISIONI.md`, non si risolve con un paragrafo.
 - **Non autorizza esecuzioni.** Le migration le applichi tu. V2 non contiene comandi da eseguire,
   per principio.
+
+---
+
+## 8. Dove va la documentazione definitiva
+
+`docs_v2/` è il **contesto operativo dell'agente**: vive, si aggiorna, ha un ciclo di vita.
+La **documentazione da allegare alla consegna finale** vive separata, in
+[`../docs_finali/`](../docs_finali/README.md), per non mescolarsi con i documenti storici
+di `docs/` e `docs_v2/`. Regola:
+
+- qui dentro (v2) → come lavoriamo e come orientarsi;
+- lì fuori (`docs_finali/`) → come è fatto il prodotto e come si collauda (solo definitivi).
 
 ---
 
