@@ -1,0 +1,56 @@
+Killed task Check Mapbox android config
+
+Task in background terminato e processi sospesi. **Nessun file è stato modificato (operazioni eseguite al 100% in sola lettura).**
+
+Ecco il report dettagliato delle evidenze emerse dall'ispezione della repository (`C:\loto_app`):
+
+---
+
+### 1. I Token Rilevati e Dove Risiedono Esattamente
+
+GitHub Secret Scanning blocca il push perché i token con prefisso `sk.` sono **token segreti ad alto privilegio** di Mapbox (autorizzati a scaricare gli SDK a pagamento).
+
+Dall'ispezione della cronologia Git, ci sono **due token segreti distinti** che sono transitati nella storia:
+1. **Token A:** `sk.eyJ1IjoibG90b2h1YiIsImEiOiJjbXM1bm83dnUwNzVpMnlzZHE1ZThiY2RyIn0.ranHqBAYAS-SrUB2sRNwzg`
+2. **Token B:** `sk.eyJ1IjoibG90b2h1YiIsImEiOiJjbW55ajB6amcwMWQ2MnhzZGYydDR4aWJuIn0.DB2PNMU7oM-VsDa8ulxWzw`
+
+#### Dove si trovano nello stato attuale (`HEAD`):
+* **`app.json`**: **PULITO.** Il blocco del plugin `@rnmapbox/maps` con il token segreto è già stato rimosso nel commit `ec9d599`.
+* **`eas.json`**: **PULITO.** Contiene solo la chiave pubblica `EXPO_PUBLIC_MAPBOX_KEY = pk.eyJ1...`.
+* **`docs/storico_chat_vecchia.md`**: **PRESENTE.** C'è ancora la riga di log con il comando `eas secret:create ... "sk....ranHqBAYAS-SrUB2sRNwzg"`.
+* **`temp_backup_2/app.json`**: **PRESENTE.** Contiene ancora il Token B `sk....DB2PNMU7oM-VsDa8ulxWzw`.
+
+---
+
+### 2. Situazione Git: Divergenza e Branch (Dato Chiave)
+
+La misurazione matematica dei commit ha chiarito la topologia reale della cronologia:
+* **`origin/main`** è fermo al commit `8fe116b` (18 luglio).
+* **`main` locale** (`47b597c`) è avanti di **145 commit** rispetto a `origin/main`, ma ha **0 commit di divergenza indietro** (è una prosecuzione perfettamente lineare).
+* **`HEAD` (`fix/ripristino-lavoro-15-set-selective`)** (`fcc250c`) è avanti di **66 commit** rispetto a `main` locale, e ha **0 commit di divergenza indietro**.
+* **Totale:** Il branch attuale è **211 commit lineari avanti rispetto a `origin/main`**. Non ci sono fork disallineati; è un'unica linea retta di sviluppo che non è mai stata sincronizzata con GitHub a causa del blocco del secret scanning.
+
+---
+
+### 3. Risposta ai tuoi 3 Dubbi Tecnici
+
+#### A. Rischio di "perdere" il token o il suo valore
+* **Non c'è rischio di perderlo:** I token sono stati censiti e archiviati.
+* **Distinzione cruciale:**
+  * **Chiave Pubblica (`pk.*`)**: Quella presente in `.env` e in `eas.json`. Serve all'app per visualizzare la mappa in `app/(tabs)/map.tsx` (`Mapbox.setAccessToken(...)`). Questa **non è segreta** e non blocca Git.
+  * **Token Segreto (`sk.*`)**: Serve **esclusivamente** a Gradle/Cocoapods per scaricare i file binari C++/Android da `api.mapbox.com/downloads/v2/releases/maven` durante la compilazione nativa. Non viene **mai** letto o eseguito dal codice JavaScript dell'app a runtime.
+
+#### B. La rimozione da `app.json` / `eas.json` rompe il download delle librerie native?
+* **Assolutamente NO, anzi: tenerlo in `app.json` è sconsigliato.**
+  * In Expo/React Native moderno (`@rnmapbox/maps`), il token segreto di download **non deve mai stare in chiaro nei file di configurazione versionati**.
+  * **Per le build locali Gradle (APK di test)**: Gradle legge il token dalla variabile d'ambiente di sistema `MAPBOX_DOWNLOADS_TOKEN` o dal file locale `~/.gradle/gradle.properties` sul PC di sviluppo.
+  * **Per le build EAS (AAB Play Store)**: EAS inietta il token in fase di compilazione tramite **EAS Secrets** sul cloud (`eas secret:create --name MAPBOX_DOWNLOADS_TOKEN ...`), mantenendo i file del repository puliti e conformi al Secret Scanning.
+
+#### C. `git filter-repo` è la strada migliore o ci sono alternative più sicure?
+* **I rischi di `git filter-repo`:**
+  Poiché il token è stato introdotto indietro nella storia (addirittura toccato fin dai primi commit), eseguire `git filter-repo` andrebbe a **riscrivere gli hash SHA di oltre 200 commit**. Questo invalida tutti i tag storici, rende complessa qualsiasi futura operazione di comparazione e richiede un `git push --force`.
+* **Le due alternative più sicure:**
+  1. **Bypass del Secret Scanning via GitHub (Zero riscrittura storia):**
+     Quando GitHub blocca il push per un segreto, fornisce nel messaggio del terminale un URL diretto (es. `https://github.com/.../security/secret-scanning/...`). Da quella pagina web puoi marcare il segreto come *"Used in tests / False positive / Revoked"* oppure autorizzare l'eccezione ("Allow secret"). Questo sblocca il push all'istante **senza riscrivere un solo commit**.
+  2. **Revoca del token su Mapbox Dashboard (Best practice di sicurezza):**
+     Vai su Mapbox, revochi quel vecchio token `sk.` compromesso e ne generi uno nuovo pulito. Quello nuovo lo imposti solo su EAS Secret e nel tuo Gradle locale. A quel punto il vecchio token su GitHub è un guscio vuoto privo di valore, e autorizzare il bypass su GitHub non comporta alcun rischio.
