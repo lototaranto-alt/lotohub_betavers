@@ -5643,7 +5643,7 @@ The current local time is: 2026-08-25T08:41:40+02:00.
 Ho recuperato gli archivi di Aprile e ho letto esattamente cosa era successo nella chat `60507201-57e9-4b14-987b-46956aa8d123`.
 
 Hai perfettamente ragione: in quel momento storico, per sbloccare la build Android, è bastato iniettare il token segreto (`sk.`) in `app.json`.
-Infatti, ho appena fatto un test ping direttamente ai server di Mapbox con il tuo token `sk.eyJ1I...` e mi risponde `200 OK` (il token è valido e ha i permessi di download).
+Infatti, ho appena fatto un test ping direttamente ai server di Mapbox con il tuo token `[token-omesso]` e mi risponde `200 OK` (il token è valido e ha i permessi di download).
 
 **Ma ecco perché oggi non basta più:**
 Ad Aprile eravamo su una vecchia versione di Expo (SDK 50 o 51). In queste ore stiamo forzando l'uso del nuovissimo **Expo SDK 54 (React Native 0.77)**. 
@@ -5700,7 +5700,7 @@ La tua missione è risolvere una complessa incompatibilità di compilazione nati
 Durante la fase "Run gradlew" su EAS, la build Android fallisce inesorabilmente con l'errore: "Gradle build failed with unknown error". 
 
 **Tentativi già effettuati (che NON hanno risolto):**
-1. Abbiamo inserito correttamente il `MAPBOX_DOWNLOADS_TOKEN` (sk.eyJ...) nel plugin config di app.json per aggirare l'Errore 401 Unauthorized, testando che il token è valido (risponde 200 OK da cURL).
+1. Abbiamo inserito correttamente il `MAPBOX_DOWNLOADS_TOKEN` ([token-omesso]) nel plugin config di app.json per aggirare l'Errore 401 Unauthorized, testando che il token è valido (risponde 200 OK da cURL).
 2. Abbiamo provato la versione stabile `@rnmapbox/maps@10.3.5` e la pre-release v10.3.2-rc.2.
 3. Abbiamo testato il flag `"RNMapboxMapsUseV11": true` nel config plugin.
 4. Abbiamo forzato le `expo-build-properties` con `kotlinVersion: "1.9.24"`.
@@ -5980,7 +5980,7 @@ Per ripristinare il corretto funzionamento di Mapbox in modo professionale, ecco
 Apri un terminale nella radice del progetto (non in `admin-app`) e lancia questo comando per salvare la tua chiave nel Vault criptato di Expo in cloud:
 
 ```bash
-eas secret:create --scope project --name MAPBOX_DOWNLOADS_TOKEN --value "sk.eyJ1IjoibG90b2h1YiIsImEiOiJjbXM1bm83dnUwNzVpMnlzZHE1ZThiY2RyIn0.ranHqBAYAS-SrUB2sRNwzg"
+eas secret:create --scope project --name MAPBOX_DOWNLOADS_TOKEN --value "REDACTED_MAPBOX_SK_TOKEN"
 ```
 *(Ti assicuro che d'ora in poi, l'app continuerà a compilarsi perfettamente, ma nessun hacker potrà mai leggere questa chiave nel codice).*
 
